@@ -1,5 +1,3 @@
-
-
 use jaeger_stats::{
     read_jaeger_trace_file, test_trace};
 use std::{

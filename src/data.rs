@@ -26,25 +26,25 @@ pub struct JaegerReference {
     
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerTag {
-    key: String,
+    pub key: String,
     #[serde(rename(serialize = "type", deserialize = "type"))]
-    type_id: String,
-    value: serde_json::Value
+    pub type_id: String,
+    pub value: serde_json::Value
 }
     
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerSpan {
-    traceID: String,
-    spanID: String,
-    flags: i32,
-    operationName: String,
-    references: Vec<JaegerReference>,
-    startTime: u64,
-    duration: u64,
-    tags: Vec<JaegerTag>,
-    logs: Vec<JaegerLog>,
-    processID: String,
-    warnings: Option<Vec<String >>,
+    pub traceID: String,
+    pub spanID: String,
+    pub flags: i32,
+    pub operationName: String,
+    pub references: Vec<JaegerReference>,
+    pub startTime: u64,
+    pub duration: u64,
+    pub tags: Vec<JaegerTag>,
+    pub logs: Vec<JaegerLog>,
+    pub processID: String,
+    pub warnings: Option<Vec<String >>,
 }
     
 #[derive(Serialize, Deserialize, Debug)]

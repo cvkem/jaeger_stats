@@ -1,4 +1,4 @@
-
+/// Read a file and generate JSON again to see if all information was captured completely and correctly in the internal rust-format.
 use jaeger_stats::{
         read_jaeger_trace_file};
 use std::{
@@ -13,6 +13,7 @@ const OUTPUT_FILE: &str = "out.json";
 
 
 fn main() -> Result<(), Box<dyn Error>> {
+    println!("Read a file and generate JSON again to see if all information was captured completely and correctly in the internal rust-format.");
     println!("Reading a Jaeger-trace from '{INPUT_FILE}'");
     let jt = read_jaeger_trace_file(INPUT_FILE).unwrap();
 
