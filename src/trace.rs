@@ -2,6 +2,9 @@ use std::collections::HashMap;
 use crate::{JaegerTrace, JaegerItem};
 use serde_json::Value;
 
+
+const SHOW_STDOUT: bool = true;
+
 #[derive(Debug, Default)]
 pub struct Process {
     pub name: String,
@@ -50,10 +53,10 @@ impl Process {
 type ProcessMap = HashMap<String, Process>;
 
 
-
 /// Build_process takes a JaegerItem and extract a mapping from keys like 'p2' to a Process-structs.
 /// The nested structure of JSON items with flexible key-value pairs is flattened to simple Struct for convenient access downstream (during processing) 
-fn build_process_map(item: &JaegerItem) ->  ProcessMap {
+/// (This is the imperative version, next version is in functional style)
+fn build_process_map_imperative(item: &JaegerItem) ->  ProcessMap {
     let mut proc_map = HashMap::new();
 
     for (proc_key, val) in &item.processes {
@@ -72,7 +75,9 @@ fn build_process_map(item: &JaegerItem) ->  ProcessMap {
             },
             _ => panic!("Expected process {proc_key} to refer to an object. Found {val}")
         }
-        println!("Insert Proc {proc:?}");
+        if SHOW_STDOUT {
+            println!("Insert Proc {proc:?}");
+        }
         // Insert the extracted process
         proc_map.insert(proc_key.to_owned(), proc);
     };
@@ -81,10 +86,42 @@ fn build_process_map(item: &JaegerItem) ->  ProcessMap {
 }
 
 
+/// Build_process takes a JaegerItem and extract a mapping from keys like 'p2' to a Process-structs.
+/// The nested structure of JSON items with flexible key-value pairs is flattened to simple Struct for convenient access downstream (during processing) 
+fn build_process_map_func(item: &JaegerItem) ->  ProcessMap {
+    item.processes
+        .iter()
+        .map(|(proc_key, val)| {
+            let mut proc: Process = Default::default();
+
+            match val {
+                Value::Object(val) => {
+                    // now unpack the object as a series of key-value pairs
+                    for (key2, val2) in val {
+                        match &key2[..] {
+                            "serviceName" => proc.with_servername(val2),
+                            "tags" => proc.with_tags(proc_key, val2),
+                            _ => panic!("Unexpected key for process {proc_key}: '{key2}'")
+                        }    
+                    }
+                },
+                _ => panic!("Expected process {proc_key} to refer to an object. Found {val}")
+            }
+            let proc_kv = (proc_key.to_owned(), proc);
+            if SHOW_STDOUT {
+                println!(" extracted process: {proc_kv:?}");
+            }
+            proc_kv
+        })
+        .collect()
+}
+
+
+
 pub fn test_trace(jt: &JaegerTrace) {
     for item in jt.data.iter() {
         println!(" Found trace: {}", item.traceID);
-        let proc_map = build_process_map(item);
+        let proc_map = build_process_map_func(item);
 
         println!("{proc_map:#?}");
     };
