@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::{JaegerTrace, JaegerItem};
+use crate::JaegerItem;
 use serde_json::Value;
 
 
@@ -88,7 +88,8 @@ fn build_process_map_imperative(item: &JaegerItem) ->  ProcessMap {
 
 /// Build_process takes a JaegerItem and extract a mapping from keys like 'p2' to a Process-structs.
 /// The nested structure of JSON items with flexible key-value pairs is flattened to simple Struct for convenient access downstream (during processing) 
-fn build_process_map_func(item: &JaegerItem) ->  ProcessMap {
+/// (this is the functional version, the imperative version is called 'build_process_map_imperative')
+pub fn build_process_map(item: &JaegerItem) ->  ProcessMap {
     item.processes
         .iter()
         .map(|(proc_key, val)| {
@@ -116,13 +117,3 @@ fn build_process_map_func(item: &JaegerItem) ->  ProcessMap {
         .collect()
 }
 
-
-
-pub fn test_trace(jt: &JaegerTrace) {
-    for item in jt.data.iter() {
-        println!(" Found trace: {}", item.traceID);
-        let proc_map = build_process_map_func(item);
-
-        println!("{proc_map:#?}");
-    };
-}
