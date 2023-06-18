@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use serde_json;
+use serde_json::Value;
 
 
 
@@ -19,9 +19,9 @@ pub struct JaegerLog {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerReference {
-    refType: String,
-    traceID: String,
-    spanID: String,
+    pub refType: String,
+    pub traceID: String,
+    pub spanID: String,
 }
     
 #[derive(Serialize, Deserialize, Debug)]
@@ -31,6 +31,38 @@ pub struct JaegerTag {
     pub type_id: String,
     pub value: serde_json::Value
 }
+
+impl JaegerTag {
+
+    /// Extract the string-value or fail.
+    pub fn get_string(&self) -> String {
+        let serde_json::Value::String(val) = &self.value else {
+            panic!("The key '{}' does not contain a string. Value = {:?}", self.key, self.value);
+        };
+        val.to_owned()
+    }
+
+    /// Extract the string-value and transform to u32 or fail.
+    pub fn to_u32(&self) -> u32 {
+        let Ok(val) = self.get_string().trim().parse() else {
+            panic!("Can no translate key '{}' to u32 {:?}", self.key, self.value);
+        };
+        val
+    }
+
+    pub fn get_i32(&self) -> i32 {
+        let serde_json::Value::Number(val) = &self.value else {
+            panic!("The key '{}' does not contain a number (i32). Value = {:?}", self.key, self.value);
+        };
+        match val.as_i64() {
+            Some(val) => val as i32,
+            None =>  panic!("The key '{}' does not contain a number (i32). Value = {:?}", self.key, self.value)
+        }
+    }
+
+}
+
+pub type JaegerTags = Vec<JaegerTag>;
     
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerSpan {
@@ -41,7 +73,7 @@ pub struct JaegerSpan {
     pub references: Vec<JaegerReference>,
     pub startTime: u64,
     pub duration: u64,
-    pub tags: Vec<JaegerTag>,
+    pub tags: JaegerTags,
     pub logs: Vec<JaegerLog>,
     pub processID: String,
     pub warnings: Option<Vec<String >>,

@@ -5,7 +5,7 @@ use serde_json::Value;
 
 const SHOW_STDOUT: bool = true;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Process {
     pub name: String,
     pub server_name: String,
@@ -50,7 +50,7 @@ impl Process {
 }
 
 
-type ProcessMap = HashMap<String, Process>;
+pub type ProcessMap = HashMap<String, Process>;
 
 
 /// Build_process takes a JaegerItem and extract a mapping from keys like 'p2' to a Process-structs.

@@ -13,4 +13,5 @@ Cargo.lock
 
 # ignore json in the root
 *.json
+out.txt
 

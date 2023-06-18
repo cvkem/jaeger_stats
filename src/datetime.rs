@@ -4,7 +4,7 @@ use chrono::{
     Utc,
     TimeZone};
 
-/// micros_to_datetime takes the number of micro-seconds since epoch (unsigned) and returns a DateTime adjusted for timezone.
+/// micros_to_datetime takes the number of micro-seconds since epoch (unsigned) and returns a UTC-DateTime.
 pub fn micros_to_datetime(epoch_micros: u64) -> DateTime<Utc> {
     let timestamp = epoch_micros/1000/1000;
     let micros = epoch_micros - timestamp * 1000 * 1000;
