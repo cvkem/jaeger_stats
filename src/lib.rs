@@ -19,5 +19,5 @@ pub use crate::datetime::{
     datetime_millis_str,
     datetime_micros_str,
 };
-pub use stats::{basic_stats, chained_stats};
+pub use stats::{basic_stats, chained_stats, StatsMap};
 
