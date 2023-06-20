@@ -87,6 +87,47 @@ impl StatsMap {
 //        self  // return self for chaining
     }
     
+    pub fn to_csv_string(&self) -> String {
+        let mut s = Vec::new();
+
+        let mut data: Vec<_> = self.0.iter().collect();
+        data.sort_by(|a,b| { a.0.cmp(&b.0)});
+
+        s.push("process; count".to_owned());
+        data.iter()
+            .for_each(|(k, stat)| {
+                let line = format!("{k};{}", stat.count);
+                s.push(line);
+            });
+        s.push("\n".to_owned());
+
+        s.push("process-method; count".to_owned());
+        data.iter()
+            .for_each(|(k, stat)| {
+                stat.method
+                    .iter()
+                    .for_each(|(method, count)| {
+                        let line = format!("{k}/{method};{count}");
+                        s.push(line);
+                            })
+            });
+            s.push("\n".to_owned());
+
+            s.push("process; call_chain; depth; count; looped; revisit".to_owned());
+            data.iter()
+                .for_each(|(k, stat)| {
+                    stat.call_chain
+                        .iter()
+                        .for_each(|(cc_key, path_stats)| {
+                            let line = format!("{k}; {cc_key}; {}; {}; {}; {:?}", 
+                                path_stats.depth, path_stats.count, path_stats.looped.len()> 0, path_stats.looped);
+                            s.push(line);
+                                })
+                });
+                s.push("\n".to_owned());
+    
+            s.join("\n")
+    }
 }
 
 
@@ -147,7 +188,7 @@ fn get_call_chain(idx: usize, spans: &Spans) -> Vec<String> {
     call_chain
 }
 
-/// get all values that appear more than once in the list of strings.
+/// get all values that appear more than once in the list of strings, while being none-adjacent.
 fn get_duplicates(names: &Vec<String>) -> Vec<String> {
     let mut duplicates = Vec::new();
     for idx in 0..names.len() {
