@@ -1,8 +1,7 @@
 use chrono::{
     DateTime,
     NaiveDateTime,
-    Utc,
-    TimeZone};
+    Utc};
 
 /// micros_to_datetime takes the number of micro-seconds since epoch (unsigned) and returns a UTC-DateTime.
 pub fn micros_to_datetime(epoch_micros: u64) -> DateTime<Utc> {

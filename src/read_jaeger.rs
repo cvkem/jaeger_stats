@@ -5,7 +5,7 @@ use std::{
     path::Path
 };
 
-use crate::data::JaegerTrace;
+use crate::raw_jaeger::JaegerTrace;
 
 pub fn read_jaeger_trace_file<P: AsRef<Path>>(path: P) -> Result<JaegerTrace, Box<dyn Error>> {
     // Open the file in read-only mode with buffer.

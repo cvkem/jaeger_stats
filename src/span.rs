@@ -1,14 +1,11 @@
 use std::iter;
 use crate::{
-    build_process_map,
     JaegerTrace,
-    data::{
+    raw_jaeger::{
         JaegerSpan,
         JaegerTags},
-    process_map::ProcessMap,
-    micros_to_datetime,
-    Process};
-use serde::Serialize;
+    process_map::{build_process_map, ProcessMap, Process},
+    micros_to_datetime};
 use chrono::{
     DateTime,
     Utc};
@@ -73,6 +70,7 @@ impl Span {
 
 }
 
+
 /// add_parents adds parent-links to spans based on the information in Vec<JaegerSpan>
 fn add_parents(spans: &mut Vec<Span>, jspans: &Vec<JaegerSpan>) {
     let mut iter = iter::zip(spans, jspans);
@@ -95,13 +93,12 @@ fn add_parents(spans: &mut Vec<Span>, jspans: &Vec<JaegerSpan>) {
 
 } 
 
-
-pub fn build_trace(jt: &JaegerTrace) -> Vec<Span> {
+/// build the ist of spans (including parent links and proces-mapping)
+pub fn build_spans(jt: &JaegerTrace) -> Spans {
     if jt.data.len() != 1 {
         panic!("File contains {} (expected exactly 1)", jt.data.len());
     }
     let item = &jt.data[0]; 
-    println!(" Found trace: {}", item.traceID);
     let proc_map = build_process_map(item);
 
     let mut spans: Vec<_> = item.spans
@@ -113,14 +110,10 @@ pub fn build_trace(jt: &JaegerTrace) -> Vec<Span> {
 
     add_parents(&mut spans, &item.spans);
 
-    return spans;
+    spans
 }
 
 
-pub fn test_trace(jt: &JaegerTrace) -> Vec<Span> {
-
-    build_trace(jt)
-}
 
 
 

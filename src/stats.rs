@@ -1,5 +1,8 @@
 use std::collections::HashMap;
-use crate::{Spans};
+use crate::{
+    process_map::Process,
+    Trace,
+    span::Spans};
 
 #[derive(Debug, Default)]
 pub struct PathStats {
@@ -39,7 +42,9 @@ impl StatsMap {
         StatsMap(HashMap::new())
     }
 
-    pub fn extend_statistics(&mut self, spans: &Spans) {
+    pub fn extend_statistics(&mut self, trace: &Trace) {
+
+        let spans = &trace.spans;
 
         spans
             .iter()
@@ -132,7 +137,9 @@ impl StatsMap {
 
 
 /// Compute basic call statistics, which only looks at functions/operations and does not include the call path
-pub fn basic_stats(spans: &Spans) -> HashMap<String, u32> {
+pub fn basic_stats(trace: &Trace) -> HashMap<String, u32> {
+    let spans = &trace.spans;
+
     let mut stats = HashMap::new();
     spans
         .iter()
@@ -222,7 +229,9 @@ fn get_duplicates(names: &Vec<String>) -> Vec<String> {
 }
 
 /// Compute basic call statistics, which only looks at functions/operations and does not include the call path
-pub fn chained_stats(spans: &Spans) -> HashMap<String, u32> {
+pub fn chained_stats(trace: &Trace) -> HashMap<String, u32> {
+    let spans = &trace.spans;
+
     let mut stats = HashMap::new();
     spans
         .iter()

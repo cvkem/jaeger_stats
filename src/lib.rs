@@ -1,19 +1,22 @@
 
-mod data;
-mod read;
+mod raw_jaeger;
+mod read_jaeger;
 mod process_map;
 mod span;
+mod trace;
 mod datetime;
 mod stats;
 
-pub use data::{
+pub use raw_jaeger::{
     JaegerTrace,
     JaegerItem};
-pub use read::read_jaeger_trace_file;
-use process_map::{
-    build_process_map,
-    Process};
-pub use span::{build_trace, Span, Spans};
+pub use read_jaeger::read_jaeger_trace_file;
+// use process_map::{
+//     build_process_map,
+//     Process};
+pub use trace::{build_trace, Trace};
+//pub use span::{Span, Spans};
+
 pub use crate::datetime::{
     micros_to_datetime,
     datetime_millis_str,
