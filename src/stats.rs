@@ -3,6 +3,10 @@ use crate::{
     process_map::Process,
     Trace,
     span::Spans};
+    use chrono::{
+        DateTime,
+        Utc};
+
 
 #[derive(Debug, Default)]
 pub struct PathStats {
@@ -36,19 +40,30 @@ impl Stats {
 //type StatsMap = HashMap<String, Stats>;
 
 #[derive(Debug, Default)]
-pub struct StatsMap (HashMap<String, Stats>);
+pub struct StatsMap {
+    pub trace_id: Vec<String>,
+    pub start_dt: Vec<DateTime<Utc>>,
+    pub end_dt: Vec<DateTime<Utc>>,
+    pub duration_micros: Vec<u64>,
+    pub time_to_respond_micros: Vec<u64>,
+    stats: HashMap<String, Stats>
+}
 
 impl StatsMap {
 
     pub fn new() -> Self {
-        StatsMap(HashMap::new())
+        Default::default()
     }
 
     pub fn extend_statistics(&mut self, trace: &Trace) {
 
         let spans = &trace.spans;
 
-        //TODO:: collect some basics
+        self.trace_id.push(trace.trace_id.to_owned());
+        self.start_dt.push(trace.start_dt);
+        self.end_dt.push(trace.end_dt);
+        self.duration_micros.push(trace.duration_micros);
+        self.time_to_respond_micros.push(trace.time_to_respond_micros);
 
         spans
             .iter()
@@ -87,7 +102,7 @@ impl StatsMap {
                         .or_insert_with(|| PathStats{count: 1, depth, looped});
                     
                 };
-                self.0
+                self.stats
                     .entry(proc)
                     .and_modify(update_stat)            
                     .or_insert_with(|| {
@@ -103,11 +118,34 @@ impl StatsMap {
         let mut s = Vec::new();
 
         //TODO: add generic stats
+        match self.trace_id.len() as u64 {
+            0 => panic!("No data in Stats"),
+            1 => {
+                s.push(format!("trace_id:; {:?}", self.trace_id[0]));
+                s.push(format!("start_dt; {:?}", self.start_dt[0]));
+                s.push(format!("end_dt:; {:?}", self.end_dt[0]));
+                s.push(format!("duration_micros:; {:?}", self.duration_micros[0]));
+                s.push(format!("time_to_respond_micros:; {:?}", self.time_to_respond_micros[0]));
+        
+            },
+            N => {
+                s.push(format!("trace_ids:; {:?}", self.trace_id));
+                s.push(format!("start_dt; {:?}", self.start_dt));
+                s.push(format!("end_dt:; {:?}", self.end_dt));
+                s.push(format!("AVG(duration_micros):; {:?}", self.duration_micros.iter().sum::<u64>()/N));
+                s.push(format!("MAX(duration_micros):; {:?}", self.duration_micros.iter().max()));
+                s.push(format!("duration_micros:; {:?}", self.duration_micros));
+                s.push(format!("AVG(time_to_respond):; {:?}", self.time_to_respond_micros.iter().sum::<u64>()/N));
+                s.push(format!("MAX(time_to_respond_micros):; {:?}", self.time_to_respond_micros.iter().max()));
+                s.push(format!("time_to_respond_micros:; {:?}", self.time_to_respond_micros));        
+            }
+        }
+        s.push("\n".to_owned());
 
-        let mut data: Vec<_> = self.0.iter().collect();
+        let mut data: Vec<_> = self.stats.iter().collect();
         data.sort_by(|a,b| { a.0.cmp(&b.0)});
 
-        s.push("process; num_received_calls; num_outbound_calls".to_owned());
+        s.push("Process; Num_received_calls; Num_outbound_calls".to_owned());
         data.iter()
             .for_each(|(k, stat)| {
                 let line = format!("{k};{};{}", stat.num_received_calls, stat.num_outbound_calls);
@@ -115,7 +153,7 @@ impl StatsMap {
             });
         s.push("\n".to_owned());
 
-        s.push("process-method; count".to_owned());
+        s.push("Process-method; Count".to_owned());
         data.iter()
             .for_each(|(k, stat)| {
                 stat.method
@@ -127,7 +165,7 @@ impl StatsMap {
             });
             s.push("\n".to_owned());
 
-            s.push("process; call_chain; depth; count; looped; revisit".to_owned());
+            s.push("Process; Call_chain; Depth; Count; Looped; Revisit".to_owned());
             data.iter()
                 .for_each(|(k, stat)| {
                     stat.call_chain

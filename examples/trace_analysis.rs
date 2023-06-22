@@ -4,6 +4,7 @@ use std::{
     env,
     error::Error,
     fs::{self, File},
+    path::Path,
     io::Write};
 
 
@@ -53,7 +54,7 @@ fn proces_file(cumm_stats: &mut Option<StatsMap>, input_file: &String) -> Result
     // let mut file = File::create(output_file)?;
     // file.write_all(span_str.as_bytes())?;
 
-    println!("Now writing the read Jaeger_trace to {csv_file}");
+    println!("Now writing the trace statistics to {csv_file}");
     let stats_csv_str = stats.to_csv_string();
     write_string_to_file(&csv_file, stats_csv_str);
 
@@ -62,20 +63,28 @@ fn proces_file(cumm_stats: &mut Option<StatsMap>, input_file: &String) -> Result
 
 
 fn process_json_in_folder(folder: &str) {
+    let mut cumm_stats = Some(StatsMap::new());
+
     for entry in fs::read_dir(folder).expect("Failed to read directory") {
         let entry = entry.expect("Failed to extract file-entry");
         let path = entry.path();
-        let mut cumm_stats = StatsMap::new();
 
         let metadata = fs::metadata(&path).unwrap();
         if metadata.is_file() {
             let file_name = path.to_str().expect("path-string").to_owned();
             if file_name.ends_with(".json") {
-                proces_file(&mut Some(cumm_stats), &file_name).unwrap();
+                proces_file(&mut cumm_stats, &file_name).unwrap();
             } else {
                 println!("Ignore '{file_name} as it does not have suffix '.json'.");
             }
         }
+    }
+
+    if let Some(cumm_stats) = cumm_stats {
+        let csv_file = format!("{folder}cummulative_trace_stats.csv");
+        println!("Now writing the cummulative trace statistics to {csv_file}");
+        let stats_csv_str = cumm_stats.to_csv_string();
+        write_string_to_file(&csv_file, stats_csv_str);
     }
 }
 
@@ -90,7 +99,9 @@ fn main()  {
 
     if input_file.ends_with(".json") {
         proces_file(&mut None, &input_file).unwrap();
-    } else {
+    } else if input_file.ends_with("/") || input_file.ends_with("\\") {
         process_json_in_folder(&input_file);
+    } else {
+        panic!(" Expected file with extention '.json'  or folder that ends with '/' (linux) or '\' (windows)");
     }
 }
