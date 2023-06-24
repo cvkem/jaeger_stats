@@ -42,6 +42,7 @@ impl Stats {
 #[derive(Debug, Default)]
 pub struct StatsMap {
     pub trace_id: Vec<String>,
+    pub root_call: Vec<String>,
     pub start_dt: Vec<DateTime<Utc>>,
     pub end_dt: Vec<DateTime<Utc>>,
     pub duration_micros: Vec<u64>,
@@ -60,6 +61,7 @@ impl StatsMap {
         let spans = &trace.spans;
 
         self.trace_id.push(trace.trace_id.to_owned());
+        self.root_call.push(trace.root_call.to_owned());
         self.start_dt.push(trace.start_dt);
         self.end_dt.push(trace.end_dt);
         self.duration_micros.push(trace.duration_micros);
@@ -69,10 +71,7 @@ impl StatsMap {
             .iter()
             .enumerate()
             .for_each(|(idx, span)| {
-                let proc = match &span.process {
-                    Some(p) => p.name.to_owned(),
-                    None => "-".to_owned()
-                };
+                let proc = span.get_process_str().to_owned();
                 let method = &span.operation_name;
                 let update_stat = |stat: &mut Stats| {
                     match &method[..] {
@@ -121,15 +120,18 @@ impl StatsMap {
         match self.trace_id.len() as u64 {
             0 => panic!("No data in Stats"),
             1 => {
-                s.push(format!("trace_id:; {:?}", self.trace_id[0]));
+                s.push(format!("trace_id:; {}", self.trace_id[0]));
+                s.push(format!("root_call:; {}", self.root_call[0]));
                 s.push(format!("start_dt; {:?}", self.start_dt[0]));
                 s.push(format!("end_dt:; {:?}", self.end_dt[0]));
-                s.push(format!("duration_micros:; {:?}", self.duration_micros[0]));
-                s.push(format!("time_to_respond_micros:; {:?}", self.time_to_respond_micros[0]));
+                s.push(format!("duration_micros:; {}", self.duration_micros[0]));
+                s.push(format!("time_to_respond_micros:; {}", self.time_to_respond_micros[0]));
         
             },
             N => {
                 s.push(format!("trace_ids:; {:?}", self.trace_id));
+                s.push(format!("root_call_stats:; {}", root_call_stats(&self.root_call)));
+                s.push(format!("root_calls:; {:?}", root_call_list(&self.trace_id, &self.root_call)));
                 s.push(format!("start_dt; {:?}", self.start_dt));
                 s.push(format!("end_dt:; {:?}", self.end_dt));
                 s.push(format!("AVG(duration_micros):; {:?}", self.duration_micros.iter().sum::<u64>()/N));
@@ -191,10 +193,7 @@ pub fn basic_stats(trace: &Trace) -> HashMap<String, u32> {
     spans
         .iter()
         .for_each(|span| {
-            let proc = match &span.process {
-                Some(p) => &p.name[..],
-                None => "-"
-            };
+            let proc = span.get_process_str();
             let proc_method = format!("{}/{}", proc, span.operation_name);
             stats.entry(proc_method).and_modify(|counter| *counter += 1).or_insert(1);
         });
@@ -235,10 +234,7 @@ fn get_call_chain(idx: usize, spans: &Spans) -> Vec<(String, String)> {
          Some(idx) => get_call_chain(idx, spans)
         };
     // and push all proces names starting from the root
-    let process = match &span.process {
-        Some(p) => p.name.to_owned(),
-        None => "-".to_owned()
-    };
+    let process = span.get_process_str().to_owned();
     let method = span.operation_name.to_owned();
     call_chain.push( (process, method) );
     call_chain
@@ -286,10 +282,7 @@ pub fn chained_stats(trace: &Trace) -> HashMap<String, u32> {
         .iter()
         .enumerate()
         .for_each(|(idx, span)| {
-            let proc = match &span.process {
-                Some(p) => &p.name[..],
-                None => "-"
-            };
+            let proc = span.get_process_str();
             let parents_str = get_call_chain(idx, spans)
                 .into_iter()
                 .fold(String::new(), |a, b| a + &b.0 + &b.1 +" | ");
@@ -299,3 +292,29 @@ pub fn chained_stats(trace: &Trace) -> HashMap<String, u32> {
     stats
 }
 
+
+/// root_call_stats return a list of root_calls and their count.
+fn root_call_stats(root_calls: &Vec<String>) -> String {
+    let mut stats = HashMap::new();
+    root_calls
+        .iter()
+        .for_each(|call| {
+            stats
+                .entry(call)
+                .and_modify(|counter: &mut i32| *counter += 1)
+                .or_insert(1);
+        });
+    let mut data: Vec<_> = stats.iter().collect();
+    data.sort_by(|a,b| { b.1.cmp(&a.1)});
+    format!("{data:?}")
+}
+
+fn root_call_list(trace_ids: &Vec<String>, root_calls: &Vec<String>) -> String {
+    let labelled: Vec<_> = trace_ids
+        .iter()
+        .zip(root_calls.iter())
+        .map(|(tr, rc)| format!("{tr} -> {rc}"))
+        .collect();
+    labelled
+        .join(",   ")
+}

@@ -68,6 +68,19 @@ impl Span {
             })
     }
 
+    //. get_process_name returns the string-slice of the process of this span (without the operation (method) that is called)
+    pub fn get_process_str(&self) -> & str {
+        match &self.process {
+            Some(p) => &p.name[..],
+            None => "-"
+        }
+    }
+
+    // //. get_process_name returns the name of the process of this span (without the operation (method) that is called)
+    // pub fn get_process_name(&self) -> String {
+    //     self.get_process_str().to_owned()
+    // }
+
 }
 
 

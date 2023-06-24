@@ -13,6 +13,7 @@ use chrono::{
 #[derive(Debug)]
 pub struct Trace {
     pub trace_id: String,
+    pub root_call: String,
     pub start_dt: DateTime<Utc>,
     pub end_dt: DateTime<Utc>,
     pub duration_micros: u64,
@@ -61,6 +62,29 @@ fn get_response_duration(ji: &JaegerItem) -> u64 {
     time_to_respond_micros
 }
 
+
+
+/// get_root_call finds the process and method that is the root-method of the trace.
+fn get_root_call(spans: &Spans) -> String {
+    // compute start-time based on start_time of earliest span
+    let Some(root_call) = spans
+        .iter()
+        .find_map(|span| {
+            match span.parent {
+                None => {
+                    let proc = span.get_process_str().to_owned();
+                    Some(proc + "/" + &span.operation_name)
+                },
+                _ => None
+            }
+        })
+    else {
+        panic!("Could not find an root-span");
+    };
+
+    root_call
+}
+
 pub fn build_trace(jt: &JaegerTrace) -> Trace {
     let item = &jt.data[0];
     let trace_id = item.traceID.to_owned(); 
@@ -68,7 +92,9 @@ pub fn build_trace(jt: &JaegerTrace) -> Trace {
 
     let spans = build_spans(jt);
 
-    let proc_map = build_process_map(item);
+    let root_call = get_root_call(&spans);
+
+//    let proc_map = build_process_map(item);
 
     let (start_dt, end_dt) = find_full_duration(item);
     let duration_micros = end_dt - start_dt;
@@ -77,6 +103,6 @@ pub fn build_trace(jt: &JaegerTrace) -> Trace {
 
     let time_to_respond_micros = get_response_duration(item);
 
-    Trace{trace_id, start_dt, end_dt,duration_micros, time_to_respond_micros, spans}
+    Trace{trace_id, root_call, start_dt, end_dt,duration_micros, time_to_respond_micros, spans}
 }
 
