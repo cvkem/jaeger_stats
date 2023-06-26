@@ -172,6 +172,7 @@ impl StatsMap {
             },
             n => {
                 s.push(format!("trace_ids:; {:?}", self.trace_id));
+                s.push(format!("num_traces:; {num_traces}"));
                 s.push(format!("root_call_stats:; {}", root_call_stats(&self.root_call)));
                 s.push(format!("root_calls:; {:?}", root_call_list(&self.trace_id, &self.root_call)));
                 s.push(format!("start_dt; {:?}", self.start_dt));
@@ -194,7 +195,9 @@ impl StatsMap {
             .for_each(|(k, stat)| {
                 let freq_rc = stat.num_received_calls as f64/ num_traces as f64;
                 let freq_oc = stat.num_outbound_calls as f64/ num_traces as f64;
-                let line = format!("{k}; {}; {}; {freq_rc}; {freq_oc}", stat.num_received_calls, stat.num_outbound_calls);
+                let line = format!("{k}; {}; {}; {}; {}", 
+                    stat.num_received_calls, stat.num_outbound_calls,
+                    format_float(freq_rc), format_float(freq_oc));
                 s.push(line);
             });
         s.push("\n".to_owned());
@@ -206,7 +209,7 @@ impl StatsMap {
                     .iter()
                     .for_each(|(method, count)| {
                         let freq = *count as f64/ num_traces as f64;
-                        let line = format!("{k}/{method}; {count}; {freq}");
+                        let line = format!("{k}/{method}; {count}; {}", format_float(freq));
                         s.push(line);
                             })
             });
@@ -219,7 +222,7 @@ impl StatsMap {
                     .iter()
                     .for_each(|(method_cached, count)| {
                         let freq = *count as f64/ num_traces as f64;
-                        let line = format!("{k}/{method_cached}; {count}; {freq}");
+                        let line = format!("{k}/{method_cached}; {count}; {}", format_float(freq));
                         s.push(line);
                             })
             });
@@ -284,6 +287,19 @@ pub fn basic_stats(trace: &Trace) -> HashMap<String, u32> {
             stats.entry(proc_method).and_modify(|counter| *counter += 1).or_insert(1);
         });
     stats
+}
+
+
+const NL_FORMAT: bool = true;
+
+/// format_float will format will replace the floating point '.' with a comma ',' such that the excel is readable in the Dutch Excel :-(
+fn format_float(val: f64) -> String {
+    let s = format!("{}", val);
+    if NL_FORMAT {
+        s.replace('.',",")
+    } else {
+        s
+    }
 }
 
 
