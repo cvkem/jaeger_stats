@@ -27,12 +27,14 @@ pub struct Stats {
     num_received_calls: usize,    // inbound calls to this process
     num_outbound_calls: usize,  // outbound calls to other processes
     method: HashMap<String, usize>,
+    method_cache_suffix: HashMap<String, usize>,  // methods in a cache-chain have a suffix.
     call_chain: HashMap<String, PathStats>,
 }
 
 impl Stats {
     pub fn new() -> Self {
-        Stats{num_received_calls: 0, num_outbound_calls: 0, method: HashMap::new(), call_chain: HashMap::new()}
+        Default::default()
+//        Stats{num_received_calls: 0, num_outbound_calls: 0, method: HashMap::new(), call_chain: HashMap::new()}
     }
 }
 
@@ -47,13 +49,40 @@ pub struct StatsMap {
     pub end_dt: Vec<DateTime<Utc>>,
     pub duration_micros: Vec<u64>,
     pub time_to_respond_micros: Vec<u64>,
+    pub cached_processes: Vec<String>,
     stats: HashMap<String, Stats>
 }
 
 impl StatsMap {
 
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new(cached_processes: Vec<String>) -> Self {
+        StatsMap{
+            cached_processes,
+            ..Default::default()}
+    }
+
+
+    /// get_cache_suffix determines whether cached processes are in the call-chain and if so returns a suffix to represent it.
+    ///  Could not be used, using an independent function with the same name instead.
+    pub fn get_cache_suffix(&self, call_chain: &Vec<(String, String)>) -> String {
+        if self.cached_processes.len() == 0 {
+            return "".to_owned()
+        }
+        let mut cached = Vec::new();
+
+        call_chain.iter()
+            .for_each(|(proc, method)| {
+                match &method[..] {
+                    "GET" | "POST" | "HEAD" | "QUERY" => (),  // ignore these methods
+                    _ => match self.cached_processes.iter().find(|&s| *s == *proc) {
+                        Some(_) => {
+                            println!("TMP: pushing a value for {proc}/{method}");
+                            cached.push(proc.to_owned())},
+                        None => ()
+                    }
+                }
+            });
+        format!(" [{}]", cached.join(", "))
     }
 
     pub fn extend_statistics(&mut self, trace: &Trace) {
@@ -85,9 +114,21 @@ impl StatsMap {
                         .and_modify(|count| *count += 1)
                         .or_insert(1);
 
-                    // add call-chain stats
+                    // add a count per method_including-cached
                     println!(" get call-chain");
                     let call_chain = get_call_chain(idx, &spans);
+                    {
+                        // next line fails as we use self with a self method and closure
+//                        let cache_suffix = self.get_cache_suffix(&call_chain);
+                        let cache_suffix = get_cache_suffix(&self.cached_processes, &call_chain);
+                        let method_cached = method.to_owned() + &cache_suffix;
+                        stat.method_cache_suffix
+                            .entry(method_cached.to_owned())
+                            .and_modify(|count| *count += 1)
+                            .or_insert(1);
+                    }
+
+                    // add call-chain stats
                     println!(" get looped for {call_chain:?}");
                     let depth = call_chain.len();
                     let looped = get_duplicates(&call_chain);
@@ -115,9 +156,10 @@ impl StatsMap {
     
     pub fn to_csv_string(&self) -> String {
         let mut s = Vec::new();
+        let num_traces = self.trace_id.len() as u64;
 
         //TODO: add generic stats
-        match self.trace_id.len() as u64 {
+        match num_traces {
             0 => panic!("No data in Stats"),
             1 => {
                 s.push(format!("trace_id:; {}", self.trace_id[0]));
@@ -128,16 +170,16 @@ impl StatsMap {
                 s.push(format!("time_to_respond_micros:; {}", self.time_to_respond_micros[0]));
         
             },
-            N => {
+            n => {
                 s.push(format!("trace_ids:; {:?}", self.trace_id));
                 s.push(format!("root_call_stats:; {}", root_call_stats(&self.root_call)));
                 s.push(format!("root_calls:; {:?}", root_call_list(&self.trace_id, &self.root_call)));
                 s.push(format!("start_dt; {:?}", self.start_dt));
                 s.push(format!("end_dt:; {:?}", self.end_dt));
-                s.push(format!("AVG(duration_micros):; {:?}", self.duration_micros.iter().sum::<u64>()/N));
+                s.push(format!("AVG(duration_micros):; {:?}", self.duration_micros.iter().sum::<u64>()/n));
                 s.push(format!("MAX(duration_micros):; {:?}", self.duration_micros.iter().max()));
                 s.push(format!("duration_micros:; {:?}", self.duration_micros));
-                s.push(format!("AVG(time_to_respond):; {:?}", self.time_to_respond_micros.iter().sum::<u64>()/N));
+                s.push(format!("AVG(time_to_respond):; {:?}", self.time_to_respond_micros.iter().sum::<u64>()/n));
                 s.push(format!("MAX(time_to_respond_micros):; {:?}", self.time_to_respond_micros.iter().max()));
                 s.push(format!("time_to_respond_micros:; {:?}", self.time_to_respond_micros));        
             }
@@ -150,40 +192,84 @@ impl StatsMap {
         s.push("Process; Num_received_calls; Num_outbound_calls".to_owned());
         data.iter()
             .for_each(|(k, stat)| {
-                let line = format!("{k};{};{}", stat.num_received_calls, stat.num_outbound_calls);
+                let freq_rc = stat.num_received_calls as f64/ num_traces as f64;
+                let freq_oc = stat.num_outbound_calls as f64/ num_traces as f64;
+                let line = format!("{k}; {}; {}; {freq_rc}; {freq_oc}", stat.num_received_calls, stat.num_outbound_calls);
                 s.push(line);
             });
         s.push("\n".to_owned());
 
-        s.push("Process-method; Count".to_owned());
+        s.push("Process-method; Count; Freq".to_owned());
         data.iter()
             .for_each(|(k, stat)| {
                 stat.method
                     .iter()
                     .for_each(|(method, count)| {
-                        let line = format!("{k}/{method};{count}");
+                        let freq = *count as f64/ num_traces as f64;
+                        let line = format!("{k}/{method}; {count}; {freq}");
+                        s.push(line);
+                            })
+            });
+        s.push("\n".to_owned());
+
+        s.push("Process-method-Cached; Count; Freq".to_owned());
+        data.iter()
+            .for_each(|(k, stat)| {
+                stat.method_cache_suffix
+                    .iter()
+                    .for_each(|(method_cached, count)| {
+                        let freq = *count as f64/ num_traces as f64;
+                        let line = format!("{k}/{method_cached}; {count}; {freq}");
+                        s.push(line);
+                            })
+            });
+        s.push("\n".to_owned());
+
+
+        s.push("Process; Call_chain; Depth; Count; Looped; Revisit".to_owned());
+        data.iter()
+            .for_each(|(k, stat)| {
+                stat.call_chain
+                    .iter()
+                    .for_each(|(cc_key, path_stats)| {
+                        let line = format!("{k}; {}; {}; {}; {:?}; {cc_key}", 
+                            path_stats.depth, path_stats.count, path_stats.looped.len()> 0, path_stats.looped);
                         s.push(line);
                             })
             });
             s.push("\n".to_owned());
-
-            s.push("Process; Call_chain; Depth; Count; Looped; Revisit".to_owned());
-            data.iter()
-                .for_each(|(k, stat)| {
-                    stat.call_chain
-                        .iter()
-                        .for_each(|(cc_key, path_stats)| {
-                            let line = format!("{k}; {cc_key}; {}; {}; {}; {:?}", 
-                                path_stats.depth, path_stats.count, path_stats.looped.len()> 0, path_stats.looped);
-                            s.push(line);
-                                })
-                });
-                s.push("\n".to_owned());
     
             s.join("\n")
     }
 }
 
+
+
+/// get_cache_suffix determines whether cached processes are in the call-chain and if so returns a suffix to represent it.
+pub fn get_cache_suffix(cached_processes: &Vec<String>, call_chain: &Vec<(String, String)>) -> String {
+    if cached_processes.len() == 0 {
+        return "".to_owned()
+    }
+    let mut cached = Vec::new();
+
+    call_chain.iter()
+    .for_each(|(proc, method)| {
+        match &method[..] {
+            "GET" | "POST" | "HEAD" | "QUERY" => (),  // ignore these methods
+            _ => match cached_processes.iter().find(|&s| *s == *proc) {
+                Some(_) => {
+//                    println!("TMP: pushing a value for {proc}/{method}");
+                    cached.push(proc.to_owned())},
+                None => ()
+            }
+        }
+    });
+    if cached.len() > 0 {
+        format!(" [{}]", cached.join(", "))
+    } else {
+        "".to_owned()
+    }
+}
 
 /// Compute basic call statistics, which only looks at functions/operations and does not include the call path
 pub fn basic_stats(trace: &Trace) -> HashMap<String, u32> {

@@ -41,7 +41,7 @@ fn proces_file(cumm_stats: &mut Option<StatsMap>, input_file: &String) -> Result
 
     let chained_stats = chained_stats(&spans);
 
-    let mut stats = StatsMap::new();
+    let mut stats = StatsMap::new(Vec::new());
     stats.extend_statistics(&spans);
     match cumm_stats {
         Some(cs) => cs.extend_statistics(&spans),
@@ -62,8 +62,8 @@ fn proces_file(cumm_stats: &mut Option<StatsMap>, input_file: &String) -> Result
 }
 
 
-fn process_json_in_folder(folder: &str) {
-    let mut cumm_stats = Some(StatsMap::new());
+fn process_json_in_folder(folder: &str, cached_processes: Vec<String>) {
+    let mut cumm_stats = Some(StatsMap::new(cached_processes));
 
     for entry in fs::read_dir(folder).expect("Failed to read directory") {
         let entry = entry.expect("Failed to extract file-entry");
@@ -97,10 +97,16 @@ fn main()  {
         INPUT_FILE.to_owned()
     };
 
+    let cached_processes = if args.len() > 2 {
+        args[2].split(",").map(|s| s.to_owned()).collect()
+    } else {
+        Vec::new()
+    };
+
     if input_file.ends_with(".json") {
         proces_file(&mut None, &input_file).unwrap();
     } else if input_file.ends_with("/") || input_file.ends_with("\\") {
-        process_json_in_folder(&input_file);
+        process_json_in_folder(&input_file, cached_processes);
     } else {
         panic!(" Expected file with extention '.json'  or folder that ends with '/' (linux) or '\' (windows)");
     }
