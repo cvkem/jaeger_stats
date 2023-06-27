@@ -3,7 +3,7 @@ use crate::JaegerItem;
 use serde_json::Value;
 
 
-const SHOW_STDOUT: bool = true;
+const SHOW_STDOUT: bool = false;
 
 #[derive(Debug, Default, Clone)]
 pub struct Process {

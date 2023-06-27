@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path};
 use crate::{
     process_map::Process,
     Trace,
@@ -12,12 +12,13 @@ use crate::{
 pub struct PathStats {
     pub count: usize,
     pub depth: usize,
+    pub duration_micros: Vec<u64>,
     pub looped: Vec<String>
 }
 
 impl PathStats {
     pub fn new() -> Self {
-        PathStats{count: 0, depth: 0, looped: Vec::new()}
+        Default::default()
     }
 }
 
@@ -115,7 +116,6 @@ impl StatsMap {
                         .or_insert(1);
 
                     // add a count per method_including-cached
-                    println!(" get call-chain");
                     let call_chain = get_call_chain(idx, &spans);
                     {
                         // next line fails as we use self with a self method and closure
@@ -129,17 +129,22 @@ impl StatsMap {
                     }
 
                     // add call-chain stats
-                    println!(" get looped for {call_chain:?}");
                     let depth = call_chain.len();
                     let looped = get_duplicates(&call_chain);
-                    println!(" get call_chain_str");
+                    let duration_micros = span.duration_micros;
                     let call_chain_str = call_chain
                         .into_iter()
                         .fold(String::new(), |a, b| a + &b.0 + "/" + &b.1 + " | ");
                     stat.call_chain
                         .entry(call_chain_str)
-                        .and_modify(|ps| ps.count += 1)
-                        .or_insert_with(|| PathStats{count: 1, depth, looped});
+                        .and_modify(|ps| {
+                            ps.count += 1;
+                            ps.duration_micros.push(duration_micros);})
+                        .or_insert_with(|| {
+                            let dms: Box<[_]> = Box::new([duration_micros]);
+                            let duration_micros = dms.into_vec();
+                            PathStats{count: 1, depth, duration_micros, looped}
+                        });
                     
                 };
                 self.stats
@@ -229,14 +234,20 @@ impl StatsMap {
         s.push("\n".to_owned());
 
 
-        s.push("Process; Call_chain; Depth; Count; Looped; Revisit".to_owned());
+        s.push("Process; Depth; Count; Looped; Revisit; Call_chain; min_nillis; avg_millis; max_millis".to_owned());
         data.iter()
             .for_each(|(k, stat)| {
                 stat.call_chain
                     .iter()
                     .for_each(|(cc_key, path_stats)| {
-                        let line = format!("{k}; {}; {}; {}; {:?}; {cc_key}", 
-                            path_stats.depth, path_stats.count, path_stats.looped.len()> 0, path_stats.looped);
+//                        let min_millis = ;
+                        let min_millis = *path_stats.duration_micros.iter().min().expect("Not an integer") as f64 / 1000 as f64;
+                        let avg_millis = path_stats.duration_micros.iter().sum::<u64>() as f64 / (1000 as f64 * path_stats.duration_micros.len() as f64);
+                        let max_millis = *path_stats.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
+                        let line = format!("{k}; {}; {}; {}; {:?}; {}; {}; {}; {}", 
+                            path_stats.depth, path_stats.count, path_stats.looped.len()> 0, 
+                            path_stats.looped, cc_key, 
+                            format_float(min_millis), format_float(avg_millis), format_float(max_millis));
                         s.push(line);
                             })
             });
