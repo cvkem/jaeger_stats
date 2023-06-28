@@ -10,6 +10,7 @@ use crate::{
 
 #[derive(Debug, Default)]
 pub struct PathStats {
+    pub method: String,
     pub count: usize,
     pub depth: usize,
     pub duration_micros: Vec<u64>,
@@ -143,10 +144,12 @@ impl StatsMap {
                         .or_insert_with(|| {
                             let dms: Box<[_]> = Box::new([duration_micros]);
                             let duration_micros = dms.into_vec();
-                            PathStats{count: 1, depth, duration_micros, looped}
+                            let method = method.to_owned();
+                            PathStats{method, count: 1, depth, duration_micros, looped}
                         });
                     
                 };
+
                 self.stats
                     .entry(proc)
                     .and_modify(update_stat)            
@@ -244,7 +247,8 @@ impl StatsMap {
                         let min_millis = *path_stats.duration_micros.iter().min().expect("Not an integer") as f64 / 1000 as f64;
                         let avg_millis = path_stats.duration_micros.iter().sum::<u64>() as f64 / (1000 as f64 * path_stats.duration_micros.len() as f64);
                         let max_millis = *path_stats.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
-                        let line = format!("{k}; {}; {}; {}; {:?}; {}; {}; {}; {}", 
+                        let method = &path_stats.method;
+                        let line = format!("{k}/{method}; {}; {}; {}; {:?}; {}; {}; {}; {}", 
                             path_stats.depth, path_stats.count, path_stats.looped.len()> 0, 
                             path_stats.looped, cc_key, 
                             format_float(min_millis), format_float(avg_millis), format_float(max_millis));
