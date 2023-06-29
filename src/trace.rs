@@ -42,26 +42,23 @@ fn find_full_duration(ji: &JaegerItem) -> (u64, u64) {
     (start_dt, end_dt)
 }
 
-/// get_response_duration finds the duration needed before the root-span returns a response.
-fn get_response_duration(ji: &JaegerItem) -> u64 {
+/// get_response_duration finds the duration it takes for the root-span to return a response.
+/// We iterate over the spans as these have a clear parent-span, while taking the value from the corresponding JaegerItem.
+fn get_response_duration(spans: &Spans, ji: &JaegerItem) -> u64 {
     // compute start-time based on start_time of earliest span
-    let Some(time_to_respond_micros) = ji.spans
-        .iter()
-        .find_map(|jspan| {
-            if jspan.references.len() == 0 {
-                // return duration of span that has no parents.
-                Some(jspan.duration)
-            } else {
-                None
-            }
+    let Some(time_to_respond_micros) = iter::zip(spans, &ji.spans)
+        .find_map(|(span, jspan)| {
+            match span.parent {
+                None => Some(jspan.duration),
+                Some(_) => None
+            } 
         })
     else {
-        panic!("Could not find an root-span");
-    };
-
+            panic!("Could not find the response duration");
+        };
+    
     time_to_respond_micros
 }
-
 
 
 /// get_root_call finds the process and method that is the root-method of the trace.
@@ -101,7 +98,7 @@ pub fn build_trace(jt: &JaegerTrace) -> Trace {
     let start_dt = micros_to_datetime(start_dt);
     let end_dt = micros_to_datetime(end_dt);
 
-    let time_to_respond_micros = get_response_duration(item);
+    let time_to_respond_micros = get_response_duration(&spans, item);
 
     Trace{trace_id, root_call, start_dt, end_dt,duration_micros, time_to_respond_micros, spans}
 }

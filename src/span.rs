@@ -100,7 +100,7 @@ fn add_parents(spans: &mut Vec<Span>, jspans: &Vec<JaegerSpan>) {
                     }
                 }
             },
-            num => panic!("Span '{}' has {num} spans", jspan.spanID)
+            num => panic!("Span '{}' has {num} parent-references.", jspan.spanID)
         }
     })
 

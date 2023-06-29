@@ -10,7 +10,7 @@ use std::{
 
 const SHOW_STDOUT: bool = false;
 //const INPUT_FILE: &str = "/home/ceesvk/jaeger/372e70a4e259978e.json";
-const INPUT_FILE: &str = "/home/ceesvk/jaeger/4cd5114ce8c5c387.json";
+const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadt-prodinz-prodGroep/df7e679437c1a05d.json";
 const OUTPUT_FILE: &str = "out.txt";
 
 
