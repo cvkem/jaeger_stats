@@ -47,6 +47,7 @@ impl Stats {
 pub struct StatsMap {
     pub trace_id: Vec<String>,
     pub root_call: Vec<String>,
+    pub num_spans: Vec<usize>,
     pub start_dt: Vec<DateTime<Utc>>,
     pub end_dt: Vec<DateTime<Utc>>,
     pub duration_micros: Vec<u64>,
@@ -93,6 +94,7 @@ impl StatsMap {
 
         self.trace_id.push(trace.trace_id.to_owned());
         self.root_call.push(trace.root_call.to_owned());
+        self.num_spans.push(trace.spans.len());
         self.start_dt.push(trace.start_dt);
         self.end_dt.push(trace.end_dt);
         self.duration_micros.push(trace.duration_micros);
@@ -166,12 +168,12 @@ impl StatsMap {
         let mut s = Vec::new();
         let num_traces = self.trace_id.len() as u64;
 
-        //TODO: add generic stats
         match num_traces {
             0 => panic!("No data in Stats"),
             1 => {
                 s.push(format!("trace_id:; {}", self.trace_id[0]));
                 s.push(format!("root_call:; {}", self.root_call[0]));
+                s.push(format!("num_spans:; {}", self.num_spans[0]));
                 s.push(format!("start_dt; {:?}", self.start_dt[0]));
                 s.push(format!("end_dt:; {:?}", self.end_dt[0]));
                 s.push(format!("duration_micros:; {}", self.duration_micros[0]));
@@ -181,15 +183,20 @@ impl StatsMap {
             n => {
                 s.push(format!("trace_ids:; {:?}", self.trace_id));
                 s.push(format!("num_traces:; {num_traces}"));
+                s.push(format!("MIN(num_spans):; {:?}", self.num_spans.iter().min().unwrap()));
+                s.push(format!("AVG(num_spans):; {:?}", self.num_spans.iter().sum::<usize>() as u64/n));
+                s.push(format!("MAX(num_spans):; {:?}", self.num_spans.iter().max().unwrap()));
                 s.push(format!("root_call_stats:; {}", root_call_stats(&self.root_call)));
                 s.push(format!("root_calls:; {:?}", root_call_list(&self.trace_id, &self.root_call)));
                 s.push(format!("start_dt; {:?}", self.start_dt));
                 s.push(format!("end_dt:; {:?}", self.end_dt));
+                s.push(format!("MIN(duration_micros):; {:?}", self.duration_micros.iter().min().unwrap()));
                 s.push(format!("AVG(duration_micros):; {:?}", self.duration_micros.iter().sum::<u64>()/n));
-                s.push(format!("MAX(duration_micros):; {:?}", self.duration_micros.iter().max()));
+                s.push(format!("MAX(duration_micros):; {:?}", self.duration_micros.iter().max().unwrap()));
                 s.push(format!("duration_micros:; {:?}", self.duration_micros));
+                s.push(format!("MIN(time_to_respond_micros):; {:?}", self.time_to_respond_micros.iter().min().unwrap()));
                 s.push(format!("AVG(time_to_respond):; {:?}", self.time_to_respond_micros.iter().sum::<u64>()/n));
-                s.push(format!("MAX(time_to_respond_micros):; {:?}", self.time_to_respond_micros.iter().max()));
+                s.push(format!("MAX(time_to_respond_micros):; {:?}", self.time_to_respond_micros.iter().max().unwrap()));
                 s.push(format!("time_to_respond_micros:; {:?}", self.time_to_respond_micros));        
             }
         }
