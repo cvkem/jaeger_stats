@@ -6,7 +6,7 @@ use std::{
 
 
 const SHOW_STDOUT: bool = false;
-const INPUT_FILE: &str = "/home/ceesvk/Downloads/372e70a4e259978e.json";
+const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadt-prodinz-prodGroep/28adb54b8868eef9.json";
 
 fn collect_span_tags(jt: &JaegerTrace) -> (u32, HashMap<String, u32>) {
     let mut span_tags = HashMap::new();

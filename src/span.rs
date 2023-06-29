@@ -29,7 +29,11 @@ pub struct Span{
     // optional parameters from tags
     // to see statistics on all tags run:
     //      cargo run --example collect_span_tags
+    pub span_kind: Option<String>,
     pub http_status_code: Option<i32>,
+    pub http_method: Option<String>,
+    pub http_url: Option<String>,
+    pub component: Option<String>,
     pub db_instance: Option<String>,
     pub db_type: Option<String>,
     pub db_statement: Option<String>,
@@ -59,7 +63,11 @@ impl Span {
             .iter()
             .for_each(|tag| {
                 match &tag.key[..] {
-                    "http.status_code" => self.http_status_code = Some(tag.get_i32()), 
+                    "span.kind" => self.span_kind = Some(tag.get_string()), 
+                    "http.status_code" => self.http_status_code = Some(tag.get_i32()),
+                    "http.method" => self.http_method = Some(tag.get_string()), 
+                    "http.url" => self.http_url = Some(tag.get_string()), 
+                    "component" => self.component = Some(tag.get_string()), 
                     "db.instance" => self.db_instance = Some(tag.get_string()), 
                     "db.type" => self.db_instance = Some(tag.get_string()), 
                     "db.statement" => self.db_statement = Some(tag.get_string()), 
