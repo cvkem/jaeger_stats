@@ -19,6 +19,7 @@ pub struct Span{
 //    - passing lifetimes
 //pub struct Span<'a> {
     pub parent: Option<usize>,
+    pub is_leaf: bool,
     pub span_id: String,
     pub operation_name: String,
     pub start_dt: DateTime<Utc>,
@@ -84,6 +85,20 @@ impl Span {
 }
 
 
+/// mark_leafs sets the is_leaf value of each span.
+fn mark_leafs(spans: &mut Spans) {
+    let mut is_leaf = Vec::with_capacity(spans.len());
+    (0..spans.len()).for_each(|_| is_leaf.push(true));
+    spans.iter().for_each(|span| {
+        match span.parent {
+            None => (),
+            Some(par) => is_leaf[par] = true
+        }
+    });
+
+    iter::zip(spans, is_leaf).for_each(|(mut span, is_leaf)| span.is_leaf = is_leaf);
+}
+
 /// add_parents adds parent-links to spans based on the information in Vec<JaegerSpan>
 fn add_parents(spans: &mut Vec<Span>, jspans: &Vec<JaegerSpan>) {
     let mut iter = iter::zip(spans, jspans);
@@ -122,6 +137,7 @@ pub fn build_spans(jt: &JaegerTrace) -> Spans {
         .collect();
 
     add_parents(&mut spans, &item.spans);
+    mark_leafs(&mut spans);
 
     spans
 }

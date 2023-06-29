@@ -14,6 +14,7 @@ pub struct PathStats {
     pub count: usize,
     pub depth: usize,
     pub duration_micros: Vec<u64>,
+    pub is_leaf: bool,
     pub looped: Vec<String>
 }
 
@@ -26,7 +27,7 @@ impl PathStats {
 #[derive(Debug, Default)]
 pub struct Stats {
 //    count: usize,
-    num_received_calls: usize,    // inbound calls to this process
+    num_received_calls: usize,  // inbound calls to this process
     num_outbound_calls: usize,  // outbound calls to other processes
     method: HashMap<String, usize>,
     method_cache_suffix: HashMap<String, usize>,  // methods in a cache-chain have a suffix.
@@ -147,7 +148,7 @@ impl StatsMap {
                             let dms: Box<[_]> = Box::new([duration_micros]);
                             let duration_micros = dms.into_vec();
                             let method = method.to_owned();
-                            PathStats{method, count: 1, depth, duration_micros, looped}
+                            PathStats{method, count: 1, depth, duration_micros, is_leaf: span.is_leaf, looped}
                         });
                     
                 };
@@ -244,7 +245,7 @@ impl StatsMap {
         s.push("\n".to_owned());
 
 
-        s.push("Process; Depth; Count; Looped; Revisit; Call_chain; min_nillis; avg_millis; max_millis".to_owned());
+        s.push("Process; Is_leaf; Depth; Count; Looped; Revisit; Call_chain; min_millis; avg_millis; max_millis".to_owned());
         data.iter()
             .for_each(|(k, stat)| {
                 stat.call_chain
@@ -255,8 +256,8 @@ impl StatsMap {
                         let avg_millis = path_stats.duration_micros.iter().sum::<u64>() as f64 / (1000 as f64 * path_stats.duration_micros.len() as f64);
                         let max_millis = *path_stats.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
                         let method = &path_stats.method;
-                        let line = format!("{k}/{method}; {}; {}; {}; {:?}; {}; {}; {}; {}", 
-                            path_stats.depth, path_stats.count, path_stats.looped.len()> 0, 
+                        let line = format!("{k}/{method}; {}; {}; {}; {}; {:?}; {}; {}; {}; {}", 
+                            path_stats.is_leaf, path_stats.depth, path_stats.count, path_stats.looped.len()> 0, 
                             path_stats.looped, cc_key, 
                             format_float(min_millis), format_float(avg_millis), format_float(max_millis));
                         s.push(line);
