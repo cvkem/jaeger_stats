@@ -1,6 +1,5 @@
-use std::{collections::HashMap, path};
+use std::{collections::HashMap};
 use crate::{
-    process_map::Process,
     Trace,
     span::Spans};
     use chrono::{
@@ -22,11 +21,23 @@ impl PathStats {
     pub fn new() -> Self {
         Default::default()
     }
+
+    fn report_stats_line(&self, key: &str, cc_key: &str, n: f64) -> String {
+        let min_millis = *self.duration_micros.iter().min().expect("Not an integer") as f64 / 1000 as f64;
+        let avg_millis = self.duration_micros.iter().sum::<u64>() as f64 / (1000 as f64 * self.duration_micros.len() as f64);
+        let max_millis = *self.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
+        let method = &self.method;
+        let line = format!("{key}/{method}; {}; {}; {}; {}; {:?}; {}; {}; {}; {}", 
+            self.is_leaf, self.depth, self.count, self.looped.len()> 0, 
+            self.looped, cc_key, 
+            format_float(min_millis), format_float(avg_millis), format_float(max_millis));
+        line
+    }
+
 }
 
 #[derive(Debug, Default)]
 pub struct Stats {
-//    count: usize,
     num_received_calls: usize,  // inbound calls to this process
     num_outbound_calls: usize,  // outbound calls to other processes
     method: HashMap<String, usize>,
@@ -37,12 +48,9 @@ pub struct Stats {
 impl Stats {
     pub fn new() -> Self {
         Default::default()
-//        Stats{num_received_calls: 0, num_outbound_calls: 0, method: HashMap::new(), call_chain: HashMap::new()}
     }
 }
 
-
-//type StatsMap = HashMap<String, Stats>;
 
 #[derive(Debug, Default)]
 pub struct StatsMap {
@@ -53,41 +61,43 @@ pub struct StatsMap {
     pub end_dt: Vec<DateTime<Utc>>,
     pub duration_micros: Vec<u64>,
     pub time_to_respond_micros: Vec<u64>,
-    pub cached_processes: Vec<String>,
+    pub caching_process: Vec<String>,
     stats: HashMap<String, Stats>
 }
 
 impl StatsMap {
 
-    pub fn new(cached_processes: Vec<String>) -> Self {
+    pub fn new(caching_process: Vec<String>) -> Self {
         StatsMap{
-            cached_processes,
+            caching_process,
             ..Default::default()}
     }
 
 
-    /// get_cache_suffix determines whether cached processes are in the call-chain and if so returns a suffix to represent it.
-    ///  Could not be used, using an independent function with the same name instead.
-    pub fn get_cache_suffix(&self, call_chain: &Vec<(String, String)>) -> String {
-        if self.cached_processes.len() == 0 {
-            return "".to_owned()
-        }
-        let mut cached = Vec::new();
+    // /// get_cache_suffix determines whether caching processes (services) are in the call-chain and if so returns a suffix to represent it.
+    // ///  Could not be used, using an independent function with the same name instead.
+    // pub fn get_cache_suffix(&self, call_chain: &Vec<(String, String)>) -> String {
+    //     if self.caching_process.len() == 0 {
+    //         return "".to_owned()
+    //     }
+    //     let mut cached = Vec::new();
 
-        call_chain.iter()
-            .for_each(|(proc, method)| {
-                match &method[..] {
-                    "GET" | "POST" | "HEAD" | "QUERY" => (),  // ignore these methods
-                    _ => match self.cached_processes.iter().find(|&s| *s == *proc) {
-                        Some(_) => {
-                            println!("TMP: pushing a value for {proc}/{method}");
-                            cached.push(proc.to_owned())},
-                        None => ()
-                    }
-                }
-            });
-        format!(" [{}]", cached.join(", "))
-    }
+    //     call_chain.iter()
+    //         .for_each(|(proc, method)| {
+    //             // method does not matter. These things can be cached too.
+    //             // match &method[..] {
+    //             //     "GET" | "POST" | "HEAD" | "QUERY" => (),  // ignore these methods
+    //             //     _ => 
+    //                 match self.caching_process.iter().find(|&s| *s == *proc) {
+    //                     Some(_) => {
+    //                         cached.push(proc.to_owned())},
+    //                     None => ()
+    //                 }
+    //             //}
+    //         });
+    //     format!(" [{}]", cached.join(", "))
+    // }
+
 
     pub fn extend_statistics(&mut self, trace: &Trace) {
 
@@ -123,8 +133,7 @@ impl StatsMap {
                     let call_chain = get_call_chain(idx, &spans);
                     {
                         // next line fails as we use self with a self method and closure
-//                        let cache_suffix = self.get_cache_suffix(&call_chain);
-                        let cache_suffix = get_cache_suffix(&self.cached_processes, &call_chain);
+                        let cache_suffix = get_cache_suffix(&self.caching_process, &call_chain);
                         let method_cached = method.to_owned() + &cache_suffix;
                         stat.method_cache_suffix
                             .entry(method_cached.to_owned())
@@ -162,9 +171,9 @@ impl StatsMap {
                         stat
                     });
             });
-//        self  // return self for chaining
     }
-    
+
+
     pub fn to_csv_string(&self) -> String {
         let mut s = Vec::new();
         let num_traces = self.trace_id.len() as u64;
@@ -246,22 +255,12 @@ impl StatsMap {
 
 
         s.push("Process; Is_leaf; Depth; Count; Looped; Revisit; Call_chain; min_millis; avg_millis; max_millis".to_owned());
+        let num_traces = num_traces as f64; 
         data.iter()
             .for_each(|(k, stat)| {
                 stat.call_chain
                     .iter()
-                    .for_each(|(cc_key, path_stats)| {
-//                        let min_millis = ;
-                        let min_millis = *path_stats.duration_micros.iter().min().expect("Not an integer") as f64 / 1000 as f64;
-                        let avg_millis = path_stats.duration_micros.iter().sum::<u64>() as f64 / (1000 as f64 * path_stats.duration_micros.len() as f64);
-                        let max_millis = *path_stats.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
-                        let method = &path_stats.method;
-                        let line = format!("{k}/{method}; {}; {}; {}; {}; {:?}; {}; {}; {}; {}", 
-                            path_stats.is_leaf, path_stats.depth, path_stats.count, path_stats.looped.len()> 0, 
-                            path_stats.looped, cc_key, 
-                            format_float(min_millis), format_float(avg_millis), format_float(max_millis));
-                        s.push(line);
-                            })
+                    .for_each(|(cc_key, path_stats)| s.push(path_stats.report_stats_line(k, cc_key, num_traces)))
             });
             s.push("\n".to_owned());
     
@@ -272,8 +271,8 @@ impl StatsMap {
 
 
 /// get_cache_suffix determines whether cached processes are in the call-chain and if so returns a suffix to represent it.
-pub fn get_cache_suffix(cached_processes: &Vec<String>, call_chain: &Vec<(String, String)>) -> String {
-    if cached_processes.len() == 0 {
+pub fn get_cache_suffix(caching_process: &Vec<String>, call_chain: &Vec<(String, String)>) -> String {
+    if caching_process.len() == 0 {
         return "".to_owned()
     }
     let mut cached = Vec::new();
@@ -281,10 +280,9 @@ pub fn get_cache_suffix(cached_processes: &Vec<String>, call_chain: &Vec<(String
     call_chain.iter()
     .for_each(|(proc, method)| {
         match &method[..] {
-            "GET" | "POST" | "HEAD" | "QUERY" => (),  // ignore these methods
-            _ => match cached_processes.iter().find(|&s| *s == *proc) {
+            "GET" | "POST" | "HEAD" | "QUERY" => (),  // ignore these methods as the inbound call has been matched already. (prevent duplicates of cached names)
+            _ => match caching_process.iter().find(|&s| *s == *proc) {
                 Some(_) => {
-//                    println!("TMP: pushing a value for {proc}/{method}");
                     cached.push(proc.to_owned())},
                 None => ()
             }
@@ -296,6 +294,7 @@ pub fn get_cache_suffix(cached_processes: &Vec<String>, call_chain: &Vec<(String
         "".to_owned()
     }
 }
+
 
 /// Compute basic call statistics, which only looks at functions/operations and does not include the call path
 pub fn basic_stats(trace: &Trace) -> HashMap<String, u32> {
@@ -315,6 +314,7 @@ pub fn basic_stats(trace: &Trace) -> HashMap<String, u32> {
 
 const NL_FORMAT: bool = true;
 
+
 /// format_float will format will replace the floating point '.' with a comma ',' such that the excel is readable in the Dutch Excel :-(
 fn format_float(val: f64) -> String {
     let s = format!("{}", val);
@@ -324,30 +324,6 @@ fn format_float(val: f64) -> String {
         s
     }
 }
-
-
-// fn get_parent_processes(parent_idx: Option<usize>, spans: &Spans) -> String {
-//     let mut parents = Vec::new();
-//     let mut par_idx = parent_idx;
-//     loop {
-//         match par_idx {
-//             None => break,
-//             Some(idx) => {
-//                 let par_span = &spans[idx];
-//                 parents.push(match &par_span.process {
-//                     Some(p) => p.name.to_owned(),
-//                     None => "-".to_owned()
-//                 });
-//                 par_idx = par_span.parent;
-//             }
-//         }
-//     }
-//     let res = parents
-//         .into_iter()
-//         .rev()
-//         .fold(String::new(), |a, b| a + &b + "|");
-//     res
-// }
 
 
 /// parent_call_chain returns the full call_chain from top to bottom showing process and called method
@@ -364,6 +340,7 @@ fn get_call_chain(idx: usize, spans: &Spans) -> Vec<(String, String)> {
     call_chain.push( (process, method) );
     call_chain
 }
+
 
 /// get all values that appear more than once in the list of strings, while being none-adjacent.
 fn get_duplicates(names: &Vec<(String, String)>) -> Vec<String> {
@@ -397,6 +374,7 @@ fn get_duplicates(names: &Vec<(String, String)>) -> Vec<String> {
     }
     duplicates
 }
+
 
 /// Compute basic call statistics, which only looks at functions/operations and does not include the call path
 pub fn chained_stats(trace: &Trace) -> HashMap<String, u32> {

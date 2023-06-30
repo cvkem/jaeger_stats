@@ -10,7 +10,7 @@ use std::{
 
 const SHOW_STDOUT: bool = false;
 //const INPUT_FILE: &str = "/home/ceesvk/jaeger/372e70a4e259978e.json";
-const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadt-prodinz-prodGroep/df7e679437c1a05d.json";
+const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadTest-prodinz-prodGroep/df7e679437c1a05d.json";
 
 
 fn write_string_to_file(filename: &String, data: String) -> Result<(), Box<dyn Error>> {
@@ -47,7 +47,7 @@ fn proces_file(cumm_stats: &mut Option<StatsMap>, input_file: &String) -> Result
         None => ()
     }
 
-    let span_str = format!("StatsMap:\n{stats:#?}\n\nBasicStats:\n{basic_stats:#?}\n\nchained Stats:\n{chained_stats:#?}\n\nSpans:\n{spans:#?}");
+    let span_str = format!("{spans:#?}");
     println!("Now writing the read Jaeger_trace to {output_file}");
     write_string_to_file(&output_file, span_str);
     // let mut file = File::create(output_file)?;
