@@ -22,15 +22,20 @@ impl PathStats {
         Default::default()
     }
 
+    /// reports the statistics for a single line
     fn report_stats_line(&self, key: &str, cc_key: &str, n: f64) -> String {
         let min_millis = *self.duration_micros.iter().min().expect("Not an integer") as f64 / 1000 as f64;
         let avg_millis = self.duration_micros.iter().sum::<u64>() as f64 / (1000 as f64 * self.duration_micros.len() as f64);
         let max_millis = *self.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
         let method = &self.method;
-        let line = format!("{key}/{method}; {}; {}; {}; {}; {:?}; {}; {}; {}; {}", 
+        let freq = self.count as f64 / n;
+        let expect_duration = freq * avg_millis;
+        let expect_contribution = if self.is_leaf { expect_duration } else { 0.0 };
+        let line = format!("{key}/{method}; {}; {}; {}; {}; {:?}; {}; {}; {}; {}; {}; {}; {}", 
             self.is_leaf, self.depth, self.count, self.looped.len()> 0, 
             self.looped, cc_key, 
-            format_float(min_millis), format_float(avg_millis), format_float(max_millis));
+            format_float(min_millis), format_float(avg_millis), format_float(max_millis),
+            format_float(freq), format_float(expect_duration), format_float(expect_contribution));
         line
     }
 
@@ -254,12 +259,17 @@ impl StatsMap {
         s.push("\n".to_owned());
 
 
-        s.push("Process; Is_leaf; Depth; Count; Looped; Revisit; Call_chain; min_millis; avg_millis; max_millis".to_owned());
+        s.push("Process; Is_leaf; Depth; Count; Looped; Revisit; Call_chain; min_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;".to_owned());
         let num_traces = num_traces as f64; 
         data.iter()
             .for_each(|(k, stat)| {
-                stat.call_chain
+                //re-sort on a different key
+                let mut     cc: Vec<_> = stat.call_chain
                     .iter()
+                    .collect();
+                cc.sort_by(|a,b| {
+                    a.1.method.to_lowercase().cmp(&b.1.method.to_lowercase())});
+                cc.iter()
                     .for_each(|(cc_key, path_stats)| s.push(path_stats.report_stats_line(k, cc_key, num_traces)))
             });
             s.push("\n".to_owned());
