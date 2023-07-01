@@ -14,7 +14,8 @@ pub struct PathStats {
     pub depth: usize,
     pub duration_micros: Vec<u64>,
     pub is_leaf: bool,
-    pub looped: Vec<String>
+    pub looped: Vec<String>,
+    pub cache_suffix: String,
 }
 
 impl PathStats {
@@ -28,10 +29,11 @@ impl PathStats {
         let avg_millis = self.duration_micros.iter().sum::<u64>() as f64 / (1000 as f64 * self.duration_micros.len() as f64);
         let max_millis = *self.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
         let method = &self.method;
+        let cache_suffix = &self.cache_suffix;
         let freq = self.count as f64 / n;
         let expect_duration = freq * avg_millis;
         let expect_contribution = if self.is_leaf { expect_duration } else { 0.0 };
-        let line = format!("{key}/{method}; {}; {}; {}; {}; {:?}; {}; {}; {}; {}; {}; {}; {}", 
+        let line = format!("{key}/{method} {cache_suffix}; {}; {}; {}; {}; {:?}; {}; {}; {}; {}; {}; {}; {}", 
             self.is_leaf, self.depth, self.count, self.looped.len()> 0, 
             self.looped, cc_key, 
             format_float(min_millis), format_float(avg_millis), format_float(max_millis),
@@ -46,7 +48,7 @@ pub struct Stats {
     num_received_calls: usize,  // inbound calls to this process
     num_outbound_calls: usize,  // outbound calls to other processes
     method: HashMap<String, usize>,
-    method_cache_suffix: HashMap<String, usize>,  // methods in a cache-chain have a suffix.
+//    method_cache_suffix: HashMap<String, usize>,  // methods in a cache-chain have a suffix.
     call_chain: HashMap<String, PathStats>,
 }
 
@@ -134,17 +136,18 @@ impl StatsMap {
                         .and_modify(|count| *count += 1)
                         .or_insert(1);
 
-                    // add a count per method_including-cached
+                    // // add a count per method_including-cached
                     let call_chain = get_call_chain(idx, &spans);
-                    {
-                        // next line fails as we use self with a self method and closure
-                        let cache_suffix = get_cache_suffix(&self.caching_process, &call_chain);
-                        let method_cached = method.to_owned() + &cache_suffix;
-                        stat.method_cache_suffix
-                            .entry(method_cached.to_owned())
-                            .and_modify(|count| *count += 1)
-                            .or_insert(1);
-                    }
+                    let cache_suffix = get_cache_suffix(&self.caching_process, &call_chain);
+                    // {
+                    //     // next line fails as we use self with a self method and closure
+                    //     // let cache_suffix = get_cache_suffix(&self.caching_process, &call_chain);
+                    //     let method_cached = method.to_owned() + &cache_suffix;
+                    //     stat.method_cache_suffix
+                    //         .entry(method_cached.to_owned())
+                    //         .and_modify(|count| *count += 1)
+                    //         .or_insert(1);
+                    // }
 
                     // add call-chain stats
                     let depth = call_chain.len();
@@ -162,7 +165,8 @@ impl StatsMap {
                             let dms: Box<[_]> = Box::new([duration_micros]);
                             let duration_micros = dms.into_vec();
                             let method = method.to_owned();
-                            PathStats{method, count: 1, depth, duration_micros, is_leaf: span.is_leaf, looped}
+                            let cache_suffix = cache_suffix.to_owned();
+                            PathStats{method, count: 1, depth, duration_micros, is_leaf: span.is_leaf, looped, cache_suffix}
                         });
                     
                 };
@@ -245,18 +249,18 @@ impl StatsMap {
             });
         s.push("\n".to_owned());
 
-        s.push("Process-method-Cached; Count; Freq".to_owned());
-        data.iter()
-            .for_each(|(k, stat)| {
-                stat.method_cache_suffix
-                    .iter()
-                    .for_each(|(method_cached, count)| {
-                        let freq = *count as f64/ num_traces as f64;
-                        let line = format!("{k}/{method_cached}; {count}; {}", format_float(freq));
-                        s.push(line);
-                            })
-            });
-        s.push("\n".to_owned());
+        // s.push("Process-method-Cached; Count; Freq".to_owned());
+        // data.iter()
+        //     .for_each(|(k, stat)| {
+        //         stat.method_cache_suffix
+        //             .iter()
+        //             .for_each(|(method_cached, count)| {
+        //                 let freq = *count as f64/ num_traces as f64;
+        //                 let line = format!("{k}/{method_cached}; {count}; {}", format_float(freq));
+        //                 s.push(line);
+        //                     })
+        //     });
+        // s.push("\n".to_owned());
 
 
         s.push("Process; Is_leaf; Depth; Count; Looped; Revisit; Call_chain; min_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;".to_owned());
