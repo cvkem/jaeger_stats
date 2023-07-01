@@ -47,6 +47,7 @@ impl PathStats {
 pub struct Stats {
     num_received_calls: usize,  // inbound calls to this process
     num_outbound_calls: usize,  // outbound calls to other processes
+    num_unknown_calls: usize,
     method: HashMap<String, usize>,
 //    method_cache_suffix: HashMap<String, usize>,  // methods in a cache-chain have a suffix.
     call_chain: HashMap<String, PathStats>,
@@ -125,10 +126,19 @@ impl StatsMap {
                 let proc = span.get_process_str().to_owned();
                 let method = &span.operation_name;
                 let update_stat = |stat: &mut Stats| {
-                    match &method[..] {
-                        "GET" | "POST" | "HEAD" | "QUERY" => stat.num_outbound_calls += 1,
-                        _ => stat.num_received_calls += 1 
+                    match &span.span_kind {
+                        Some(kind) => match &kind[..] {
+                            "server" => stat.num_received_calls += 1,
+                            "client" => stat.num_outbound_calls += 1,
+                            _ => stat.num_unknown_calls += 1
+
+                        },
+                        None => stat.num_unknown_calls += 1
                     }
+                    // match &method[..] {
+                    //     "GET" | "POST" | "HEAD" | "QUERY" => stat.num_outbound_calls += 1,
+                    //     _ => stat.num_received_calls += 1 
+                    // }
 
                     // add a count per method
                     stat.method
@@ -224,14 +234,15 @@ impl StatsMap {
         let mut data: Vec<_> = self.stats.iter().collect();
         data.sort_by(|a,b| { a.0.cmp(&b.0)});
 
-        s.push("Process; Num_received_calls; Num_outbound_calls".to_owned());
+        s.push("Process; Num_received_calls; Num_outbound_calls; Num_unknown_calls".to_owned());
         data.iter()
             .for_each(|(k, stat)| {
                 let freq_rc = stat.num_received_calls as f64/ num_traces as f64;
                 let freq_oc = stat.num_outbound_calls as f64/ num_traces as f64;
-                let line = format!("{k}; {}; {}; {}; {}", 
+                let freq_uc = stat.num_outbound_calls as f64/ num_traces as f64;
+                let line = format!("{k}; {}; {}; {}; {}; {}", 
                     stat.num_received_calls, stat.num_outbound_calls,
-                    format_float(freq_rc), format_float(freq_oc));
+                    format_float(freq_rc), format_float(freq_oc), format_float(freq_uc));
                 s.push(line);
             });
         s.push("\n".to_owned());
