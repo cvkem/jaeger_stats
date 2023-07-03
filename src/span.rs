@@ -100,7 +100,7 @@ fn mark_leafs(spans: &mut Spans) {
     spans.iter().for_each(|span| {
         match span.parent {
             None => (),
-            Some(par) => is_leaf[par] = true
+            Some(par) => is_leaf[par] = false
         }
     });
 

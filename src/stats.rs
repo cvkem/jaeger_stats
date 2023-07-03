@@ -234,14 +234,14 @@ impl StatsMap {
         let mut data: Vec<_> = self.stats.iter().collect();
         data.sort_by(|a,b| { a.0.cmp(&b.0)});
 
-        s.push("Process; Num_received_calls; Num_outbound_calls; Num_unknown_calls".to_owned());
+        s.push("Process; Num_received_calls; Num_outbound_calls; Num_unknown_calls; Freq_received_calls; Freq_outbound_calls; Freq_unknown_calls".to_owned());
         data.iter()
             .for_each(|(k, stat)| {
                 let freq_rc = stat.num_received_calls as f64/ num_traces as f64;
                 let freq_oc = stat.num_outbound_calls as f64/ num_traces as f64;
                 let freq_uc = stat.num_outbound_calls as f64/ num_traces as f64;
-                let line = format!("{k}; {}; {}; {}; {}; {}", 
-                    stat.num_received_calls, stat.num_outbound_calls,
+                let line = format!("{k}; {}; {}; {}; {}; {}; {}", 
+                    stat.num_received_calls, stat.num_outbound_calls, stat.num_unknown_calls,
                     format_float(freq_rc), format_float(freq_oc), format_float(freq_uc));
                 s.push(line);
             });
