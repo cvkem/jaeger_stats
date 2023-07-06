@@ -163,11 +163,14 @@ impl StatsMap {
                     let depth = call_chain.len();
                     let looped = get_duplicates(&call_chain);
                     let duration_micros = span.duration_micros;
+                    let is_leaf = span.is_leaf;
                     let call_chain_str = call_chain
                         .into_iter()
                         .fold(String::new(), |a, b| a + &b.0 + "/" + &b.1 + " | ");
+                    let leaf_str = if is_leaf { "*L" } else { "" };
+                    let key = call_chain_str + &cache_suffix + &leaf_str;
                     stat.call_chain
-                        .entry(call_chain_str)
+                        .entry(key)
                         .and_modify(|ps| {
                             ps.count += 1;
                             ps.duration_micros.push(duration_micros);})
@@ -176,7 +179,7 @@ impl StatsMap {
                             let duration_micros = dms.into_vec();
                             let method = method.to_owned();
                             let cache_suffix = cache_suffix.to_owned();
-                            PathStats{method, count: 1, depth, duration_micros, is_leaf: span.is_leaf, looped, cache_suffix}
+                            PathStats{method, count: 1, depth, duration_micros, is_leaf, looped, cache_suffix}
                         });
                     
                 };
