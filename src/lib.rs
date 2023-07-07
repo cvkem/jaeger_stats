@@ -6,21 +6,21 @@ mod span;
 mod trace;
 mod datetime;
 mod stats;
+mod anal;
 
-pub use raw_jaeger::{
+
+use raw_jaeger::{
     JaegerTrace,
     JaegerItem};
-pub use read_jaeger::read_jaeger_trace_file;
-// use process_map::{
-//     build_process_map,
-//     Process};
-pub use trace::{build_trace, Trace};
-//pub use span::{Span, Spans};
+use span::Spans;
+use read_jaeger::read_jaeger_trace_file;
+use trace::{build_trace, Trace};
 
-pub use crate::datetime::{
+use crate::datetime::{
     micros_to_datetime,
     datetime_millis_str,
     datetime_micros_str,
 };
-pub use stats::{basic_stats, chained_stats, StatsMap};
+use stats::{basic_stats, chained_stats, StatsMap};
 
+pub use anal::process_file_or_folder;
