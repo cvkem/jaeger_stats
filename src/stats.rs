@@ -8,8 +8,17 @@ use crate::{
 
 
 #[derive(Debug, Default)]
+pub struct Call {
+    pub process: String,
+    pub method: String,
+}
+
+type CallChain = Vec<Call>;
+
+#[derive(Debug, Default)]
 pub struct PathStats {
     pub method: String,
+    pub call_chain: CallChain,
     pub count: usize,
     pub depth: usize,
     pub duration_micros: Vec<u64>,
@@ -165,8 +174,8 @@ impl StatsMap {
                     let duration_micros = span.duration_micros;
                     let is_leaf = span.is_leaf;
                     let call_chain_str = call_chain
-                        .into_iter()
-                        .fold(String::new(), |a, b| a + &b.0 + "/" + &b.1 + " | ");
+                        .iter()
+                        .fold(String::new(), |a, b| a + &b.process + "/" + &b.method + " | ");
                     let leaf_str = if is_leaf { "*L" } else { "" };
                     let key = call_chain_str + &cache_suffix + &leaf_str;
                     stat.call_chain
@@ -179,7 +188,7 @@ impl StatsMap {
                             let duration_micros = dms.into_vec();
                             let method = method.to_owned();
                             let cache_suffix = cache_suffix.to_owned();
-                            PathStats{method, count: 1, depth, duration_micros, is_leaf, looped, cache_suffix}
+                            PathStats{method, call_chain, count: 1, depth, duration_micros, is_leaf, looped, cache_suffix}
                         });
                     
                 };
@@ -279,17 +288,33 @@ impl StatsMap {
 
         s.push("Process; Is_leaf; Depth; Count; Looped; Revisit; Call_chain; min_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;".to_owned());
         let num_traces = num_traces as f64; 
-        data.iter()
-            .for_each(|(k, stat)| {
-                //re-sort on a different key
-                let mut     cc: Vec<_> = stat.call_chain
+
+        // reorder data based on the full call-chain
+        let mut cc_data = data
+            .into_iter()
+            .flat_map(|(key, stat)| {
+                stat.call_chain
                     .iter()
-                    .collect();
-                cc.sort_by(|a,b| {
-                    a.1.method.to_lowercase().cmp(&b.1.method.to_lowercase())});
-                cc.iter()
-                    .for_each(|(cc_key, path_stats)| s.push(path_stats.report_stats_line(k, cc_key, num_traces)))
-            });
+                    .map(|(cc_key, path_stats)| {
+                        (cc_key, key.to_owned(), path_stats)
+                    })
+            })
+            .collect::<Vec<_>>();
+        cc_data.sort_by(|a,b| { a.0.cmp(&b.0)});
+        cc_data
+            .into_iter()
+            .for_each(|(cc_key, key, path_stats)| s.push(path_stats.report_stats_line(&key, cc_key, num_traces)));
+        // data.iter()
+        //     .for_each(|(k, stat)| {
+        //         //re-sort on a different key
+        //         let mut     cc: Vec<_> = stat.call_chain
+        //             .iter()
+        //             .collect();
+        //         cc.sort_by(|a,b| {
+        //             a.1.method.to_lowercase().cmp(&b.1.method.to_lowercase())});
+        //         cc.iter()
+        //             .for_each(|(cc_key, path_stats)| s.push(path_stats.report_stats_line(k, cc_key, num_traces)))
+        //     });
             s.push("\n".to_owned());
     
             s.join("\n")
@@ -299,19 +324,19 @@ impl StatsMap {
 
 
 /// get_cache_suffix determines whether cached processes are in the call-chain and if so returns a suffix to represent it.
-pub fn get_cache_suffix(caching_process: &Vec<String>, call_chain: &Vec<(String, String)>) -> String {
+pub fn get_cache_suffix(caching_process: &Vec<String>, call_chain: &CallChain) -> String {
     if caching_process.len() == 0 {
         return "".to_owned()
     }
     let mut cached = Vec::new();
 
     call_chain.iter()
-    .for_each(|(proc, method)| {
+    .for_each(|Call{process, method}| {
         match &method[..] {
             "GET" | "POST" | "HEAD" | "QUERY" => (),  // ignore these methods as the inbound call has been matched already. (prevent duplicates of cached names)
-            _ => match caching_process.iter().find(|&s| *s == *proc) {
+            _ => match caching_process.iter().find(|&s| *s == *process) {
                 Some(_) => {
-                    cached.push(proc.to_owned())},
+                    cached.push(process.to_owned())},
                 None => ()
             }
         }
@@ -355,7 +380,7 @@ fn format_float(val: f64) -> String {
 
 
 /// parent_call_chain returns the full call_chain from top to bottom showing process and called method
-fn get_call_chain(idx: usize, spans: &Spans) -> Vec<(String, String)> {
+fn get_call_chain(idx: usize, spans: &Spans) -> CallChain {
     let span = &spans[idx];
     // find the root and allocate vector
     let mut call_chain = match span.parent {
@@ -365,16 +390,16 @@ fn get_call_chain(idx: usize, spans: &Spans) -> Vec<(String, String)> {
     // and push all proces names starting from the root
     let process = span.get_process_str().to_owned();
     let method = span.operation_name.to_owned();
-    call_chain.push( (process, method) );
+    call_chain.push( Call{process, method} );
     call_chain
 }
 
 
 /// get all values that appear more than once in the list of strings, while being none-adjacent.
-fn get_duplicates(names: &Vec<(String, String)>) -> Vec<String> {
+fn get_duplicates(names: &CallChain) -> Vec<String> {
     let mut duplicates = Vec::new();
     for idx in 0..names.len() {
-        let proc = &names[idx].0;
+        let proc = &names[idx].process;
         let mut j = 0;
         loop {
             if j >= duplicates.len() {
@@ -391,7 +416,7 @@ fn get_duplicates(names: &Vec<(String, String)>) -> Vec<String> {
         //  nme does not exist in duplicates yet, so find it in names
         let mut j = idx + 2; // Step by 2 as we want to prevent matching sub-sequent GET calls
         loop {
-            if j>= names.len() || names[j].0 == *proc {
+            if j>= names.len() || names[j].process == *proc {
                 break;
             }
             j += 1;
@@ -416,7 +441,7 @@ pub fn chained_stats(trace: &Trace) -> HashMap<String, u32> {
             let proc = span.get_process_str();
             let parents_str = get_call_chain(idx, spans)
                 .into_iter()
-                .fold(String::new(), |a, b| a + &b.0 + &b.1 +" | ");
+                .fold(String::new(), |a, b| a + &b.process + &b.method +" | ");
             let proc_method = format!("{parents_str}{proc}/{}", span.operation_name);
             stats.entry(proc_method).and_modify(|counter| *counter += 1).or_insert(1);
         });
