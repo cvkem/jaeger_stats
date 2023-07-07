@@ -1,6 +1,6 @@
 use crate::{
     read_jaeger_trace_file, build_trace, basic_stats, chained_stats, StatsMap,
-    trace::Trace};
+    trace::Trace, stats::Stats};
 use std::{
     error::Error,
     fs::{self, File},
@@ -10,12 +10,19 @@ use std::{
 const SHOW_STDOUT: bool = false;
 
 
-fn write_string_to_file(filename: &String, data: String) -> Result<(), Box<dyn Error>> {
+fn write_string_to_file(filename: &str, data: String) -> Result<(), Box<dyn Error>> {
     let mut file = File::create(filename)?;
     file.write_all(data.as_bytes())?;
     Ok(())
 }
 
+/// Collect statistics as a string and write it to a textfile in CSV format
+fn write_stats_to_csv_file(csv_file: &str, stats: &StatsMap) {
+    println!("Now writing the trace statistics to {csv_file}");
+    let stats_csv_str = stats.to_csv_string();
+    write_string_to_file(&csv_file, stats_csv_str);    
+
+}
 struct TraceExt {
     base_name: String,
     trace: Trace,
@@ -54,17 +61,14 @@ impl TraceExt {
 
 
     fn write_stats_csv(&self) {
-        let csv_file = format!("{}.csv", self.base_name);
-        println!("Now writing the trace statistics to {csv_file}");
-        let stats_csv_str = self.stats.to_csv_string();
-        write_string_to_file(&csv_file, stats_csv_str);    
+        write_string_to_file(&format!("{}.csv", self.base_name), self.stats.to_csv_string());    
     }
 
 }
 
 
 
-fn proces_file(cumm_stats: &mut Option<StatsMap>, input_file: &str) -> Result<(), Box<dyn Error>> {
+fn process_file(cumm_stats: &mut Option<StatsMap>, input_file: &str) -> Result<(), Box<dyn Error>> {
 
     let tr = TraceExt::new(input_file);
 
@@ -86,9 +90,12 @@ fn proces_file(cumm_stats: &mut Option<StatsMap>, input_file: &str) -> Result<()
 
 
 fn process_json_in_folder(folder: &str, cached_processes: Vec<String>) {
-    let mut cumm_stats = Some(StatsMap::new(cached_processes));
-
-    for entry in fs::read_dir(folder).expect("Failed to read directory") {
+ 
+//    for entry in fs::read_dir(folder).expect("Failed to read directory") {
+    let traces = fs::read_dir(folder)
+        .expect("Failed to read directory")
+        .into_iter()
+        .filter_map(|entry| {
         let entry = entry.expect("Failed to extract file-entry");
         let path = entry.path();
 
@@ -96,26 +103,32 @@ fn process_json_in_folder(folder: &str, cached_processes: Vec<String>) {
         if metadata.is_file() {
             let file_name = path.to_str().expect("path-string").to_owned();
             if file_name.ends_with(".json") {
-                proces_file(&mut cumm_stats, &file_name).unwrap();
+                Some(TraceExt::new(&file_name))
             } else {
                 println!("Ignore '{file_name} as it does not have suffix '.json'.");
+                None // Not .json file
             }
+        } else {
+            None  // No file
         }
-    }
+    });
 
-    if let Some(cumm_stats) = cumm_stats {
-        let csv_file = format!("{folder}cummulative_trace_stats.csv");
-        println!("Now writing the cummulative trace statistics to {csv_file}");
-        let stats_csv_str = cumm_stats.to_csv_string();
-        write_string_to_file(&csv_file, stats_csv_str);
-    }
+    let mut cumm_stats = StatsMap::new(cached_processes);
+
+    traces.for_each(|tr| cumm_stats.extend_statistics(&tr.trace));
+
+    write_stats_to_csv_file(&format!("{folder}cummulative_trace_stats.csv"), &cumm_stats);
+    // let csv_file = ;
+    // println!("Now writing the cummulative trace statistics to {csv_file}");
+    // let stats_csv_str = cumm_stats.to_csv_string();
+    // write_string_to_file(&csv_file, stats_csv_str);
 }
 
 
 pub fn process_file_or_folder(input_file: &str, cached_processes: Vec<String>)  {
 
     if input_file.ends_with(".json") {
-        proces_file(&mut None, &input_file).unwrap();
+        process_file(&mut None, &input_file).unwrap();
     } else if input_file.ends_with("/") || input_file.ends_with("\\") {
         process_json_in_folder(&input_file, cached_processes);
     } else {
