@@ -92,7 +92,7 @@ fn process_file(cumm_stats: &mut Option<StatsMap>, input_file: &str) -> Result<(
 fn process_json_in_folder(folder: &str, cached_processes: Vec<String>) {
  
 //    for entry in fs::read_dir(folder).expect("Failed to read directory") {
-    let traces = fs::read_dir(folder)
+    let traces: Vec<_> = fs::read_dir(folder)
         .expect("Failed to read directory")
         .into_iter()
         .filter_map(|entry| {
@@ -111,12 +111,19 @@ fn process_json_in_folder(folder: &str, cached_processes: Vec<String>) {
         } else {
             None  // No file
         }
-    });
+    }).collect();
 
     let mut cumm_stats = StatsMap::new(cached_processes);
 
-    traces.for_each(|tr| cumm_stats.extend_statistics(&tr.trace));
+    traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace));
 
+    traces.iter().for_each(|tr| {
+        if tr.trace.missing_span_ids.len() > 0 {
+            println!("Trace {} is missing {} span_ids:  {:?}", tr.trace.trace_id, tr.trace.missing_span_ids.len(), tr.trace.missing_span_ids);
+        }
+
+
+    });
     write_stats_to_csv_file(&format!("{folder}cummulative_trace_stats.csv"), &cumm_stats);
     // let csv_file = ;
     // println!("Now writing the cummulative trace statistics to {csv_file}");

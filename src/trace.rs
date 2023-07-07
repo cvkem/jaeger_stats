@@ -18,6 +18,7 @@ pub struct Trace {
     pub end_dt: DateTime<Utc>,
     pub duration_micros: u64,
     pub time_to_respond_micros: u64,
+    pub missing_span_ids: Vec<String>,
     pub spans: Spans,
 }
 
@@ -87,7 +88,7 @@ pub fn build_trace(jt: &JaegerTrace) -> Trace {
     let trace_id = item.traceID.to_owned(); 
     println!(" Found trace: {}", item.traceID);
 
-    let spans = build_spans(jt);
+    let (spans, missing_span_ids) = build_spans(jt);
 
     let root_call = get_root_call(&spans);
 
@@ -100,6 +101,6 @@ pub fn build_trace(jt: &JaegerTrace) -> Trace {
 
     let time_to_respond_micros = get_response_duration(&spans, item);
 
-    Trace{trace_id, root_call, start_dt, end_dt,duration_micros, time_to_respond_micros, spans}
+    Trace{trace_id, root_call, start_dt, end_dt,duration_micros, time_to_respond_micros, missing_span_ids, spans}
 }
 

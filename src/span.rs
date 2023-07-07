@@ -108,29 +108,36 @@ fn mark_leafs(spans: &mut Spans) {
 }
 
 /// add_parents adds parent-links to spans based on the information in Vec<JaegerSpan>
-fn add_parents(spans: &mut Vec<Span>, jspans: &Vec<JaegerSpan>) {
+fn add_parents(spans: &mut Vec<Span>, jspans: &Vec<JaegerSpan>) -> Vec<String> {
     let mut iter = iter::zip(spans, jspans);
+
+    let mut missing_span_ids = Vec::new();
 
     iter.for_each(|(mut span, jspan)| {
         match jspan.references.len() {
             0 => (), // this is the root
             1 => {
                 let parentID = &jspan.references[0].spanID;
+                let mut parent_found = false;
                 for (idx, js) in jspans.iter().enumerate() {
                     if js.spanID[..] == parentID[..] {
                         span.parent = Some(idx);
+                        parent_found = true;
                         break;
                     }
+                }
+                if !parent_found {
+                    missing_span_ids.push(parentID.to_owned());
                 }
             },
             num => panic!("Span '{}' has {num} parent-references.", jspan.spanID)
         }
-    })
-
+    });
+    missing_span_ids
 } 
 
 /// build the ist of spans (including parent links and proces-mapping)
-pub fn build_spans(jt: &JaegerTrace) -> Spans {
+pub fn build_spans(jt: &JaegerTrace) -> (Spans, Vec<String>) {
     if jt.data.len() != 1 {
         panic!("File contains {} (expected exactly 1)", jt.data.len());
     }
@@ -144,10 +151,10 @@ pub fn build_spans(jt: &JaegerTrace) -> Spans {
         })
         .collect();
 
-    add_parents(&mut spans, &item.spans);
+    let missing_span_ids = add_parents(&mut spans, &item.spans);
     mark_leafs(&mut spans);
 
-    spans
+    (spans, missing_span_ids)
 }
 
 
