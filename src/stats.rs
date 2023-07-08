@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::{collections::{HashMap, HashSet}};
 use crate::{
     Trace,
     span::Spans};
@@ -54,12 +54,12 @@ impl PathStats {
 
 #[derive(Debug, Default)]
 pub struct Stats {
-    num_received_calls: usize,  // inbound calls to this process
-    num_outbound_calls: usize,  // outbound calls to other processes
-    num_unknown_calls: usize,
-    method: HashMap<String, usize>,
+    pub num_received_calls: usize,  // inbound calls to this process
+    pub num_outbound_calls: usize,  // outbound calls to other processes
+    pub num_unknown_calls: usize,
+    pub method: HashMap<String, usize>,
 //    method_cache_suffix: HashMap<String, usize>,  // methods in a cache-chain have a suffix.
-    call_chain: HashMap<String, PathStats>,
+    pub call_chain: HashMap<String, PathStats>,
 }
 
 impl Stats {
@@ -79,7 +79,7 @@ pub struct StatsMap {
     pub duration_micros: Vec<u64>,
     pub time_to_respond_micros: Vec<u64>,
     pub caching_process: Vec<String>,
-    stats: HashMap<String, Stats>
+    pub stats: HashMap<String, Stats>
 }
 
 impl StatsMap {
@@ -319,6 +319,20 @@ impl StatsMap {
     
             s.join("\n")
     }
+
+    /// resturns a hashset containing all call-chains (string-keys)
+    pub fn call_chain_set(&self) -> HashSet<String> {
+        let cc_keys: Vec<_> = self.stats.values().flat_map(|st| st.call_chain.keys()).collect();
+        HashSet::from_iter(cc_keys.into_iter().cloned())
+    }
+
+    /// resturns a hashset containing all call-chains (string-keys)
+    pub fn call_chain_sorted(&self) -> Vec<&String> {
+        let mut cc_keys: Vec<_> = self.stats.values().flat_map(|st| st.call_chain.keys()).collect();
+        cc_keys.sort();
+        cc_keys
+    }
+
 }
 
 

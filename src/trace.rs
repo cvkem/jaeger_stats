@@ -1,4 +1,4 @@
-use std::iter;
+use std::{iter, collections::HashSet};
 use crate::{
     process_map::build_process_map,
     span::{build_spans, Spans},
@@ -21,6 +21,33 @@ pub struct Trace {
     pub missing_span_ids: Vec<String>,
     pub spans: Spans,
 }
+
+impl Trace {
+
+    /// build a Trace based upon a JaegerTrace
+    pub fn new(jt: &JaegerTrace) -> Self {
+        let item = &jt.data[0];
+        let trace_id = item.traceID.to_owned(); 
+        println!(" Found trace: {}", item.traceID);
+    
+        let (spans, missing_span_ids) = build_spans(jt);
+    
+        let root_call = get_root_call(&spans);
+    
+    //    let proc_map = build_process_map(item);
+    
+        let (start_dt, end_dt) = find_full_duration(item);
+        let duration_micros = end_dt - start_dt;
+        let start_dt = micros_to_datetime(start_dt);
+        let end_dt = micros_to_datetime(end_dt);
+    
+        let time_to_respond_micros = get_response_duration(&spans, item);
+    
+        Self{trace_id, root_call, start_dt, end_dt,duration_micros, time_to_respond_micros, missing_span_ids, spans}
+    }
+    
+}
+
 
 fn find_full_duration(ji: &JaegerItem) -> (u64, u64) {
     // compute start-time based on start_time of earliest span
@@ -83,24 +110,4 @@ fn get_root_call(spans: &Spans) -> String {
     root_call
 }
 
-pub fn build_trace(jt: &JaegerTrace) -> Trace {
-    let item = &jt.data[0];
-    let trace_id = item.traceID.to_owned(); 
-    println!(" Found trace: {}", item.traceID);
-
-    let (spans, missing_span_ids) = build_spans(jt);
-
-    let root_call = get_root_call(&spans);
-
-//    let proc_map = build_process_map(item);
-
-    let (start_dt, end_dt) = find_full_duration(item);
-    let duration_micros = end_dt - start_dt;
-    let start_dt = micros_to_datetime(start_dt);
-    let end_dt = micros_to_datetime(end_dt);
-
-    let time_to_respond_micros = get_response_duration(&spans, item);
-
-    Trace{trace_id, root_call, start_dt, end_dt,duration_micros, time_to_respond_micros, missing_span_ids, spans}
-}
 

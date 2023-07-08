@@ -14,7 +14,7 @@ use raw_jaeger::{
     JaegerItem};
 use span::Spans;
 use read_jaeger::read_jaeger_trace_file;
-use trace::{build_trace, Trace};
+use trace::Trace;
 
 use crate::datetime::{
     micros_to_datetime,

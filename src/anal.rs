@@ -1,10 +1,10 @@
 use crate::{
-    read_jaeger_trace_file, build_trace, basic_stats, chained_stats, StatsMap,
+    read_jaeger_trace_file, basic_stats, chained_stats, StatsMap,
     trace::Trace, stats::Stats};
 use std::{
     error::Error,
     fs::{self, File},
-    io::Write};
+    io::Write, collections::HashSet};
 
 
 const SHOW_STDOUT: bool = false;
@@ -43,7 +43,7 @@ impl TraceExt {
             panic!("Could not split");
         };
     
-        let trace = build_trace(&jt);
+        let trace = Trace::new(&jt);
 
         let mut stats = StatsMap::new(Vec::new());
         stats.extend_statistics(&trace);
@@ -62,6 +62,59 @@ impl TraceExt {
 
     fn write_stats_csv(&self) {
         write_string_to_file(&format!("{}.csv", self.base_name), self.stats.to_csv_string());    
+    }
+
+    /// Fix the call_chain paths of a trace based on the expected call-chains.
+    pub fn fix_trace_call_chain(&self, expected_cc: &HashSet<String>) -> bool {
+        let exp_cc: Vec<&String> = expected_cc.iter().collect();
+        let cc_set = self.stats.call_chain_set();
+        let unexpected = cc_set.difference(&expected_cc);
+
+        println!("\nShowing expected:");
+        exp_cc.iter().enumerate().for_each(|(idx, cc)|  println!("{idx}: {cc}"));
+
+        println!("\nNow trying to find matches:");
+        for cc in unexpected {
+            let matched: Vec<_> = exp_cc
+                .iter()
+                .filter(|&&x| x.ends_with(cc))
+                .collect();
+            match matched.len() {
+                0 => println!("NO-MATCH for: {cc}"),
+                1 => println!("One match found"),
+                n => println!("Found {n} matches!! cc= {cc}")
+            }
+        } 
+
+    //     traces.iter().for_each(|tr| {
+    //         if tr.trace.missing_span_ids.len() > 0 {
+    //             println!("\nTrace {} is missing {} span_ids:  {:?}", tr.trace.trace_id, tr.trace.missing_span_ids.len(), tr.trace.missing_span_ids);
+    //             let cc_set = tr.stats.call_chain_set();
+    //             println!(" expected-len {}  and trace-cc-len {}", expected_cc.len(), cc_set.len());
+    // //            let diff = expected_cc.difference(&cc_set).cloned().collect::<Vec<_>>().join("\n\t");
+    //             expected_cc
+    //                 .difference(&cc_set)
+    //                 .enumerate()
+    //                 .for_each(|(idx, cc)| println!("\t{}: {}", idx+1, cc));
+    //             let cc_sorted: Vec<_> = tr.stats.call_chain_sorted();
+    //                 // .into_iter()
+    //                 // .filter(|&s| s.starts_with("retail-gateway/"))
+    //                 // .collect();
+    //             // for idx in 0..10 {
+    //             //     println!("Line {idx}\nExpect: {}\nTrace:  {}", expected_cc_sorted[idx], cc_sorted[idx])
+    //             // }
+    //             for (idx, s) in expected_cc_sorted.iter().enumerate() {
+    //                 println!("{idx}: {s}");
+    //             }
+    
+    //             for (idx, s) in cc_sorted.iter().enumerate() {
+    //                 println!("{idx}: {s}");
+    //             }
+    //         }
+    //     });
+    
+
+        false // not implemented yet
     }
 
 }
@@ -92,38 +145,51 @@ fn process_file(cumm_stats: &mut Option<StatsMap>, input_file: &str) -> Result<(
 fn process_json_in_folder(folder: &str, cached_processes: Vec<String>) {
  
 //    for entry in fs::read_dir(folder).expect("Failed to read directory") {
-    let traces: Vec<_> = fs::read_dir(folder)
+    let (traces, part_traces): (Vec<_>, Vec<_>) = fs::read_dir(folder)
         .expect("Failed to read directory")
         .into_iter()
         .filter_map(|entry| {
-        let entry = entry.expect("Failed to extract file-entry");
-        let path = entry.path();
+            let entry = entry.expect("Failed to extract file-entry");
+            let path = entry.path();
 
-        let metadata = fs::metadata(&path).unwrap();
-        if metadata.is_file() {
-            let file_name = path.to_str().expect("path-string").to_owned();
-            if file_name.ends_with(".json") {
-                Some(TraceExt::new(&file_name))
+            let metadata = fs::metadata(&path).unwrap();
+            if metadata.is_file() {
+                let file_name = path.to_str().expect("path-string").to_owned();
+                if file_name.ends_with(".json") {
+                    Some(TraceExt::new(&file_name))
+                } else {
+                    println!("Ignore '{file_name} as it does not have suffix '.json'.");
+                    None // Not .json file
+                }
             } else {
-                println!("Ignore '{file_name} as it does not have suffix '.json'.");
-                None // Not .json file
+                None  // No file
             }
-        } else {
-            None  // No file
-        }
-    }).collect();
+        })
+        .partition(|tr| tr.trace.missing_span_ids.len() == 0);
 
+    if traces.len() == 0 {
+        panic!("No complete traces found. Instead found {} partial traces", part_traces.len());
+    }
+
+    // compute statistics over complete traces only
     let mut cumm_stats = StatsMap::new(cached_processes);
+    traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace) );
 
-    traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace));
+    if part_traces.len() > 0 {
 
-    traces.iter().for_each(|tr| {
-        if tr.trace.missing_span_ids.len() > 0 {
-            println!("Trace {} is missing {} span_ids:  {:?}", tr.trace.trace_id, tr.trace.missing_span_ids.len(), tr.trace.missing_span_ids);
-        }
+        let expected_cc = cumm_stats.call_chain_set();
+        let expected_cc_sorted = cumm_stats.call_chain_sorted();
 
-
-    });
+        part_traces
+            .into_iter()
+            .for_each(|tr| {
+                if tr.fix_trace_call_chain(&expected_cc) {
+                    cumm_stats.extend_statistics(&tr.trace);
+                } else {
+                    println!("Could not fix trace '{}'. Excluded from the analysis",tr.trace.trace_id);
+                }
+            });
+    }
     write_stats_to_csv_file(&format!("{folder}cummulative_trace_stats.csv"), &cumm_stats);
     // let csv_file = ;
     // println!("Now writing the cummulative trace statistics to {csv_file}");
