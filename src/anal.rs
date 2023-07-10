@@ -31,7 +31,7 @@ struct TraceExt {
 
 impl TraceExt {
 
-    fn new(input_file: &str) -> Self {
+    fn new(input_file: &str, caching_processes: &Vec<String>) -> Self {
         println!("Reading a Jaeger-trace from '{input_file}'");
         let jt = read_jaeger_trace_file(input_file).unwrap();
     
@@ -45,7 +45,7 @@ impl TraceExt {
     
         let trace = Trace::new(&jt);
 
-        let mut stats = StatsMap::new(Vec::new());
+        let mut stats = StatsMap::new(caching_processes);
         stats.extend_statistics(&trace);
     
         Self{base_name: base_name.to_owned(), trace, stats}
@@ -71,7 +71,7 @@ impl TraceExt {
         let unexpected = cc_set.difference(&expected_cc);
 
         println!("\nShowing expected:");
-        exp_cc.iter().enumerate().for_each(|(idx, cc)|  println!("{idx}: {cc}"));
+        exp_cc.iter().enumerate().for_each(|(idx, cc)|  println!("{idx}: '{cc}'"));
 
         println!("\nNow trying to find matches:");
         for cc in unexpected {
@@ -80,7 +80,19 @@ impl TraceExt {
                 .filter(|&&x| x.ends_with(cc))
                 .collect();
             match matched.len() {
-                0 => println!("NO-MATCH for: {cc}"),
+                0 => {
+                    if cc.ends_with("*L") {
+                        let cc2 = cc.replace("*L", "");
+                        let matched2: Vec<_> = exp_cc.iter().filter(|&&x| x.ends_with(&cc2)).collect();
+                        match matched2.len() {
+                            0 => println!("NO-MATCH for '{cc}' as is and as Non-Leaf"),
+                            1 => println!("MATCHED as NON-leaf"),
+                            n => println!("Found '{n}'  matches as Non-leaf and 0 as leaf for '{cc}'") 
+                        } 
+                    } else {
+                        println!("NO-MATCH for: '{cc}'")
+                    }
+                },
                 1 => println!("One match found"),
                 n => println!("Found {n} matches!! cc= {cc}")
             }
@@ -121,9 +133,9 @@ impl TraceExt {
 
 
 
-fn process_file(cumm_stats: &mut Option<StatsMap>, input_file: &str) -> Result<(), Box<dyn Error>> {
+fn process_file(cumm_stats: &mut Option<StatsMap>, input_file: &str, caching_processes: Vec<String>) -> Result<(), Box<dyn Error>> {
 
-    let tr = TraceExt::new(input_file);
+    let tr = TraceExt::new(input_file, &caching_processes);
 
     let basic_stats = basic_stats(&tr.trace);
 
@@ -142,7 +154,7 @@ fn process_file(cumm_stats: &mut Option<StatsMap>, input_file: &str) -> Result<(
 }
 
 
-fn process_json_in_folder(folder: &str, cached_processes: Vec<String>) {
+fn process_json_in_folder(folder: &str, caching_processes: Vec<String>) {
  
 //    for entry in fs::read_dir(folder).expect("Failed to read directory") {
     let (traces, part_traces): (Vec<_>, Vec<_>) = fs::read_dir(folder)
@@ -156,7 +168,7 @@ fn process_json_in_folder(folder: &str, cached_processes: Vec<String>) {
             if metadata.is_file() {
                 let file_name = path.to_str().expect("path-string").to_owned();
                 if file_name.ends_with(".json") {
-                    Some(TraceExt::new(&file_name))
+                    Some(TraceExt::new(&file_name, &caching_processes))
                 } else {
                     println!("Ignore '{file_name} as it does not have suffix '.json'.");
                     None // Not .json file
@@ -172,7 +184,7 @@ fn process_json_in_folder(folder: &str, cached_processes: Vec<String>) {
     }
 
     // compute statistics over complete traces only
-    let mut cumm_stats = StatsMap::new(cached_processes);
+    let mut cumm_stats = StatsMap::new(&caching_processes);
     traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace) );
 
     if part_traces.len() > 0 {
@@ -198,12 +210,12 @@ fn process_json_in_folder(folder: &str, cached_processes: Vec<String>) {
 }
 
 
-pub fn process_file_or_folder(input_file: &str, cached_processes: Vec<String>)  {
+pub fn process_file_or_folder(input_file: &str, caching_processes: Vec<String>)  {
 
     if input_file.ends_with(".json") {
-        process_file(&mut None, &input_file).unwrap();
+        process_file(&mut None, &input_file, caching_processes).unwrap();
     } else if input_file.ends_with("/") || input_file.ends_with("\\") {
-        process_json_in_folder(&input_file, cached_processes);
+        process_json_in_folder(&input_file, caching_processes);
     } else {
         panic!(" Expected file with extention '.json'  or folder that ends with '/' (linux) or '\' (windows)");
     }

@@ -84,7 +84,8 @@ pub struct StatsMap {
 
 impl StatsMap {
 
-    pub fn new(caching_process: Vec<String>) -> Self {
+    pub fn new(caching_process: &Vec<String>) -> Self {
+        let caching_process = caching_process.clone();
         StatsMap{
             caching_process,
             ..Default::default()}
@@ -117,6 +118,8 @@ impl StatsMap {
 
 
     pub fn extend_statistics(&mut self, trace: &Trace) {
+
+        println!("Extend statistics for trace: {}", trace.trace_id);
 
         let spans = &trace.spans;
 

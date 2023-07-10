@@ -7,8 +7,11 @@ use std::{
     io::Write};
 
 
-const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadTest-prodinz-prodGroep/28adb54b8868eef9.json";
+//const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadTest-prodinz-prodGroep/28adb54b8868eef9.json";
 
+//const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadTest-prodinz-prodGroep/";
+const INPUT_FILE: &str = "/home/ceesvk/jaeger/prodinzicht-23-juni-14u/";
+const CACHING_PROCESS: &str = "bspc-productinzicht,bspc-partijrolbeheer";
 
 fn main()  {
     let args: Vec<String> = env::args().collect();
@@ -19,11 +22,11 @@ fn main()  {
         INPUT_FILE.to_owned()
     };
 
-    let cached_processes = if args.len() > 2 {
-        args[2].split(",").map(|s| s.to_owned()).collect()
+    let caching_processes = if args.len() > 2 {
+        args[2].clone()
     } else {
-        Vec::new()
-    };
+        CACHING_PROCESS.to_owned()
+    }.split(",").map(|s| s.to_owned()).collect();
 
-    process_file_or_folder(&input_file, cached_processes);
+    process_file_or_folder(&input_file, caching_processes);
 }
