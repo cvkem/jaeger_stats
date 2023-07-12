@@ -25,8 +25,8 @@ pub struct Trace {
 impl Trace {
 
     /// build a Trace based upon a JaegerTrace
-    pub fn new(jt: &JaegerTrace) -> Self {
-        let item = &jt.data[0];
+    pub fn new(jt: &JaegerTrace, idx: usize) -> Self {
+        let item = &jt.data[idx];
         let trace_id = item.traceID.to_owned(); 
         println!(" Found trace: {}", item.traceID);
     
@@ -46,6 +46,13 @@ impl Trace {
         Self{trace_id, root_call, start_dt, end_dt,duration_micros, time_to_respond_micros, missing_span_ids, spans}
     }
     
+}
+
+pub fn extract_traces(jt: &JaegerTrace, idx: usize) -> Vec<Trace> {
+    let num_traces = jt.data.len();
+    (0..num_traces)
+        .map(|idx| Trace::new(&jt, idx))
+        .collect()
 }
 
 

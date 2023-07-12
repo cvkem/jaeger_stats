@@ -20,6 +20,7 @@ pub struct Span{
 //pub struct Span<'a> {
     pub parent: Option<usize>,
     pub is_leaf: bool,
+    pub rooted: bool,  // does this span trace back to the real root? (default = false)
     pub span_id: String,
     pub operation_name: String,
     pub start_dt: DateTime<Utc>,
@@ -108,7 +109,7 @@ fn mark_leafs(spans: &mut Spans) {
 }
 
 /// add_parents adds parent-links to spans based on the information in Vec<JaegerSpan>
-fn add_parents(spans: &mut Vec<Span>, jspans: &Vec<JaegerSpan>) -> Vec<String> {
+fn add_parents(spans: &mut Spans, jspans: &Vec<JaegerSpan>) -> Vec<String> {
     let mut iter = iter::zip(spans, jspans);
 
     let mut missing_span_ids = Vec::new();
@@ -136,7 +137,34 @@ fn add_parents(spans: &mut Vec<Span>, jspans: &Vec<JaegerSpan>) -> Vec<String> {
     missing_span_ids
 } 
 
-/// build the ist of spans (including parent links and proces-mapping)
+
+/// mark all spans that are connected to the root.
+fn mark_rooted(spans: &mut Spans) {
+    if spans[0].parent.is_some() {
+        println!("Could not find root at index=0, as it has parent {}", spans[0].parent.unwrap());
+        return;
+    }
+    spans[0].rooted = true;
+
+    fn mark_root_path(spans: &mut Spans, idx: usize) -> bool {
+        if spans[idx].rooted {
+            return true;
+        }
+        if let Some(parent) = spans[idx].parent {
+            let rooted = mark_root_path(spans, parent);
+            spans[idx].rooted = rooted;
+            return rooted;
+        } else {
+            return false;
+        }
+    }
+
+    (0..spans.len()).for_each(|idx| { mark_root_path(spans, idx); });
+
+}
+
+
+/// build the list of spans (including parent links and proces-mapping)
 pub fn build_spans(jt: &JaegerTrace) -> (Spans, Vec<String>) {
     if jt.data.len() != 1 {
         panic!("File contains {} (expected exactly 1)", jt.data.len());
@@ -153,6 +181,8 @@ pub fn build_spans(jt: &JaegerTrace) -> (Spans, Vec<String>) {
 
     let missing_span_ids = add_parents(&mut spans, &item.spans);
     mark_leafs(&mut spans);
+
+    mark_rooted(&mut spans);
 
     (spans, missing_span_ids)
 }

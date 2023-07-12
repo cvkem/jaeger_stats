@@ -39,14 +39,14 @@ impl TraceExt {
             println!("{:#?}", jt);
         }
     
-        let Some(base_name) = input_file.split(".").next() else {
+        let Some(base_name) = input_file.split(".").next() else {  // we should collect and drop last segment (the extension)
             panic!("Could not split");
         };
     
-        let trace = Trace::new(&jt);
+        let trace = Trace::new(&jt, 0);
 
         let mut stats = StatsMap::new(caching_processes);
-        stats.extend_statistics(&trace);
+        stats.extend_statistics(&trace, false);
     
         Self{base_name: base_name.to_owned(), trace, stats}
     }
@@ -64,17 +64,25 @@ impl TraceExt {
         write_string_to_file(&format!("{}.csv", self.base_name), self.stats.to_csv_string());    
     }
 
+    fn fix_tcc_find_matches() {
+
+    }
+
     /// Fix the call_chain paths of a trace based on the expected call-chains.
-    pub fn fix_trace_call_chain(&self, expected_cc: &HashSet<String>) -> bool {
+    pub fn fix_trace_call_chain(&mut self, expected_cc: &HashSet<String>) -> bool {
         let exp_cc: Vec<&String> = expected_cc.iter().collect();
         let cc_set = self.stats.call_chain_set();
         let unexpected = cc_set.difference(&expected_cc);
 
         println!("\nShowing expected:");
-        exp_cc.iter().enumerate().for_each(|(idx, cc)|  println!("{idx}: '{cc}'"));
+        exp_cc.iter()
+            .enumerate()
+            .for_each(|(idx, cc)|  println!("{idx}: '{cc}'"));
 
         println!("\nNow trying to find matches:");
-        for cc in unexpected {
+        //for cc in unexpected {
+        let matched_cc: Vec<_> = unexpected.map(|cc| {
+
             let matched: Vec<_> = exp_cc
                 .iter()
                 .filter(|&&x| x.ends_with(cc))
@@ -83,50 +91,42 @@ impl TraceExt {
                 0 => {
                     if cc.ends_with("*L") {
                         let cc2 = cc.replace("*L", "");
-                        let matched2: Vec<_> = exp_cc.iter().filter(|&&x| x.ends_with(&cc2)).collect();
-                        match matched2.len() {
-                            0 => println!("NO-MATCH for '{cc}' as is and as Non-Leaf"),
-                            1 => println!("MATCHED as NON-leaf"),
-                            n => println!("Found '{n}'  matches as Non-leaf and 0 as leaf for '{cc}'") 
+                        let matched: Vec<_> = exp_cc.iter().filter(|&&x| x.ends_with(&cc2)).collect();
+                        match matched.len() {
+                            0 => {
+                                println!("NO-MATCH for '{cc}' as is and as Non-Leaf");
+                                None
+                            },
+                            1 => {
+                                println!("MATCHED as NON-leaf");
+                                Some(matched[0])
+                            },
+                            n => {
+                                println!("Found '{n}'  matches as Non-leaf and 0 as leaf for '{cc}'");
+                                None
+                            } 
                         } 
                     } else {
-                        println!("NO-MATCH for: '{cc}'")
+                        println!("NO-MATCH for: '{cc}'");
+                        None
                     }
                 },
-                1 => println!("One match found"),
-                n => println!("Found {n} matches!! cc= {cc}")
+                1 => Some(matched[0]),
+                n => {
+                    println!("Found {n} matches!! cc= {cc}");
+                    None
+                }
             }
-        } 
+        })
+        .collect();
 
-    //     traces.iter().for_each(|tr| {
-    //         if tr.trace.missing_span_ids.len() > 0 {
-    //             println!("\nTrace {} is missing {} span_ids:  {:?}", tr.trace.trace_id, tr.trace.missing_span_ids.len(), tr.trace.missing_span_ids);
-    //             let cc_set = tr.stats.call_chain_set();
-    //             println!(" expected-len {}  and trace-cc-len {}", expected_cc.len(), cc_set.len());
-    // //            let diff = expected_cc.difference(&cc_set).cloned().collect::<Vec<_>>().join("\n\t");
-    //             expected_cc
-    //                 .difference(&cc_set)
-    //                 .enumerate()
-    //                 .for_each(|(idx, cc)| println!("\t{}: {}", idx+1, cc));
-    //             let cc_sorted: Vec<_> = tr.stats.call_chain_sorted();
-    //                 // .into_iter()
-    //                 // .filter(|&s| s.starts_with("retail-gateway/"))
-    //                 // .collect();
-    //             // for idx in 0..10 {
-    //             //     println!("Line {idx}\nExpect: {}\nTrace:  {}", expected_cc_sorted[idx], cc_sorted[idx])
-    //             // }
-    //             for (idx, s) in expected_cc_sorted.iter().enumerate() {
-    //                 println!("{idx}: {s}");
-    //             }
-    
-    //             for (idx, s) in cc_sorted.iter().enumerate() {
-    //                 println!("{idx}: {s}");
-    //             }
-    //         }
-    //     });
-    
-
-        false // not implemented yet
+        if matched_cc.iter().all(|m| m.is_some()) {
+            // do the remapping
+            println!("!! remapping to be implemented!!");
+            true
+        } else {
+            false
+        }
     }
 
 }
@@ -142,7 +142,7 @@ fn process_file(cumm_stats: &mut Option<StatsMap>, input_file: &str, caching_pro
     let chained_stats = chained_stats(&tr.trace);
 
     match cumm_stats {
-        Some(cs) => cs.extend_statistics(&tr.trace),
+        Some(cs) => cs.extend_statistics(&tr.trace, false),
         None => ()
     }
 
@@ -179,13 +179,14 @@ fn process_json_in_folder(folder: &str, caching_processes: Vec<String>) {
         })
         .partition(|tr| tr.trace.missing_span_ids.len() == 0);
 
+    let mut cumm_stats = StatsMap::new(&caching_processes);
     if traces.len() == 0 {
         panic!("No complete traces found. Instead found {} partial traces", part_traces.len());
+        //traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false));
     }
 
     // compute statistics over complete traces only
-    let mut cumm_stats = StatsMap::new(&caching_processes);
-    traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace) );
+    traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, true) );
 
     if part_traces.len() > 0 {
 
@@ -194,9 +195,9 @@ fn process_json_in_folder(folder: &str, caching_processes: Vec<String>) {
 
         part_traces
             .into_iter()
-            .for_each(|tr| {
+            .for_each(|mut tr| {
                 if tr.fix_trace_call_chain(&expected_cc) {
-                    cumm_stats.extend_statistics(&tr.trace);
+                    cumm_stats.extend_statistics(&tr.trace, false);
                 } else {
                     println!("Could not fix trace '{}'. Excluded from the analysis",tr.trace.trace_id);
                 }

@@ -117,7 +117,7 @@ impl StatsMap {
     // }
 
 
-    pub fn extend_statistics(&mut self, trace: &Trace) {
+    pub fn extend_statistics(&mut self, trace: &Trace, rooted_spans: bool) {
 
         println!("Extend statistics for trace: {}", trace.trace_id);
 
@@ -134,8 +134,15 @@ impl StatsMap {
         spans
             .iter()
             .enumerate()
+            .filter(|(idx, span)| {
+                if rooted_spans {
+                    span.rooted
+                } else {
+                    true
+                }
+            }) 
             .for_each(|(idx, span)| {
-                let proc = span.get_process_str().to_owned();
+                    let proc = span.get_process_str().to_owned();
                 let method = &span.operation_name;
                 let update_stat = |stat: &mut Stats| {
                     match &span.span_kind {
