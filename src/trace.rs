@@ -1,6 +1,8 @@
-use std::{iter, collections::HashSet};
+use std::{
+    ffi::OsString,
+    iter,
+    path::PathBuf};
 use crate::{
-    process_map::build_process_map,
     span::{build_spans, Spans},
     JaegerTrace,
     raw_jaeger::JaegerItem,
@@ -30,7 +32,7 @@ impl Trace {
         let trace_id = item.traceID.to_owned(); 
         println!(" Found trace: {}", item.traceID);
     
-        let (spans, missing_span_ids) = build_spans(jt);
+        let (spans, missing_span_ids) = build_spans(item);
     
         let root_call = get_root_call(&spans);
     
@@ -45,10 +47,17 @@ impl Trace {
     
         Self{trace_id, root_call, start_dt, end_dt,duration_micros, time_to_respond_micros, missing_span_ids, spans}
     }
-    
+
+    /// get the nane of this trace as a CSV-file
+    pub fn base_name(&self, folder: &PathBuf) -> OsString {
+        let mut folder = folder.clone();
+        folder.push(self.trace_id.clone());
+        folder.into_os_string()
+    }
+
 }
 
-pub fn extract_traces(jt: &JaegerTrace, idx: usize) -> Vec<Trace> {
+pub fn extract_traces(jt: &JaegerTrace) -> Vec<Trace> {
     let num_traces = jt.data.len();
     (0..num_traces)
         .map(|idx| Trace::new(&jt, idx))

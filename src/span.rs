@@ -3,6 +3,7 @@ use crate::{
     JaegerTrace,
     raw_jaeger::{
         JaegerSpan,
+        JaegerItem,
         JaegerTags},
     process_map::{build_process_map, ProcessMap, Process},
     micros_to_datetime};
@@ -165,11 +166,7 @@ fn mark_rooted(spans: &mut Spans) {
 
 
 /// build the list of spans (including parent links and proces-mapping)
-pub fn build_spans(jt: &JaegerTrace) -> (Spans, Vec<String>) {
-    if jt.data.len() != 1 {
-        panic!("File contains {} (expected exactly 1)", jt.data.len());
-    }
-    let item = &jt.data[0]; 
+pub fn build_spans(item: &JaegerItem) -> (Spans, Vec<String>) {
     let proc_map = build_process_map(item);
 
     let mut spans: Vec<_> = item.spans

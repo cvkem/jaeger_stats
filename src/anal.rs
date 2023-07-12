@@ -1,10 +1,11 @@
 use crate::{
     read_jaeger_trace_file, basic_stats, chained_stats, StatsMap,
-    trace::Trace, stats::Stats};
+    trace::{Trace, extract_traces}, stats::Stats};
 use std::{
     error::Error,
     fs::{self, File},
-    io::Write, collections::HashSet};
+    io::Write, collections::HashSet,
+    path::{Path, PathBuf}, ffi::OsString};
 
 
 const SHOW_STDOUT: bool = false;
@@ -31,24 +32,13 @@ struct TraceExt {
 
 impl TraceExt {
 
-    fn new(input_file: &str, caching_processes: &Vec<String>) -> Self {
-        println!("Reading a Jaeger-trace from '{input_file}'");
-        let jt = read_jaeger_trace_file(input_file).unwrap();
-    
-        if SHOW_STDOUT {
-            println!("{:#?}", jt);
-        }
-    
-        let Some(base_name) = input_file.split(".").next() else {  // we should collect and drop last segment (the extension)
-            panic!("Could not split");
-        };
-    
-        let trace = Trace::new(&jt, 0);
+    fn new(trace: Trace, folder: &PathBuf, caching_processes: &Vec<String>) -> Self {
+        let base_name = trace.base_name(&folder);
 
         let mut stats = StatsMap::new(caching_processes);
         stats.extend_statistics(&trace, false);
     
-        Self{base_name: base_name.to_owned(), trace, stats}
+        Self{base_name: base_name.into_string().unwrap(), trace, stats}
     }
     
 
@@ -132,32 +122,18 @@ impl TraceExt {
 }
 
 
+/// read a single file and return a set of traces, or an error
+fn read_trace_file(input_file: &str) -> Result<Vec<Trace>, Box<dyn Error>> {
 
-fn process_file(cumm_stats: &mut Option<StatsMap>, input_file: &str, caching_processes: Vec<String>) -> Result<(), Box<dyn Error>> {
+    println!("Reading a Jaeger-trace from '{input_file}'");
+    let jt = read_jaeger_trace_file(input_file).unwrap();
 
-    let tr = TraceExt::new(input_file, &caching_processes);
-
-    let basic_stats = basic_stats(&tr.trace);
-
-    let chained_stats = chained_stats(&tr.trace);
-
-    match cumm_stats {
-        Some(cs) => cs.extend_statistics(&tr.trace, false),
-        None => ()
-    }
-
-    tr.write_trace();
-
-    tr.write_stats_csv();
-    
-    Ok(())
+    Ok(extract_traces(&jt))
 }
 
 
-fn process_json_in_folder(folder: &str, caching_processes: Vec<String>) {
- 
-//    for entry in fs::read_dir(folder).expect("Failed to read directory") {
-    let (traces, part_traces): (Vec<_>, Vec<_>) = fs::read_dir(folder)
+fn read_trace_folder(folder: &str) -> Result<Vec<Trace>, Box<dyn Error>> {
+    let traces = fs::read_dir(folder)
         .expect("Failed to read directory")
         .into_iter()
         .filter_map(|entry| {
@@ -168,7 +144,7 @@ fn process_json_in_folder(folder: &str, caching_processes: Vec<String>) {
             if metadata.is_file() {
                 let file_name = path.to_str().expect("path-string").to_owned();
                 if file_name.ends_with(".json") {
-                    Some(TraceExt::new(&file_name, &caching_processes))
+                    read_trace_file(&file_name).ok()
                 } else {
                     println!("Ignore '{file_name} as it does not have suffix '.json'.");
                     None // Not .json file
@@ -177,47 +153,80 @@ fn process_json_in_folder(folder: &str, caching_processes: Vec<String>) {
                 None  // No file
             }
         })
-        .partition(|tr| tr.trace.missing_span_ids.len() == 0);
+        .flatten()
+        .collect();
+        Ok(traces)
+    }
+
+
+/// process a vector of traces.
+fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<String>) {
+
+    println!("Now generating output for all traces");
+    let traces: Vec<_> = traces.into_iter()
+        .map(|trace| TraceExt::new(trace, &folder, &caching_processes))
+        .collect();
+
+    println!("Now writing all traces");
+    traces.iter().for_each(|trace| trace.write_trace());
 
     let mut cumm_stats = StatsMap::new(&caching_processes);
-    if traces.len() == 0 {
-        panic!("No complete traces found. Instead found {} partial traces", part_traces.len());
-        //traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false));
-    }
+    traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );
 
-    // compute statistics over complete traces only
-    traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, true) );
+    write_stats_to_csv_file(&format!("{}cummulative_trace_stats.csv", folder.display()), &cumm_stats);
 
-    if part_traces.len() > 0 {
+    //     let stats = StatsMap::new(^caching_process);
+    //     stats.extend_statistics(trace, false);
+    //     let filename = trace.txt_file_name(&mut folder);
+    //     let trace_str = format!("{:#?}", trace);
+    //     write_string_to_file(&filename, trace_str);
 
-        let expected_cc = cumm_stats.call_chain_set();
-        let expected_cc_sorted = cumm_stats.call_chain_sorted();
+    // });
 
-        part_traces
-            .into_iter()
-            .for_each(|mut tr| {
-                if tr.fix_trace_call_chain(&expected_cc) {
-                    cumm_stats.extend_statistics(&tr.trace, false);
-                } else {
-                    println!("Could not fix trace '{}'. Excluded from the analysis",tr.trace.trace_id);
-                }
-            });
-    }
-    write_stats_to_csv_file(&format!("{folder}cummulative_trace_stats.csv"), &cumm_stats);
-    // let csv_file = ;
-    // println!("Now writing the cummulative trace statistics to {csv_file}");
-    // let stats_csv_str = cumm_stats.to_csv_string();
-    // write_string_to_file(&csv_file, stats_csv_str);
+
+
+    // let (traces, part_traces): (Vec<_>, Vec<_>) = traces.into_iter().partition(|tr| tr.missing_span_ids.len() == 0);    
+    // let mut cumm_stats = StatsMap::new(&caching_processes);
+    // if traces.len() == 0 {
+    //     panic!("No complete traces found. Instead found {} partial traces", part_traces.len());
+    //     //traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false));
+    // }
+
+    // // compute statistics over complete traces only
+    // traces.iter().for_each(|tr| cumm_stats.extend_statistics(tr, true) );
+
+    // if part_traces.len() > 0 {
+
+    //     let expected_cc = cumm_stats.call_chain_set();
+    //     let expected_cc_sorted = cumm_stats.call_chain_sorted();
+
+    //     part_traces
+    //         .into_iter()
+    //         .for_each(|mut tr| {
+    //             if tr.fix_trace_call_chain(&expected_cc) {
+    //                 cumm_stats.extend_statistics(&tr, false);
+    //             } else {
+    //                 println!("Could not fix trace '{}'. Excluded from the analysis",tr.trace_id);
+    //             }
+    //         });
+    // }
+    // write_stats_to_csv_file(&format!("{}cummulative_trace_stats.csv", folder.display()), &cumm_stats);
 }
 
 
 pub fn process_file_or_folder(input_file: &str, caching_processes: Vec<String>)  {
 
-    if input_file.ends_with(".json") {
-        process_file(&mut None, &input_file, caching_processes).unwrap();
+    let (traces, folder) = if input_file.ends_with(".json") {
+        let traces = read_trace_file(&input_file).unwrap();
+        let path = Path::new(input_file);
+        (traces, path.parent().expect("Could not extract parent of input_file"))
     } else if input_file.ends_with("/") || input_file.ends_with("\\") {
-        process_json_in_folder(&input_file, caching_processes);
+        let traces = read_trace_folder(&input_file).unwrap();
+        (traces, Path::new(input_file))
     } else {
         panic!(" Expected file with extention '.json'  or folder that ends with '/' (linux) or '\' (windows)");
-    }
+    };
+
+    process_traces(folder.to_path_buf(), traces, caching_processes);
+
 }
