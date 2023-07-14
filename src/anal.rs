@@ -163,36 +163,50 @@ fn read_trace_folder(folder: &str) -> Result<Vec<Trace>, Box<dyn Error>> {
         Ok(traces)
     }
 
+/// create the statistics over all traces using the caching_processes and write them to the file
+fn create_trace_statistics(traces: &Vec<TraceExt>, csv_file: PathBuf, caching_processes: &Vec<String>)
+{
+    let mut cumm_stats = StatsMap::new(&caching_processes);
+    traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );
+
+    write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats);
+}
+
+
+
+/// create a sub-folder if it does not exist yet and return the path to this sub-folder
+fn extend_create_folder(folder: &PathBuf, subfolder: &str) -> PathBuf {
+    let mut ext_folder = folder.clone();
+    ext_folder.push(subfolder);
+    if !ext_folder.is_dir() {
+        fs::create_dir(ext_folder.clone()).expect("failed to create folder");
+    }
+    ext_folder
+}
 
 /// process a vector of traces.
 fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<String>) {
 
+    folder.canonicalize().expect("Failed to make canonical path. Path probably does not exist!");
+
     // create a traces folder
-    folder.canonicalize().expect("Failed to make canonical path");
     let traces = {
-        let mut trace_folder = folder.clone();
-        trace_folder.push("Traces");
-        if !trace_folder.is_dir() {
-            fs::create_dir(trace_folder.clone()).expect("failed to create folder");
-        }
+        let trace_folder = extend_create_folder(&folder,"Traces");
 
         println!("Now generating output for all traces");
         traces.into_iter()
             .map(|trace| TraceExt::new(trace, &trace_folder, &caching_processes))
             .collect::<Vec<_>>()
     };
-
-
     println!("Now writing all traces");
     traces.iter().for_each(|trace| trace.write_trace());
 
+    let stats_folder = extend_create_folder(&folder, "Stats");
     {
-        let mut cumm_stats = StatsMap::new(&caching_processes);
-        traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );
-
-        let mut csv_file = folder.clone();
+        let mut csv_file = stats_folder.clone();
         csv_file.push("cummulative_trace_stats.csv");
-        write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats);
+        println!("Writing to file: {:?}", csv_file);
+        create_trace_statistics(&traces, csv_file, &caching_processes);
     }
 
     let mut sort_traces = HashMap::new();
@@ -201,7 +215,14 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
         .for_each(|trace| {
             let k = trace.get_key();
             sort_traces.entry(k).or_insert_with(Vec::new).push(trace);
-        })
+        });
+
+    sort_traces.into_iter()
+        .for_each(|(k, traces)| {
+            let mut csv_file = stats_folder.clone();
+            csv_file.push(format!("{k}.csv"));
+            create_trace_statistics(&traces, csv_file, &caching_processes);    
+        });
 
     //     let stats = StatsMap::new(^caching_process);
     //     stats.extend_statistics(trace, false);
