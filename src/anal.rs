@@ -49,14 +49,11 @@ fn read_trace_folder(folder: &str) -> Result<Vec<Trace>, Box<dyn Error>> {
     }
 
 /// create the statistics over all traces using the caching_processes and write them to the file
-fn create_trace_statistics(traces: &Vec<TraceExt>, csv_file: PathBuf, caching_processes: &Vec<String>)
-{
+fn create_trace_statistics(traces: &Vec<&TraceExt>, caching_processes: &Vec<String>) -> StatsMap {
     let mut cumm_stats = StatsMap::new(&caching_processes);
     traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );
-
-    write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats);
+    cumm_stats
 }
-
 
 
 /// create a sub-folder if it does not exist yet and return the path to this sub-folder
@@ -91,7 +88,12 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
         let mut csv_file = stats_folder.clone();
         csv_file.push("cummulative_trace_stats.csv");
         println!("Writing to file: {:?}", csv_file);
-        create_trace_statistics(&traces, csv_file, &caching_processes);
+        let (traces, part_traces): (Vec<_>, Vec<_>) = traces.iter().partition(|tr| tr.trace.missing_span_ids.len() == 0);    
+        let mut cumm_stats = create_trace_statistics(&traces, &caching_processes);
+        // extract call-chains
+        // amend/fix traces
+        traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );
+        write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats);
     }
 
     let mut sort_traces = HashMap::new();
@@ -106,7 +108,9 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
         .for_each(|(k, traces)| {
             let mut csv_file = stats_folder.clone();
             csv_file.push(format!("{k}.csv"));
-            create_trace_statistics(&traces, csv_file, &caching_processes);    
+            let traces = traces.iter().collect(); // switch to references
+            let cumm_stats = create_trace_statistics(&traces, &caching_processes);
+            write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats);
         });
 
     //     let stats = StatsMap::new(^caching_process);

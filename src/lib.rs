@@ -7,12 +7,12 @@ mod trace;
 mod traceext;
 mod datetime;
 mod stats;
+mod callchain;
 mod anal;
 
 use raw_jaeger::{
     JaegerTrace,
     JaegerItem};
-use span::Spans;
 use read_jaeger::read_jaeger_trace_file;
 use trace::Trace;
 

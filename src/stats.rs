@@ -1,30 +1,24 @@
 use std::{collections::{HashMap, HashSet}};
 use crate::{
+    callchain::{Call, CallChain, caching_process_label, call_chain_key},
     Trace,
     span::Spans};
-    use chrono::{
-        DateTime,
-        Utc};
+use chrono::{
+    DateTime,
+    Utc};
 
-
-#[derive(Debug, Default)]
-pub struct Call {
-    pub process: String,
-    pub method: String,
-}
-
-type CallChain = Vec<Call>;
 
 #[derive(Debug, Default)]
 pub struct PathStats {
     pub method: String,
     pub call_chain: CallChain,
+    pub caching_process: String,  // an empty string or a one or more caching-processes between square brackets
+    pub is_leaf: bool,
     pub count: usize,
     pub depth: usize,
     pub duration_micros: Vec<u64>,
-    pub is_leaf: bool,
     pub looped: Vec<String>,
-    pub cache_suffix: String,
+//    pub cache_suffix: String,
 }
 
 impl PathStats {
@@ -33,16 +27,16 @@ impl PathStats {
     }
 
     /// reports the statistics for a single line
-    fn report_stats_line(&self, key: &str, cc_key: &str, n: f64) -> String {
+    fn report_stats_line(&self, process_key: &str, cc_key: &str, n: f64) -> String {
         let min_millis = *self.duration_micros.iter().min().expect("Not an integer") as f64 / 1000 as f64;
         let avg_millis = self.duration_micros.iter().sum::<u64>() as f64 / (1000 as f64 * self.duration_micros.len() as f64);
         let max_millis = *self.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
         let method = &self.method;
-        let cache_suffix = &self.cache_suffix;
+        let caching_process = &self.caching_process;
         let freq = self.count as f64 / n;
         let expect_duration = freq * avg_millis;
         let expect_contribution = if self.is_leaf { expect_duration } else { 0.0 };
-        let line = format!("{key}/{method} {cache_suffix}; {}; {}; {}; {}; {:?}; {}; {}; {}; {}; {}; {}; {}", 
+        let line = format!("{process_key}/{method} {caching_process}; {}; {}; {}; {}; {:?}; {}; {}; {}; {}; {}; {}; {}", 
             self.is_leaf, self.depth, self.count, self.looped.len()> 0, 
             self.looped, cc_key, 
             format_float(min_millis), format_float(avg_millis), format_float(max_millis),
@@ -52,14 +46,18 @@ impl PathStats {
 
 }
 
+
+type CallChainKey = String;
+type ProcessKey = String;
+
 #[derive(Debug, Default)]
 pub struct Stats {
     pub num_received_calls: usize,  // inbound calls to this process
     pub num_outbound_calls: usize,  // outbound calls to other processes
     pub num_unknown_calls: usize,
-    pub method: HashMap<String, usize>,
+    pub method: HashMap<ProcessKey, usize>,
 //    method_cache_suffix: HashMap<String, usize>,  // methods in a cache-chain have a suffix.
-    pub call_chain: HashMap<String, PathStats>,
+    pub call_chain: HashMap<CallChainKey, PathStats>,
 }
 
 impl Stats {
@@ -90,31 +88,6 @@ impl StatsMap {
             caching_process,
             ..Default::default()}
     }
-
-
-    // /// get_cache_suffix determines whether caching processes (services) are in the call-chain and if so returns a suffix to represent it.
-    // ///  Could not be used, using an independent function with the same name instead.
-    // pub fn get_cache_suffix(&self, call_chain: &Vec<(String, String)>) -> String {
-    //     if self.caching_process.len() == 0 {
-    //         return "".to_owned()
-    //     }
-    //     let mut cached = Vec::new();
-
-    //     call_chain.iter()
-    //         .for_each(|(proc, method)| {
-    //             // method does not matter. These things can be cached too.
-    //             // match &method[..] {
-    //             //     "GET" | "POST" | "HEAD" | "QUERY" => (),  // ignore these methods
-    //             //     _ => 
-    //                 match self.caching_process.iter().find(|&s| *s == *proc) {
-    //                     Some(_) => {
-    //                         cached.push(proc.to_owned())},
-    //                     None => ()
-    //                 }
-    //             //}
-    //         });
-    //     format!(" [{}]", cached.join(", "))
-    // }
 
 
     pub fn extend_statistics(&mut self, trace: &Trace, rooted_spans: bool) {
@@ -167,27 +140,15 @@ impl StatsMap {
 
                     // // add a count per method_including-cached
                     let call_chain = get_call_chain(idx, &spans);
-                    let cache_suffix = get_cache_suffix(&self.caching_process, &call_chain);
-                    // {
-                    //     // next line fails as we use self with a self method and closure
-                    //     // let cache_suffix = get_cache_suffix(&self.caching_process, &call_chain);
-                    //     let method_cached = method.to_owned() + &cache_suffix;
-                    //     stat.method_cache_suffix
-                    //         .entry(method_cached.to_owned())
-                    //         .and_modify(|count| *count += 1)
-                    //         .or_insert(1);
-                    // }
+                    let caching_process = caching_process_label(&self.caching_process, &call_chain);
 
                     // add call-chain stats
                     let depth = call_chain.len();
                     let looped = get_duplicates(&call_chain);
                     let duration_micros = span.duration_micros;
                     let is_leaf = span.is_leaf;
-                    let call_chain_str = call_chain
-                        .iter()
-                        .fold(String::new(), |a, b| a + &b.process + "/" + &b.method + " | ");
-                    let leaf_str = if is_leaf { "*L" } else { "" };
-                    let key = call_chain_str + &cache_suffix + &leaf_str;
+
+                    let key = call_chain_key(&call_chain, &caching_process, is_leaf);
                     stat.call_chain
                         .entry(key)
                         .and_modify(|ps| {
@@ -197,8 +158,8 @@ impl StatsMap {
                             let dms: Box<[_]> = Box::new([duration_micros]);
                             let duration_micros = dms.into_vec();
                             let method = method.to_owned();
-                            let cache_suffix = cache_suffix.to_owned();
-                            PathStats{method, call_chain, count: 1, depth, duration_micros, is_leaf, looped, cache_suffix}
+                            let caching_process = caching_process.to_owned();
+                            PathStats{method, call_chain, caching_process, count: 1, depth, duration_micros, is_leaf, looped}
                         });
                     
                 };
@@ -282,24 +243,11 @@ impl StatsMap {
             });
         s.push("\n".to_owned());
 
-        // s.push("Process-method-Cached; Count; Freq".to_owned());
-        // data.iter()
-        //     .for_each(|(k, stat)| {
-        //         stat.method_cache_suffix
-        //             .iter()
-        //             .for_each(|(method_cached, count)| {
-        //                 let freq = *count as f64/ num_traces as f64;
-        //                 let line = format!("{k}/{method_cached}; {count}; {}", format_float(freq));
-        //                 s.push(line);
-        //                     })
-        //     });
-        // s.push("\n".to_owned());
-
-
         s.push("Process; Is_leaf; Depth; Count; Looped; Revisit; Call_chain; min_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;".to_owned());
         let num_traces = num_traces as f64; 
 
         // reorder data based on the full call-chain
+        //  key is the ProcessKey and cc_key is the CallChainKey
         let mut cc_data = data
             .into_iter()
             .flat_map(|(key, stat)| {
@@ -330,46 +278,35 @@ impl StatsMap {
             s.join("\n")
     }
 
-    /// resturns a hashset containing all call-chains (string-keys)
-    pub fn call_chain_set(&self) -> HashSet<String> {
-        let cc_keys: Vec<_> = self.stats.values().flat_map(|st| st.call_chain.keys()).collect();
-        HashSet::from_iter(cc_keys.into_iter().cloned())
+
+    /// 
+    fn call_chain_list(&self) -> Vec<String> {
+        self.stats
+        .values()
+        .flat_map(|st| {
+                st.call_chain
+                    .values()
+                    .map(|path_Stat|{
+                        call_chain_key(&path_Stat.call_chain, &"", path_Stat.is_leaf)
+                    })
+                    .collect::<Vec<_>>()
+        })
+        .collect()
     }
 
     /// resturns a hashset containing all call-chains (string-keys)
-    pub fn call_chain_sorted(&self) -> Vec<&String> {
-        let mut cc_keys: Vec<_> = self.stats.values().flat_map(|st| st.call_chain.keys()).collect();
+    pub fn call_chain_set(&self) -> HashSet<String> {
+        let cc_keys = self.call_chain_list();
+        HashSet::from_iter(cc_keys.into_iter())
+    }
+
+    /// returns a hashset containing all call-chains (string-keys)
+    pub fn call_chain_sorted(&self) -> Vec<String> {
+        let mut cc_keys = self.call_chain_list();
         cc_keys.sort();
         cc_keys
     }
 
-}
-
-
-
-/// get_cache_suffix determines whether cached processes are in the call-chain and if so returns a suffix to represent it.
-pub fn get_cache_suffix(caching_process: &Vec<String>, call_chain: &CallChain) -> String {
-    if caching_process.len() == 0 {
-        return "".to_owned()
-    }
-    let mut cached = Vec::new();
-
-    call_chain.iter()
-    .for_each(|Call{process, method}| {
-        match &method[..] {
-            "GET" | "POST" | "HEAD" | "QUERY" => (),  // ignore these methods as the inbound call has been matched already. (prevent duplicates of cached names)
-            _ => match caching_process.iter().find(|&s| *s == *process) {
-                Some(_) => {
-                    cached.push(process.to_owned())},
-                None => ()
-            }
-        }
-    });
-    if cached.len() > 0 {
-        format!(" [{}]", cached.join(", "))
-    } else {
-        "".to_owned()
-    }
 }
 
 
