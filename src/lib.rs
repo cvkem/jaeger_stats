@@ -4,10 +4,10 @@ mod read_jaeger;
 mod process_map;
 mod span;
 mod trace;
+mod traceext;
 mod datetime;
 mod stats;
 mod anal;
-
 
 use raw_jaeger::{
     JaegerTrace,
