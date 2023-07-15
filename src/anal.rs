@@ -1,4 +1,5 @@
 use crate::{
+    call_chain::cchain_filename,
     read_jaeger_trace_file,StatsMap,
     trace::{
         Trace, 
@@ -110,10 +111,10 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
             csv_file.push(format!("{k}.csv"));
             let (traces, part_traces): (Vec<_>, Vec<_>) = traces.iter().partition(|tr| tr.trace.missing_span_ids.len() == 0);    
             let mut cumm_stats = if traces.len() > 0 {
-                let mut cumm_stats = create_trace_statistics(&traces, &caching_processes);
+                let cumm_stats = create_trace_statistics(&traces, &caching_processes);
                 // extract call-chains
                 let mut cchain_file = cchain_folder.clone();
-                cchain_file.push(format!("{k}.cchain"));
+                cchain_file.push(cchain_filename(&k));
                 let cchain_str = cumm_stats.call_chain_str();
                 write_string_to_file(&cchain_file.to_str().unwrap(), cchain_str).expect("Failed to write cchain-files.");
                 cumm_stats

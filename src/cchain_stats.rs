@@ -1,6 +1,9 @@
-use std::collections::HashMap;
-use crate::{call_chain::{CallChain, call_chain_key},
-    stats::format_float};
+use std::{
+    error::Error,
+    path::Path,
+    collections::HashMap};
+use crate::{call_chain::{Call, CallChain, call_chain_key, LEAF_LABEL},
+    stats::{format_float, chained_stats}};
 
 
 #[derive(Debug, Default)]
@@ -31,6 +34,39 @@ impl CChainStatsKey {
     pub fn call_chain_key(&self) -> String {
         call_chain_key(&self.call_chain, &self.caching_process, self.is_leaf)
     }
+
+    pub fn parse(cchain_str: &str) -> Result<Self, Box<dyn Error>> {
+        let mut parts = cchain_str
+            .split(";")
+            .map(|part| part.trim());
+        let Some(cchain) = parts.next() else {
+            Err("Provided line is empty")?
+        };
+        let caching_process = match parts.next() {
+            Some(s) => s.to_owned(),
+            None => "".to_owned()
+        };
+        let leaf_label = LEAF_LABEL;
+        let is_leaf = match parts.next() {
+            Some(s) => match s {
+                    leaf_label => true,
+                    "" => false,
+                    s => panic!("Expected {LEAF_LABEL} or empty string. Found {s}")
+                },
+            None => false
+        };
+
+        let call_chain = cchain.split("|")
+            .map(|s| {
+                    let Some((proc, meth)) = s.trim().split_once("/") else {
+                        panic!("Failed to unpack '{s}' in a process/operation pair.");
+                    };
+                    Call{process: proc.to_owned(), method: meth.to_owned()}
+                })
+            .collect();
+        Ok(Self{call_chain, caching_process, is_leaf})
+    }
+
 }
 
 

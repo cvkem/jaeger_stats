@@ -1,4 +1,12 @@
-use std::path::Path;
+use std::{  
+    error::Error,
+    fs::File,
+    io::{self, BufRead},
+    path::Path};
+
+use crate::{
+    cchain_stats::CChainStatsKey,
+    cchain_cache::EndPointCChain};
 
 
 
@@ -11,7 +19,18 @@ pub struct Call {
 pub type CallChain = Vec<Call>;
 
 
-/// build a call-chain-key based on parameters
+/// get the file-name for a specific key (excluding path)
+pub fn cchain_filename(key: &str) -> String {
+    format!("{key}.cchain")
+}
+
+const LEAF_LABEL_WITH_SPACE: &str = " *LEAF*";
+
+pub const LEAF_LABEL: &str = "*LEAF*";  // LEAF_LABEL_WITH_SPACE.trim();
+
+
+/// build a call-chain-key based on parameters.
+/// This is a separate function as this allows us to put in another caching_process than contained in the CallChainStatsKey.
 pub fn call_chain_key(call_chain: &CallChain, caching_process: &str, is_leaf: bool) -> String {
     let call_chain_str = call_chain
         .iter()
@@ -19,10 +38,32 @@ pub fn call_chain_key(call_chain: &CallChain, caching_process: &str, is_leaf: bo
             let sep = if a.len() > 0 { " | " } else { "" };
             a + sep + &b.process + "/" + &b.method
         });
-    let leaf_str = if is_leaf { " *LEAF*" } else { "" };
+    let leaf_str = if is_leaf { LEAF_LABEL_WITH_SPACE } else { "" };
     call_chain_str + &"; " + &caching_process + &"; "+ &leaf_str
 }
 
+// The output is wrapped in a Result to allow matching on errors
+// Returns an Iterator to the Reader of the lines of the file.
+fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+where P: AsRef<Path>, {
+    let file = File::open(filename)?;
+    Ok(io::BufReader::new(file).lines())
+}
+
+/// read a cchain-file and parse it
+pub fn read_cchain_file(path: &Path) -> Result<EndPointCChain, Box<dyn Error>> {
+    Ok(read_lines(path)?
+        .filter_map(|l| {
+            let l = l.unwrap();
+            let l = l.trim();
+            if l.len() == 0 || l.starts_with("#") {
+                None
+            } else {
+                Some(CChainStatsKey::parse(&l).unwrap())
+            }
+        })
+    .collect())
+}
 
 /// the label shows whether cached processes are in the call-chain and if so returns a suffix to represent it.
 pub fn caching_process_label(caching_process: &Vec<String>, call_chain: &CallChain) -> String {

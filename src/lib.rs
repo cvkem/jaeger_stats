@@ -9,6 +9,7 @@ mod datetime;
 mod stats;
 mod call_chain;
 mod cchain_stats;
+mod cchain_cache;
 mod anal;
 
 use raw_jaeger::{
@@ -25,3 +26,4 @@ use crate::datetime::{
 use stats::{basic_stats, chained_stats, StatsMap};
 
 pub use anal::process_file_or_folder;
+pub use cchain_cache::CChainEndPointCache;
