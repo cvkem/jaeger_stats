@@ -9,36 +9,56 @@ use chrono::{
 
 
 #[derive(Debug, Default)]
-pub struct PathStats {
-    pub method: String,
-    pub call_chain: CallChain,
-    pub caching_process: String,  // an empty string or a one or more caching-processes between square brackets
-    pub is_leaf: bool,
+pub struct PathStatsValue {
+//    pub method: String,
     pub count: usize,
     pub depth: usize,
     pub duration_micros: Vec<u64>,
     pub looped: Vec<String>,
-//    pub cache_suffix: String,
 }
 
-impl PathStats {
+
+/// 
+#[derive(Hash, Eq, PartialEq, Debug, PartialOrd, Ord)]
+pub struct PathStatsKey {
+    pub call_chain: CallChain,
+    pub caching_process: String,  // an empty string or a one or more caching-processes between square brackets
+    pub is_leaf: bool,
+}
+
+impl PathStatsKey {
+
+    /// get the method of the current call (last call in the call-chain)
+    pub fn get_method(&self) -> &str {
+        &self.call_chain[self.call_chain.len()-1].method
+    }
+
+    pub fn call_chain_key(&self) -> String {
+        call_chain_key(&self.call_chain, &self.caching_process, self.is_leaf)
+    }
+}
+
+/// the information is distributed over the key and the value (no duplication in value)
+type PathStats = HashMap<PathStatsKey, PathStatsValue>;
+
+impl PathStatsValue {
     pub fn new() -> Self {
         Default::default()
     }
 
     /// reports the statistics for a single line
-    fn report_stats_line(&self, process_key: &str, cc_key: &str, n: f64) -> String {
+    fn report_stats_line(&self, process_key: &str, ps_key: &PathStatsKey, n: f64) -> String {
         let min_millis = *self.duration_micros.iter().min().expect("Not an integer") as f64 / 1000 as f64;
         let avg_millis = self.duration_micros.iter().sum::<u64>() as f64 / (1000 as f64 * self.duration_micros.len() as f64);
         let max_millis = *self.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
-        let method = &self.method;
-        let caching_process = &self.caching_process;
+        let method = ps_key.get_method();
+        let caching_process = &ps_key.caching_process;
         let freq = self.count as f64 / n;
         let expect_duration = freq * avg_millis;
-        let expect_contribution = if self.is_leaf { expect_duration } else { 0.0 };
+        let expect_contribution = if ps_key.is_leaf { expect_duration } else { 0.0 };
         let line = format!("{process_key}/{method} {caching_process}; {}; {}; {}; {}; {:?}; {}; {}; {}; {}; {}; {}; {}", 
-            self.is_leaf, self.depth, self.count, self.looped.len()> 0, 
-            self.looped, cc_key, 
+            ps_key.is_leaf, self.depth, self.count, self.looped.len()> 0, 
+            self.looped, ps_key.call_chain_key(), 
             format_float(min_millis), format_float(avg_millis), format_float(max_millis),
             format_float(freq), format_float(expect_duration), format_float(expect_contribution));
         line
@@ -47,7 +67,6 @@ impl PathStats {
 }
 
 
-type CallChainKey = String;
 type ProcessKey = String;
 
 #[derive(Debug, Default)]
@@ -57,7 +76,7 @@ pub struct Stats {
     pub num_unknown_calls: usize,
     pub method: HashMap<ProcessKey, usize>,
 //    method_cache_suffix: HashMap<String, usize>,  // methods in a cache-chain have a suffix.
-    pub call_chain: HashMap<CallChainKey, PathStats>,
+    pub call_chain: PathStats,
 }
 
 impl Stats {
@@ -148,18 +167,16 @@ impl StatsMap {
                     let duration_micros = span.duration_micros;
                     let is_leaf = span.is_leaf;
 
-                    let key = call_chain_key(&call_chain, &caching_process, is_leaf);
+                    let ps_key = PathStatsKey{call_chain, caching_process, is_leaf};
                     stat.call_chain
-                        .entry(key)
+                        .entry(ps_key)
                         .and_modify(|ps| {
                             ps.count += 1;
                             ps.duration_micros.push(duration_micros);})
                         .or_insert_with(|| {
                             let dms: Box<[_]> = Box::new([duration_micros]);
                             let duration_micros = dms.into_vec();
-                            let method = method.to_owned();
-                            let caching_process = caching_process.to_owned();
-                            PathStats{method, call_chain, caching_process, count: 1, depth, duration_micros, is_leaf, looped}
+                            PathStatsValue{count: 1, depth, duration_micros, looped}
                         });
                     
                 };
@@ -247,21 +264,21 @@ impl StatsMap {
         let num_traces = num_traces as f64; 
 
         // reorder data based on the full call-chain
-        //  key is the ProcessKey and cc_key is the CallChainKey
-        let mut cc_data = data
+        //  key is the ProcessKey and cc_key is the PathStatsKey (a.o. call-chain)
+        let mut ps_data = data
             .into_iter()
             .flat_map(|(key, stat)| {
                 stat.call_chain
                     .iter()
-                    .map(|(cc_key, path_stats)| {
-                        (cc_key, key.to_owned(), path_stats)
+                    .map(|(ps_key, path_stats)| {
+                        (ps_key, key.to_owned(), path_stats)
                     })
             })
             .collect::<Vec<_>>();
-        cc_data.sort_by(|a,b| { a.0.cmp(&b.0)});
-        cc_data
+        ps_data.sort_by(|a,b| { a.0.cmp(&b.0)});
+        ps_data
             .into_iter()
-            .for_each(|(cc_key, key, path_stats)| s.push(path_stats.report_stats_line(&key, cc_key, num_traces)));
+            .for_each(|(ps_key, key, path_stats)| s.push(path_stats.report_stats_line(&key, ps_key, num_traces)));
         // data.iter()
         //     .for_each(|(k, stat)| {
         //         //re-sort on a different key
@@ -285,9 +302,9 @@ impl StatsMap {
         .values()
         .flat_map(|st| {
                 st.call_chain
-                    .values()
-                    .map(|path_Stat|{
-                        call_chain_key(&path_Stat.call_chain, &"", path_Stat.is_leaf)
+                    .keys()
+                    .map(|ps_key|{
+                        call_chain_key(&ps_key.call_chain, &"", ps_key.is_leaf)
                     })
                     .collect::<Vec<_>>()
         })

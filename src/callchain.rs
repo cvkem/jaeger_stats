@@ -1,6 +1,6 @@
 
 
-#[derive(Debug, Default)]
+#[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Debug, Default)]
 pub struct Call {
     pub process: String,
     pub method: String,
@@ -13,8 +13,11 @@ pub type CallChain = Vec<Call>;
 pub fn call_chain_key(call_chain: &CallChain, caching_process: &str, is_leaf: bool) -> String {
     let call_chain_str = call_chain
         .iter()
-        .fold(String::new(), |a, b| a + &b.process + "/" + &b.method + " | ");
-    let leaf_str = if is_leaf { "*L" } else { "" };
+        .fold(String::new(), |a, b| {
+            let sep = if a.len() > 0 { " | " } else { "" };
+            a + sep + &b.process + "/" + &b.method
+        });
+    let leaf_str = if is_leaf { " *LEAF*" } else { "" };
     call_chain_str + &caching_process + &leaf_str
 }
 
