@@ -1,10 +1,7 @@
 use jaeger_stats::process_file_or_folder;
 use std::{
     env,
-    error::Error,
-    fs::{self, File},
-    path::Path,
-    io::Write};
+    path::Path};
 
 
 //const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadTest-prodinz-prodGroep/28adb54b8868eef9.json";

@@ -1,70 +1,13 @@
 use std::collections::{HashMap, HashSet};
 use crate::{
-    callchain::{Call, CallChain, caching_process_label, call_chain_key},
+    cchain_stats::{CChainStatsKey, CChainStatsValue, CChainStats},
+    call_chain::{Call, CallChain, caching_process_label, call_chain_key},
     Trace,
     span::Spans};
 use chrono::{
     DateTime,
     Utc};
 
-
-#[derive(Debug, Default)]
-pub struct PathStatsValue {
-//    pub method: String,
-    pub count: usize,
-    pub depth: usize,
-    pub duration_micros: Vec<u64>,
-    pub looped: Vec<String>,
-}
-
-
-/// 
-#[derive(Hash, Eq, PartialEq, Debug, PartialOrd, Ord)]
-pub struct PathStatsKey {
-    pub call_chain: CallChain,
-    pub caching_process: String,  // an empty string or a one or more caching-processes between square brackets
-    pub is_leaf: bool,
-}
-
-impl PathStatsKey {
-
-    /// get the method of the current call (last call in the call-chain)
-    pub fn get_method(&self) -> &str {
-        &self.call_chain[self.call_chain.len()-1].method
-    }
-
-    pub fn call_chain_key(&self) -> String {
-        call_chain_key(&self.call_chain, &self.caching_process, self.is_leaf)
-    }
-}
-
-/// the information is distributed over the key and the value (no duplication in value)
-type PathStats = HashMap<PathStatsKey, PathStatsValue>;
-
-impl PathStatsValue {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    /// reports the statistics for a single line
-    fn report_stats_line(&self, process_key: &str, ps_key: &PathStatsKey, n: f64) -> String {
-        let min_millis = *self.duration_micros.iter().min().expect("Not an integer") as f64 / 1000 as f64;
-        let avg_millis = self.duration_micros.iter().sum::<u64>() as f64 / (1000 as f64 * self.duration_micros.len() as f64);
-        let max_millis = *self.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
-        let method = ps_key.get_method();
-        let caching_process = &ps_key.caching_process;
-        let freq = self.count as f64 / n;
-        let expect_duration = freq * avg_millis;
-        let expect_contribution = if ps_key.is_leaf { expect_duration } else { 0.0 };
-        let line = format!("{process_key}/{method} {caching_process}; {}; {}; {}; {}; {:?}; {}; {}; {}; {}; {}; {}; {}", 
-            ps_key.is_leaf, self.depth, self.count, self.looped.len()> 0, 
-            self.looped, ps_key.call_chain_key(), 
-            format_float(min_millis), format_float(avg_millis), format_float(max_millis),
-            format_float(freq), format_float(expect_duration), format_float(expect_contribution));
-        line
-    }
-
-}
 
 
 type ProcessKey = String;
@@ -76,7 +19,7 @@ pub struct Stats {
     pub num_unknown_calls: usize,
     pub method: HashMap<ProcessKey, usize>,
 //    method_cache_suffix: HashMap<String, usize>,  // methods in a cache-chain have a suffix.
-    pub call_chain: PathStats,
+    pub call_chain: CChainStats,
 }
 
 impl Stats {
@@ -176,7 +119,7 @@ impl StatsMap {
                     let duration_micros = span.duration_micros;
                     let is_leaf = span.is_leaf;
 
-                    let ps_key = PathStatsKey{call_chain, caching_process, is_leaf};
+                    let ps_key = CChainStatsKey{call_chain, caching_process, is_leaf};
                     stat.call_chain
                         .entry(ps_key)
                         .and_modify(|ps| {
@@ -185,7 +128,7 @@ impl StatsMap {
                         .or_insert_with(|| {
                             let dms: Box<[_]> = Box::new([duration_micros]);
                             let duration_micros = dms.into_vec();
-                            PathStatsValue{count: 1, depth, duration_micros, looped}
+                            CChainStatsValue{count: 1, depth, duration_micros, looped}
                         });
                     
                 };
@@ -279,15 +222,15 @@ impl StatsMap {
             .flat_map(|(key, stat)| {
                 stat.call_chain
                     .iter()
-                    .map(|(ps_key, path_stats)| {
-                        (ps_key, key.to_owned(), path_stats)
+                    .map(|(ps_key, cchain_stats)| {
+                        (ps_key, key.to_owned(), cchain_stats)
                     })
             })
             .collect::<Vec<_>>();
         ps_data.sort_by(|a,b| { a.0.cmp(&b.0)});
         ps_data
             .into_iter()
-            .for_each(|(ps_key, key, path_stats)| s.push(path_stats.report_stats_line(&key, ps_key, num_traces)));
+            .for_each(|(ps_key, key, cchain_stats)| s.push(cchain_stats.report_stats_line(&key, ps_key, num_traces)));
             s.push("\n".to_owned());
     
             s.join("\n")
@@ -345,7 +288,7 @@ const NL_FORMAT: bool = true;
 
 
 /// format_float will format will replace the floating point '.' with a comma ',' such that the excel is readable in the Dutch Excel :-(
-fn format_float(val: f64) -> String {
+pub fn format_float(val: f64) -> String {
     let s = format!("{}", val);
     if NL_FORMAT {
         s.replace('.',",")

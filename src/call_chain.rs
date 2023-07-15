@@ -1,3 +1,5 @@
+use std::path::Path;
+
 
 
 #[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Debug, Default)]
@@ -18,7 +20,7 @@ pub fn call_chain_key(call_chain: &CallChain, caching_process: &str, is_leaf: bo
             a + sep + &b.process + "/" + &b.method
         });
     let leaf_str = if is_leaf { " *LEAF*" } else { "" };
-    call_chain_str + &caching_process + &leaf_str
+    call_chain_str + &"; " + &caching_process + &"; "+ &leaf_str
 }
 
 

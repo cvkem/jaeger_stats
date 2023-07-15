@@ -7,7 +7,8 @@ mod trace;
 mod traceext;
 mod datetime;
 mod stats;
-mod callchain;
+mod call_chain;
+mod cchain_stats;
 mod anal;
 
 use raw_jaeger::{
