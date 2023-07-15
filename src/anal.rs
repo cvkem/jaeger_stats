@@ -5,7 +5,7 @@ use crate::{
         extract_traces},
     traceext::{
         TraceExt,
-        write_stats_to_csv_file}};
+        write_stats_to_csv_file, write_string_to_file}};
 use std::{
     collections::HashMap,
     error::Error,
@@ -84,15 +84,13 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
     traces.iter().for_each(|trace| trace.write_trace());
 
     let stats_folder = extend_create_folder(&folder, "Stats");
+    let cchain_folder = extend_create_folder(&folder, "CallChain");
     {
         let mut csv_file = stats_folder.clone();
         csv_file.push("cummulative_trace_stats.csv");
         println!("Writing to file: {:?}", csv_file);
-        let (traces, part_traces): (Vec<_>, Vec<_>) = traces.iter().partition(|tr| tr.trace.missing_span_ids.len() == 0);    
-        let mut cumm_stats = create_trace_statistics(&traces, &caching_processes);
-        // extract call-chains
-        // amend/fix traces
-        traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );
+        let traces = traces.iter().collect(); // switch to references
+        let cumm_stats = create_trace_statistics(&traces, &caching_processes);
         write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats);
     }
 
@@ -103,40 +101,28 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
             let k = trace.get_key();
             sort_traces.entry(k).or_insert_with(Vec::new).push(trace);
         });
-
+    // extract call_chain and statistics per call-chain
     sort_traces.into_iter()
         .for_each(|(k, traces)| {
             let mut csv_file = stats_folder.clone();
             csv_file.push(format!("{k}.csv"));
-            let traces = traces.iter().collect(); // switch to references
-            let cumm_stats = create_trace_statistics(&traces, &caching_processes);
+            let (traces, part_traces): (Vec<_>, Vec<_>) = traces.iter().partition(|tr| tr.trace.missing_span_ids.len() == 0);    
+            let mut cumm_stats = if traces.len() > 0 {
+                let mut cumm_stats = create_trace_statistics(&traces, &caching_processes);
+                // extract call-chains
+                let mut cchain_file = cchain_folder.clone();
+                cchain_file.push(format!("{k}.cchain"));
+                let cchain_str = cumm_stats.call_chain_str();
+                write_string_to_file(&cchain_file.to_str().unwrap(), cchain_str).expect("Failed to write cchain-files.");
+                cumm_stats
+            } else {
+                println!("No complete traces, so we can not produce the call-chain file");
+                StatsMap::new(&caching_processes)
+            };
+            // amend/fix traces
+            part_traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );
             write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats);
         });
-
-    //     let stats = StatsMap::new(^caching_process);
-    //     stats.extend_statistics(trace, false);
-    //     let filename = trace.txt_file_name(&mut folder);
-    //     let trace_str = format!("{:#?}", trace);
-    //     write_string_to_file(&filename, trace_str);
-
-    // });
-
-
-
-    // let (traces, part_traces): (Vec<_>, Vec<_>) = traces.into_iter().partition(|tr| tr.missing_span_ids.len() == 0);    
-    // let mut cumm_stats = StatsMap::new(&caching_processes);
-    // if traces.len() == 0 {
-    //     panic!("No complete traces found. Instead found {} partial traces", part_traces.len());
-    //     //traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false));
-    // }
-
-    // // compute statistics over complete traces only
-    // traces.iter().for_each(|tr| cumm_stats.extend_statistics(tr, true) );
-
-    // if part_traces.len() > 0 {
-
-    //     let expected_cc = cumm_stats.call_chain_set();
-    //     let expected_cc_sorted = cumm_stats.call_chain_sorted();
 
     //     part_traces
     //         .into_iter()

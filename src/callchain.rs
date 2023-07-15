@@ -22,7 +22,7 @@ pub fn call_chain_key(call_chain: &CallChain, caching_process: &str, is_leaf: bo
 }
 
 
-/// get_cache_suffix determines whether cached processes are in the call-chain and if so returns a suffix to represent it.
+/// the label shows whether cached processes are in the call-chain and if so returns a suffix to represent it.
 pub fn caching_process_label(caching_process: &Vec<String>, call_chain: &CallChain) -> String {
     if caching_process.len() == 0 {
         return "".to_owned()

@@ -1,4 +1,4 @@
-use std::{collections::{HashMap, HashSet}};
+use std::collections::{HashMap, HashSet};
 use crate::{
     callchain::{Call, CallChain, caching_process_label, call_chain_key},
     Trace,
@@ -108,6 +108,19 @@ impl StatsMap {
             ..Default::default()}
     }
 
+    /// Calcullate the contents of the call-chain-file
+    pub fn call_chain_str(&self) -> String {
+        let tmp: Vec<_> = self.stats
+            .values()
+            .flat_map(|stat| {
+                stat.call_chain
+                    .keys()
+                    .map(|psk| psk.call_chain_key())
+            })
+//            .intersperse("\n")
+            .collect();
+        tmp.join("\n")
+    }
 
     pub fn extend_statistics(&mut self, trace: &Trace, rooted_spans: bool) {
 
@@ -146,10 +159,6 @@ impl StatsMap {
                         },
                         None => stat.num_unknown_calls += 1
                     }
-                    // match &method[..] {
-                    //     "GET" | "POST" | "HEAD" | "QUERY" => stat.num_outbound_calls += 1,
-                    //     _ => stat.num_received_calls += 1 
-                    // }
 
                     // add a count per method
                     stat.method
@@ -264,7 +273,7 @@ impl StatsMap {
         let num_traces = num_traces as f64; 
 
         // reorder data based on the full call-chain
-        //  key is the ProcessKey and cc_key is the PathStatsKey (a.o. call-chain)
+        //  key is the ProcessKey and ps_key is the PathStatsKey (a.o. call-chain)
         let mut ps_data = data
             .into_iter()
             .flat_map(|(key, stat)| {
@@ -279,24 +288,13 @@ impl StatsMap {
         ps_data
             .into_iter()
             .for_each(|(ps_key, key, path_stats)| s.push(path_stats.report_stats_line(&key, ps_key, num_traces)));
-        // data.iter()
-        //     .for_each(|(k, stat)| {
-        //         //re-sort on a different key
-        //         let mut     cc: Vec<_> = stat.call_chain
-        //             .iter()
-        //             .collect();
-        //         cc.sort_by(|a,b| {
-        //             a.1.method.to_lowercase().cmp(&b.1.method.to_lowercase())});
-        //         cc.iter()
-        //             .for_each(|(cc_key, path_stats)| s.push(path_stats.report_stats_line(k, cc_key, num_traces)))
-        //     });
             s.push("\n".to_owned());
     
             s.join("\n")
     }
 
 
-    /// 
+    /// internal function 
     fn call_chain_list(&self) -> Vec<String> {
         self.stats
         .values()
