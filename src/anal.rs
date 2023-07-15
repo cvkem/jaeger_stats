@@ -9,20 +9,22 @@ use crate::{
 use std::{
     collections::HashMap,
     error::Error,
+    ffi::OsStr,
     fs,
     path::{Path, PathBuf}};
 
 /// read a single file and return a set of traces, or an error
-fn read_trace_file(input_file: &str) -> Result<Vec<Trace>, Box<dyn Error>> {
+fn read_trace_file(input_file: &Path) -> Result<Vec<Trace>, Box<dyn Error>> {
 
-    println!("Reading a Jaeger-trace from '{input_file}'");
+    println!("Reading a Jaeger-trace from '{}'", input_file.display());
     let jt = read_jaeger_trace_file(input_file).unwrap();
 
     Ok(extract_traces(&jt))
 }
 
 
-fn read_trace_folder(folder: &str) -> Result<Vec<Trace>, Box<dyn Error>> {
+
+fn read_trace_folder(folder: &Path) -> Result<Vec<Trace>, Box<dyn Error>> {
     let traces = fs::read_dir(folder)
         .expect("Failed to read directory")
         .into_iter()
@@ -34,7 +36,7 @@ fn read_trace_folder(folder: &str) -> Result<Vec<Trace>, Box<dyn Error>> {
             if metadata.is_file() {
                 let file_name = path.to_str().expect("path-string").to_owned();
                 if file_name.ends_with(".json") {
-                    read_trace_file(&file_name).ok()
+                    read_trace_file(&path).ok()
                 } else {
                     println!("Ignore '{file_name} as it does not have suffix '.json'.");
                     None // Not .json file
@@ -137,16 +139,15 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
     // write_stats_to_csv_file(&format!("{}cummulative_trace_stats.csv", folder.display()), &cumm_stats);
 }
 
-
-pub fn process_file_or_folder(input_file: &str, caching_processes: Vec<String>)  {
-
-    let (traces, folder) = if input_file.ends_with(".json") {
-        let traces = read_trace_file(&input_file).unwrap();
-        let path = Path::new(input_file);
+    
+pub fn process_file_or_folder(path: &Path, caching_processes: Vec<String>)  {
+    let (traces, folder) = if path.is_file() && path.extension() == Some(OsStr::new("json")) {
+        let traces = read_trace_file(&path).unwrap();
+        //let path = Path::new(input_file);
         (traces, path.parent().expect("Could not extract parent of input_file"))
-    } else if input_file.ends_with("/") || input_file.ends_with("\\") {
-        let traces = read_trace_folder(&input_file).unwrap();
-        (traces, Path::new(input_file))
+    } else if path.is_dir() {
+        let traces = read_trace_folder(&path).unwrap();
+        (traces, path)
     } else {
         panic!(" Expected file with extention '.json'  or folder that ends with '/' (linux) or '\' (windows)");
     };

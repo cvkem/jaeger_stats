@@ -28,5 +28,5 @@ fn main()  {
         CACHING_PROCESS.to_owned()
     }.split(",").map(|s| s.to_owned()).collect();
 
-    process_file_or_folder(&input_file, caching_processes);
+    process_file_or_folder(&Path::new(&input_file), caching_processes);
 }
