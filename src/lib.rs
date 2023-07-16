@@ -10,7 +10,7 @@ mod stats;
 mod call_chain;
 mod cchain_stats;
 mod cchain_cache;
-mod anal;
+mod analyse;
 
 use raw_jaeger::{
     JaegerTrace,
@@ -23,7 +23,7 @@ use crate::datetime::{
     datetime_millis_str,
     datetime_micros_str,
 };
-use stats::{basic_stats, chained_stats, StatsMap};
+use stats::{basic_stats, chained_stats, StatsRec};
 
-pub use anal::process_file_or_folder;
+pub use analyse::process_file_or_folder;
 pub use cchain_cache::CChainEndPointCache;

@@ -19,6 +19,7 @@ pub struct CChainEndPointCache {
 impl CChainEndPointCache {
 
     pub fn new(path: PathBuf) -> Self {
+        let path = path.canonicalize().unwrap(); 
         Self{path, cache: HashMap::new()}
     }
 

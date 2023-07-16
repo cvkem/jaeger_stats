@@ -9,6 +9,8 @@ use std::{
 //const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadTest-prodinz-prodGroep/";
 const INPUT_FILE: &str = "/home/ceesvk/jaeger/prodinzicht-23-juni-14u/";
 const CACHING_PROCESS: &str = "bspc-productinzicht,bspc-partijrolbeheer";
+//const CALL_CHAIN_REPO: &str = "~/CallChain/";
+const CALL_CHAIN_REPO: &str = "/home/ceesvk/CallChain/";
 
 fn main()  {
     let args: Vec<String> = env::args().collect();
@@ -25,5 +27,5 @@ fn main()  {
         CACHING_PROCESS.to_owned()
     }.split(",").map(|s| s.to_owned()).collect();
 
-    process_file_or_folder(&Path::new(&input_file), caching_processes);
+    process_file_or_folder(&Path::new(&input_file), caching_processes, &Path::new(&CALL_CHAIN_REPO));
 }

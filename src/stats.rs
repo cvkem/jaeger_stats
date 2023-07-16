@@ -30,7 +30,7 @@ impl Stats {
 
 
 #[derive(Debug, Default)]
-pub struct StatsMap {
+pub struct StatsRec {
     pub trace_id: Vec<String>,
     pub root_call: Vec<String>,
     pub num_spans: Vec<usize>,
@@ -42,11 +42,11 @@ pub struct StatsMap {
     pub stats: HashMap<String, Stats>
 }
 
-impl StatsMap {
+impl StatsRec {
 
     pub fn new(caching_process: &Vec<String>) -> Self {
         let caching_process = caching_process.clone();
-        StatsMap{
+        StatsRec{
             caching_process,
             ..Default::default()}
     }
@@ -67,7 +67,7 @@ impl StatsMap {
 
     pub fn extend_statistics(&mut self, trace: &Trace, rooted_spans: bool) {
 
-        println!("Extend statistics for trace: {}", trace.trace_id);
+        //println!("Extend statistics for trace: {}", trace.trace_id);
 
         let spans = &trace.spans;
 
@@ -118,6 +118,7 @@ impl StatsMap {
                     let looped = get_duplicates(&call_chain);
                     let duration_micros = span.duration_micros;
                     let is_leaf = span.is_leaf;
+                    let rooted = span.rooted;
 
                     let ps_key = CChainStatsKey{call_chain, caching_process, is_leaf};
                     stat.call_chain
@@ -128,7 +129,7 @@ impl StatsMap {
                         .or_insert_with(|| {
                             let dms: Box<[_]> = Box::new([duration_micros]);
                             let duration_micros = dms.into_vec();
-                            CChainStatsValue{count: 1, depth, duration_micros, looped}
+                            CChainStatsValue{count: 1, depth, duration_micros, looped, rooted}
                         });
                     
                 };

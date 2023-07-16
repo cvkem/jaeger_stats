@@ -111,7 +111,7 @@ fn mark_leafs(spans: &mut Spans) {
 
 /// add_parents adds parent-links to spans based on the information in Vec<JaegerSpan>
 fn add_parents(spans: &mut Spans, jspans: &Vec<JaegerSpan>) -> Vec<String> {
-    let mut iter = iter::zip(spans, jspans);
+    let iter = iter::zip(spans, jspans);
 
     let mut missing_span_ids = Vec::new();
 

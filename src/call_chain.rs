@@ -10,7 +10,7 @@ use crate::{
 
 
 
-#[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Debug, Default)]
+#[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Debug, Default, Clone)]
 pub struct Call {
     pub process: String,
     pub method: String,

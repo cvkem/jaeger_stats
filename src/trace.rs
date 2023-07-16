@@ -30,7 +30,7 @@ impl Trace {
     pub fn new(jt: &JaegerTrace, idx: usize) -> Self {
         let item = &jt.data[idx];
         let trace_id = item.traceID.to_owned(); 
-        println!(" Found trace: {}", item.traceID);
+        //println!(" Found trace: {}", item.traceID);
     
         let (spans, missing_span_ids) = build_spans(item);
     
