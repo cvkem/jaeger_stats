@@ -18,10 +18,11 @@ use raw_jaeger::{
 use read_jaeger::read_jaeger_trace_file;
 use trace::Trace;
 
-use crate::datetime::{
+pub use crate::datetime::{
     micros_to_datetime,
     datetime_millis_str,
     datetime_micros_str,
+    set_tz_offset_minutes,
 };
 use stats::{basic_stats, chained_stats, StatsRec};
 

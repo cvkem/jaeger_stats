@@ -18,7 +18,7 @@ use std::{
 /// read a single file and return a set of traces, or an error
 fn read_trace_file(input_file: &Path) -> Result<Vec<Trace>, Box<dyn Error>> {
 
-    //println!("Reading a Jaeger-trace from '{}'", input_file.display());
+    println!("Reading a Jaeger-trace from '{}'", input_file.display());
     let jt = read_jaeger_trace_file(input_file).unwrap();
 
     Ok(extract_traces(&jt))
@@ -134,7 +134,7 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
                 let trace_len = traces.len();
                 let tot_trace = trace_len + part_trace_len;
                 let part_frac = 100.0 * part_trace_len as f64 / tot_trace as f64;
-                println!("For root '{k}'  found {part_trace_len} incomplete out of {tot_trace} traces ({part_frac:.1}%)");
+                println!("For end-point (root) '{k}' found {part_trace_len} incomplete out of {tot_trace} traces ({part_frac:.1}%)");
             }
 
             // amend/fix traces
@@ -144,20 +144,8 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
             write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats);
         });
 
-        println!("Processed {total_traces} traces covering {num_end_points} end-points  (on average {:.1} per end-point).", total_traces as f64/num_end_points as f64);
+        println!("\nProcessed {total_traces} traces covering {num_end_points} end-points  (on average {:.1} per end-point).", total_traces as f64/num_end_points as f64);
         println!("Observed {incomplete_traces}, which is {:.1}% of the total", 100.0 * incomplete_traces as f64/total_traces as f64);
-
-    //     part_traces
-    //         .into_iter()
-    //         .for_each(|mut tr| {
-    //             if tr.fix_trace_call_chain(&expected_cc) {
-    //                 cumm_stats.extend_statistics(&tr, false);
-    //             } else {
-    //                 println!("Could not fix trace '{}'. Excluded from the analysis",tr.trace_id);
-    //             }
-    //         });
-    // }
-    // write_stats_to_csv_file(&format!("{}cummulative_trace_stats.csv", folder.display()), &cumm_stats);
 }
 
     

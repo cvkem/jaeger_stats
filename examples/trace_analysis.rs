@@ -1,4 +1,6 @@
-use jaeger_stats::process_file_or_folder;
+use jaeger_stats::{
+    process_file_or_folder,
+    set_tz_offset_minutes};
 use std::{
     env,
     path::Path};
@@ -7,10 +9,13 @@ use std::{
 //const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadTest-prodinz-prodGroep/28adb54b8868eef9.json";
 
 //const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadTest-prodinz-prodGroep/";
-const INPUT_FILE: &str = "/home/ceesvk/jaeger/prodinzicht-23-juni-14u/";
+//const INPUT_FILE: &str = "/home/ceesvk/jaeger/prodinzicht-23-juni-14u/";
+const INPUT_FILE: &str = "/home/ceesvk/jaeger/prodInzBatch/";
 const CACHING_PROCESS: &str = "bspc-productinzicht,bspc-partijrolbeheer";
 //const CALL_CHAIN_REPO: &str = "~/CallChain/";
 const CALL_CHAIN_REPO: &str = "/home/ceesvk/CallChain/";
+
+const TIME_ZONE_MINUTES: u64 = 2*60;
 
 fn main()  {
     let args: Vec<String> = env::args().collect();
@@ -27,5 +32,6 @@ fn main()  {
         CACHING_PROCESS.to_owned()
     }.split(",").map(|s| s.to_owned()).collect();
 
+    set_tz_offset_minutes(TIME_ZONE_MINUTES);
     process_file_or_folder(&Path::new(&input_file), caching_processes, &Path::new(&CALL_CHAIN_REPO));
 }
