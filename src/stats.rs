@@ -1,4 +1,6 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Mutex};
 use crate::{
     cchain_stats::{CChainStatsKey, CChainStatsValue, CChainStats},
     call_chain::{Call, CallChain, caching_process_label, call_chain_key},
@@ -285,13 +287,18 @@ pub fn basic_stats(trace: &Trace) -> HashMap<String, u32> {
 }
 
 
-const NL_FORMAT: bool = true;
+static COMMA_FLOAT: Mutex<bool> = Mutex::new(false);
+
+pub fn set_comma_float(val: bool) {
+    let mut  guard = COMMA_FLOAT.lock().unwrap();
+    *guard = val
+}
 
 
 /// format_float will format will replace the floating point '.' with a comma ',' such that the excel is readable in the Dutch Excel :-(
 pub fn format_float(val: f64) -> String {
     let s = format!("{}", val);
-    if NL_FORMAT {
+    if *COMMA_FLOAT.lock().unwrap() {
         s.replace('.',",")
     } else {
         s

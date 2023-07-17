@@ -1,9 +1,32 @@
 use jaeger_stats::{
     process_file_or_folder,
+    set_comma_float,
     set_tz_offset_minutes};
 use std::{
     env,
     path::Path};
+use clap;
+use clap::Parser;
+
+
+/// Parsing and analyzing Jaeger traces
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    // file of folder to parse
+    input: String,
+
+    #[arg(short, long)]
+    caching_process: Option<String>,
+
+    #[arg(short, long, default_value_t = 2*60)]
+    timezone_minutes: u64,
+
+    #[arg(short='f', long, default_value_t = true)]
+    comma_float: bool,
+}
+
 
 
 //const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadTest-prodinz-prodGroep/28adb54b8868eef9.json";
@@ -18,20 +41,23 @@ const CALL_CHAIN_REPO: &str = "/home/ceesvk/CallChain/";
 const TIME_ZONE_MINUTES: u64 = 2*60;
 
 fn main()  {
-    let args: Vec<String> = env::args().collect();
+ 
+    let args = Args::parse();
 
-    let input_file = if args.len() > 1 {
-        args[1].to_owned()
+    println!("Args = {args:?}");
+
+ //   let args: Vec<String> = env::args().collect();
+
+
+    let caching_processes = if let Some(cache_proc) = args.caching_process {
+        cache_proc.split(",").map(|s| s.to_owned()).collect()
     } else {
-        INPUT_FILE.to_owned()
+        Vec::new()
     };
 
-    let caching_processes = if args.len() > 2 {
-        args[2].clone()
-    } else {
-        CACHING_PROCESS.to_owned()
-    }.split(",").map(|s| s.to_owned()).collect();
+    set_tz_offset_minutes(args.timezone_minutes);
 
-    set_tz_offset_minutes(TIME_ZONE_MINUTES);
-    process_file_or_folder(&Path::new(&input_file), caching_processes, &Path::new(&CALL_CHAIN_REPO));
+    set_comma_float(args.comma_float);
+
+    process_file_or_folder(&Path::new(&args.input), caching_processes, &Path::new(&CALL_CHAIN_REPO));
 }

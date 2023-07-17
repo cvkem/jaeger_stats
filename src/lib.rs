@@ -24,7 +24,7 @@ pub use crate::datetime::{
     datetime_micros_str,
     set_tz_offset_minutes,
 };
-use stats::{basic_stats, chained_stats, StatsRec};
+pub use stats::{chained_stats, StatsRec, set_comma_float};
 
 pub use analyse::process_file_or_folder;
 pub use cchain_cache::CChainEndPointCache;
