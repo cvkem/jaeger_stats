@@ -1,19 +1,60 @@
 use std::{
     error::Error,
-    fs::File,
-    io::BufReader,
+    fs::{self, File},
+    io::{
+        BufReader,
+        Read},
     path::Path
 };
 
 use crate::raw_jaeger::JaegerTrace;
+use encoding_rs::Encoding;
 
-pub fn read_jaeger_trace_file<P: AsRef<Path>>(path: P) -> Result<JaegerTrace, Box<dyn Error>> {
-    // Open the file in read-only mode with buffer.
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
 
-    // Read the JSON contents of the file as an instance of `User`.
-    let jt = serde_json::from_reader(reader)?;
+/// check the Byte Order Mark (= BOM) of the file to find the current encoding.
+fn check_bom<P: AsRef<Path>>(path: P) -> Result<&'static Encoding, Box<dyn Error>> {
+    let mut f = File::open(path)?;
+//    let mut reader = BufReader::new(f);
+    let mut buffer = [0_u8;5];
+
+    match f.read(&mut buffer) {
+        Ok(num) if num >= 3 => (),
+        Ok(num)  =>  println!("Did read only {num} bytes. At least 3 needed"),
+        Err(err) =>  println!("Failed reading BOM with error {err}")
+    }
+    if let Some((enc, size)) = Encoding::for_bom(&buffer) {
+        Ok(enc)
+    } else {
+        Err("Could not find the BOM with the text encoding")?
+    }
+}
+
+pub fn read_jaeger_trace_file<P: AsRef<Path> + Copy>(path: P) -> Result<JaegerTrace, Box<dyn Error>> {
+
+    let jt = match check_bom(path) {
+        Ok(encoding) => {
+            // an encoding is found, so we need to decode and to drop the BOM as serde can not handle it.
+            // beware, this consumes quite a bit of memory as the data is present 3 times (raw, decoded and as json)
+            let file_size = fs::metadata(path)?.len();
+            println!("Found encoding {encoding:?} for a file with size: {file_size}");
+            let f = File::open(path)?;
+            let mut reader = BufReader::new(f);
+            let mut buffer = Vec::with_capacity(file_size.try_into()?);
+            reader.read_to_end(&mut buffer)?;
+            let (s, malformed) = encoding.decode_with_bom_removal(buffer.as_slice());
+            serde_json::from_str(&s)?
+        },
+        Err(err) => {
+            println!("Failed to find encoding: {err:?}");
+            // Open the file in read-only mode with buffer.
+            let file = File::open(path)?;
+            let reader = BufReader::new(file);
+
+            println!("About to read trace via serde");
+            // Read the JSON contents of the file as an instance of `User`.
+            serde_json::from_reader(reader)?
+        }
+    };
 
     // Return the `Jaeger_trace`.
     Ok(jt)
