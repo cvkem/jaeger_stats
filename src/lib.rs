@@ -11,6 +11,7 @@ mod call_chain;
 mod cchain_stats;
 mod cchain_cache;
 mod analyse;
+mod report;
 
 use raw_jaeger::{
     JaegerTrace,
@@ -25,6 +26,6 @@ pub use crate::datetime::{
     set_tz_offset_minutes,
 };
 pub use stats::{chained_stats, StatsRec, set_comma_float};
-
 pub use analyse::process_file_or_folder;
 pub use cchain_cache::CChainEndPointCache;
+pub use report::{report, write_report};

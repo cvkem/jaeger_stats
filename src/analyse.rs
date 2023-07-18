@@ -2,6 +2,7 @@ use crate::{
     call_chain::cchain_filename,
     cchain_cache::CChainEndPointCache,
     read_jaeger_trace_file,StatsRec,
+    report::{report, Chapter},
     trace::{
         Trace, 
         extract_traces},
@@ -150,7 +151,7 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
 
     
 pub fn process_file_or_folder(path: &Path, caching_processes: Vec<String>, cc_path: &Path)  {
-    println!("Reading all traces from folder: {}", path.display());
+    report(Chapter::Summary, format!("Reading all traces from folder: {}", path.display()));
     let (traces, folder) = if path.is_file() && path.extension() == Some(OsStr::new("json")) {
         let traces = read_trace_file(&path).unwrap();
         //let path = Path::new(input_file);
@@ -159,7 +160,7 @@ pub fn process_file_or_folder(path: &Path, caching_processes: Vec<String>, cc_pa
         let traces = read_trace_folder(&path).unwrap();
         (traces, path)
     } else {
-        panic!(" Expected file with extention '.json'  or folder that ends with '/' (linux) or '\' (windows)");
+        panic!(" Expected file with extention '.json' or folder. Received: '{}' ", path.display());
     };
     println!("....Read {} traces", traces.len());
 

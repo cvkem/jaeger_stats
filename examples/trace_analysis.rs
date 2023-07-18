@@ -1,7 +1,8 @@
 use jaeger_stats::{
     process_file_or_folder,
     set_comma_float,
-    set_tz_offset_minutes};
+    set_tz_offset_minutes,
+    write_report};
 use std::{
     env,
     path::Path};
@@ -17,8 +18,11 @@ struct Args {
     // file of folder to parse
     input: String,
 
-    #[arg(short, long)]
+    #[arg(long)]
     caching_process: Option<String>,
+
+    #[arg(short, long, default_value_t = String::from("/home/ceesvk/CallChain/"))]
+    call_chain_folder: String,
 
     #[arg(short, long, default_value_t = 2*60)]
     timezone_minutes: u64,
@@ -33,21 +37,16 @@ struct Args {
 
 //const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadTest-prodinz-prodGroep/";
 //const INPUT_FILE: &str = "/home/ceesvk/jaeger/prodinzicht-23-juni-14u/";
-const INPUT_FILE: &str = "/home/ceesvk/jaeger/prodInzBatch/";
-const CACHING_PROCESS: &str = "bspc-productinzicht,bspc-partijrolbeheer";
-//const CALL_CHAIN_REPO: &str = "~/CallChain/";
-const CALL_CHAIN_REPO: &str = "/home/ceesvk/CallChain/";
+// const INPUT_FILE: &str = "/home/ceesvk/jaeger/prodInzBatch/";
+// const CACHING_PROCESS: &str = "bspc-productinzicht,bspc-partijrolbeheer";
+// //const CALL_CHAIN_REPO: &str = "~/CallChain/";
+// const CALL_CHAIN_REPO: &str = "/home/ceesvk/CallChain/";
 
-const TIME_ZONE_MINUTES: u64 = 2*60;
+// const TIME_ZONE_MINUTES: u64 = 2*60;
 
 fn main()  {
  
     let args = Args::parse();
-
-    println!("Args = {args:?}");
-
- //   let args: Vec<String> = env::args().collect();
-
 
     let caching_processes = if let Some(cache_proc) = args.caching_process {
         cache_proc.split(",").map(|s| s.to_owned()).collect()
@@ -59,5 +58,6 @@ fn main()  {
 
     set_comma_float(args.comma_float);
 
-    process_file_or_folder(&Path::new(&args.input), caching_processes, &Path::new(&CALL_CHAIN_REPO));
+    process_file_or_folder(&Path::new(&args.input), caching_processes, &Path::new(&args.call_chain_folder));
+    write_report("report.txt");
 }
