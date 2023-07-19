@@ -215,6 +215,8 @@ impl StatsRec {
             });
         s.push("\n".to_owned());
 
+        s.push("#The unique key of the next table is 'Call_Chain' (which includes full path and the leaf-marker). So the Process column contains duplicates".to_owned());
+
         s.push("Process; Is_leaf; Depth; Count; Looped; Revisit; Call_chain; min_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;".to_owned());
         let num_traces = num_traces as f64; 
 

@@ -1,5 +1,6 @@
 use std::{
     error::Error,
+    fmt::Debug,
     fs::{self, File},
     io::{
         BufReader,
@@ -7,7 +8,9 @@ use std::{
     path::Path
 };
 
-use crate::raw_jaeger::JaegerTrace;
+use crate::{
+    report::{report, Chapter},
+    raw_jaeger::JaegerTrace};
 use encoding_rs::Encoding;
 
 
@@ -25,18 +28,18 @@ fn check_bom<P: AsRef<Path>>(path: P) -> Result<&'static Encoding, Box<dyn Error
     if let Some((enc, size)) = Encoding::for_bom(&buffer) {
         Ok(enc)
     } else {
-        Err("Could not find the BOM with the text encoding")?
+        Err("No BOM")?
     }
 }
 
-pub fn read_jaeger_trace_file<P: AsRef<Path> + Copy>(path: P) -> Result<JaegerTrace, Box<dyn Error>> {
+pub fn read_jaeger_trace_file<P: AsRef<Path> + Copy + Debug>(path: P) -> Result<JaegerTrace, Box<dyn Error>> {
 
     let jt = match check_bom(path) {
         Ok(encoding) => {
             // an encoding is found, so we need to decode and to drop the BOM as serde can not handle it.
             // beware, this consumes quite a bit of memory as the data is present 3 times (raw, decoded and as json)
             let file_size = fs::metadata(path)?.len();
-            println!("Found encoding {encoding:?} for a file with size: {file_size}");
+            report(Chapter::Details ,format!("File {path:?}: Found encoding {encoding:?} for a file with size: {file_size}"));
             let f = File::open(path)?;
             let mut reader = BufReader::new(f);
             let mut buffer = Vec::with_capacity(file_size.try_into()?);
@@ -45,7 +48,7 @@ pub fn read_jaeger_trace_file<P: AsRef<Path> + Copy>(path: P) -> Result<JaegerTr
             serde_json::from_str(&s)?
         },
         Err(err) => {
-            println!("Failed to find encoding: {err:?}");
+            report(Chapter::Details, format!("File {path:?}: Failed to find encoding: {err:?}"));
             // Open the file in read-only mode with buffer.
             let file = File::open(path)?;
             let reader = BufReader::new(file);

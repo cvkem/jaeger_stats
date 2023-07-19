@@ -58,6 +58,7 @@ fn main()  {
 
     set_comma_float(args.comma_float);
 
-    process_file_or_folder(&Path::new(&args.input), caching_processes, &Path::new(&args.call_chain_folder));
-    write_report("report.txt");
+    let mut path = process_file_or_folder(&Path::new(&args.input), caching_processes, &Path::new(&args.call_chain_folder));
+    path.push("report.txt");
+    write_report(path.to_str().unwrap());
 }

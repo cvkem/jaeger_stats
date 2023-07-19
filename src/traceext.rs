@@ -1,5 +1,6 @@
 use crate::{
     cchain_cache::CChainEndPointCache,
+    report::{Chapter, report},
     StatsRec,
     trace::Trace, cchain_stats::CChainStatsValue};
 use std::{
@@ -55,15 +56,8 @@ impl TraceExt {
     }
 
 
-    // fn write_stats_csv(&self) {
-    //     write_string_to_file(&format!("{}.csv", self.base_name), self.stats.to_csv_string()).expect("Failed to write statistics to file");    
-    // }
-
-    // fn fix_tcc_find_matches() {
-
-    // }
-
     pub fn fix_cchains(&mut self, cchain_cache: &mut CChainEndPointCache) {
+        report(Chapter::Details, format!("Trace: {} does have {}", self.base_name, self.trace.missing_span_ids.len()));
         if let Some(expect_cc) = cchain_cache.get_cchain_key(&self.get_endpoint_key()) {
             let new_stats: HashMap<_, _> = mem::take(&mut self.stats_rec.stats)
             .into_iter()
@@ -74,7 +68,7 @@ impl TraceExt {
 
                 if non_rooted.len() > 0 {
                     let depths: Vec<_> = non_rooted.iter().map(|(k,v)| v.depth).collect();
-                    println!("For key '{key}'  found {} non-rooted out of {} traces at depths {depths:?}", non_rooted.len(), non_rooted.len() + rooted.len());
+                    report(Chapter::Details, format!("For key '{key}'  found {} non-rooted out of {} traces at depths {depths:?}", non_rooted.len(), non_rooted.len() + rooted.len()));
                 }
 
                 // fix the non-rooted paths by a rewrite of the key

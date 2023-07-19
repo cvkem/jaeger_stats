@@ -145,12 +145,13 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
             write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats);
         });
 
-        println!("\nProcessed {total_traces} traces covering {num_end_points} end-points  (on average {:.1} per end-point).", total_traces as f64/num_end_points as f64);
-        println!("Observed {incomplete_traces}, which is {:.1}% of the total", 100.0 * incomplete_traces as f64/total_traces as f64);
+        println!();
+        report(Chapter::Summary, format!("Processed {total_traces} traces covering {num_end_points} end-points  (on average {:.1} per end-point).", total_traces as f64/num_end_points as f64));
+        report(Chapter::Summary, format!("Observed {incomplete_traces}, which is {:.1}% of the total", 100.0 * incomplete_traces as f64/total_traces as f64));
 }
 
     
-pub fn process_file_or_folder(path: &Path, caching_processes: Vec<String>, cc_path: &Path)  {
+pub fn process_file_or_folder(path: &Path, caching_processes: Vec<String>, cc_path: &Path) -> PathBuf {
     report(Chapter::Summary, format!("Reading all traces from folder: {}", path.display()));
     let (traces, folder) = if path.is_file() && path.extension() == Some(OsStr::new("json")) {
         let traces = read_trace_file(&path).unwrap();
@@ -162,9 +163,10 @@ pub fn process_file_or_folder(path: &Path, caching_processes: Vec<String>, cc_pa
     } else {
         panic!(" Expected file with extention '.json' or folder. Received: '{}' ", path.display());
     };
-    println!("....Read {} traces", traces.len());
+    report(Chapter::Summary, format!("Read {} traces in total", traces.len()));
 
     let mut cache = CChainEndPointCache::new(cc_path.to_path_buf());
-    process_traces(folder.to_path_buf(), traces, caching_processes, &mut cache);
-
+    let folder = folder.to_path_buf();
+    process_traces(folder.clone(), traces, caching_processes, &mut cache);
+    folder
 }

@@ -39,7 +39,7 @@ pub fn call_chain_key(call_chain: &CallChain, caching_process: &str, is_leaf: bo
             a + sep + &b.process + "/" + &b.method
         });
     let leaf_str = if is_leaf { LEAF_LABEL_WITH_SPACE } else { "" };
-    call_chain_str + &"; " + &caching_process + &"; "+ &leaf_str
+    call_chain_str + &"& " + &caching_process + &"& "+ &leaf_str    // using '&' as separator as a ';' separator would break the CSV-files
 }
 
 // The output is wrapped in a Result to allow matching on errors

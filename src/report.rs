@@ -6,6 +6,7 @@ use std::{
 
 
 #[derive(Copy, Clone)]
+#[repr(u8)]
 pub enum Chapter {
     Summary = 0,
     Ingest,
@@ -17,6 +18,7 @@ static CHAPTER_NAMES: [&str;4] = ["Summary", "Ingest", "Analysis", "Details"];
 
 impl Chapter {
     fn discriminant(&self) -> usize {
+        // first map to u8, otherwise you might get high or negative numbers
         unsafe { *(self as *const Self as *const u8) as usize }
     }
 }
