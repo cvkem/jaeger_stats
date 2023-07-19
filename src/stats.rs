@@ -3,6 +3,7 @@ use std::{
     sync::Mutex};
 use crate::{
     cchain_stats::{CChainStatsKey, CChainStatsValue, CChainStats},
+    method_stats::{MethodStats, MethodStatsValue},
     call_chain::{Call, CallChain, caching_process_label, call_chain_key},
     Trace,
     span::Spans};
@@ -19,7 +20,7 @@ pub struct Stats {
     pub num_received_calls: usize,  // inbound calls to this process
     pub num_outbound_calls: usize,  // outbound calls to other processes
     pub num_unknown_calls: usize,
-    pub method: HashMap<ProcessKey, usize>,
+    pub method: MethodStats,
 //    method_cache_suffix: HashMap<String, usize>,  // methods in a cache-chain have a suffix.
     pub call_chain: CChainStats,
 }
@@ -105,11 +106,14 @@ impl StatsRec {
                         None => stat.num_unknown_calls += 1
                     }
 
+                    let duration_micros = span.duration_micros;
                     // add a count per method
                     stat.method
                         .entry(method.to_owned())
-                        .and_modify(|count| *count += 1)
-                        .or_insert(1);
+                        .and_modify(|meth_stat| {
+                            meth_stat.count += 1;
+                            meth_stat.duration_micros.push(duration_micros);})
+                        .or_insert(MethodStatsValue::new(duration_micros));
 
                     // // add a count per method_including-cached
                     let call_chain = get_call_chain(idx, &spans);
@@ -118,7 +122,6 @@ impl StatsRec {
                     // add call-chain stats
                     let depth = call_chain.len();
                     let looped = get_duplicates(&call_chain);
-                    let duration_micros = span.duration_micros;
                     let is_leaf = span.is_leaf;
                     let rooted = span.rooted;
 
@@ -202,14 +205,14 @@ impl StatsRec {
             });
         s.push("\n".to_owned());
 
-        s.push("Process-method; Count; Freq".to_owned());
+        let num_traces = num_traces as f64; 
+        s.push("Process; Count; min_millis; avg_millis; max_millis; freq.; expect_duration;".to_owned());
         data.iter()
             .for_each(|(k, stat)| {
                 stat.method
                     .iter()
-                    .for_each(|(method, count)| {
-                        let freq = *count as f64/ num_traces as f64;
-                        let line = format!("{k}/{method}; {count}; {}", format_float(freq));
+                    .for_each(|(method, meth_stat)| {
+                        let line = meth_stat.report_stats_line(k, method, num_traces);
                         s.push(line);
                             })
             });
@@ -218,7 +221,6 @@ impl StatsRec {
         s.push("#The unique key of the next table is 'Call_Chain' (which includes full path and the leaf-marker). So the Process column contains duplicates".to_owned());
 
         s.push("Process; Is_leaf; Depth; Count; Looped; Revisit; Call_chain; min_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;".to_owned());
-        let num_traces = num_traces as f64; 
 
         // reorder data based on the full call-chain
         //  key is the ProcessKey and ps_key is the PathStatsKey (a.o. call-chain)
