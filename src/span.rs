@@ -114,7 +114,7 @@ fn replace_regex(s: String, re: &Regex, replacement: &str) -> (String, bool) {
 
 fn get_operation_unified(js_operation: &str) -> (String, Option<String>) {
     lazy_static! {
-        static ref RE_REK: Regex = Regex::new(r"/\d{6,11}/").unwrap();  // actually 9-10
+        static ref RE_REK: Regex = Regex::new(r"/\d{6,10}").unwrap();  // typically 8-10
         // should be a T{0,1}  however, that is inconsistency in source
         static ref RE_TIME: Regex = Regex::new(r"(?x)
             /T\d{4}-\d{2}-\d{2}_
@@ -134,11 +134,12 @@ fn get_operation_unified(js_operation: &str) -> (String, Option<String>) {
 
     
     let oper_name = js_operation.to_owned();
-    let (oper_name, repl_rek) = replace_regex(oper_name, &RE_REK, "/{ACCOUNT}/");
     let (oper_name, repl_time) = replace_regex(oper_name, &RE_TIME, "/{TIME}");
     let (oper_name, repl_spaarpot) = replace_regex(oper_name, &RE_SPAAR, "/{SPAAR}");
     let (oper_name, repl_base) = replace_regex(oper_name, &RE_BASE, "/{BASE}/");
     let (oper_name, repl_jaarrek) = replace_regex(oper_name, &RE_JAARREK, "-{JAARREK}");
+    // do next one last, as it might conflict with others.
+    let (oper_name, repl_rek) = replace_regex(oper_name, &RE_REK, "/{ACCOUNT}");
 
     if repl_rek || repl_time || repl_spaarpot || repl_base || repl_jaarrek {
         (oper_name, Some(js_operation.to_owned()))
