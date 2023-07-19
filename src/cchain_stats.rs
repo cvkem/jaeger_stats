@@ -4,7 +4,8 @@ use std::{
     path::Path,
     collections::HashMap};
 use crate::{call_chain::{Call, CallChain, call_chain_key, LEAF_LABEL},
-    stats::{format_float, chained_stats}};
+    stats::{format_float, chained_stats}, 
+    report::{Chapter, report}};
 
 
 #[derive(Debug, Default)]
@@ -96,7 +97,7 @@ impl CChainStatsKey {
                     }
                 },
                 n => {
-                    println!("NO FIX: {n} matches found.");
+                    report(Chapter::Details, format!("NO FIX: {n} matches found for non-rooted '{:?}'", self.call_chain));
                     None
                 }
             };

@@ -72,12 +72,18 @@ impl TraceExt {
                 }
 
                 // fix the non-rooted paths by a rewrite of the key
+                let mut fix_failed = 0;
                 non_rooted.iter_mut()
                     .for_each(|(k, v)| {
                         if k.remap_callchain(expect_cc) {
                             assert!(!v.rooted);  // should be false
                             v.rooted = true;
+                        } else {
+                            fix_failed += 1;
                         }});
+                if fix_failed > 0 {
+                    report(Chapter::Details, format!("Failed to fix {fix_failed} chains out of {} non-rooted chains.", non_rooted.len()));
+                }
 
                 let new_call_chain = rooted.into_iter()
                     .chain(non_rooted.into_iter())

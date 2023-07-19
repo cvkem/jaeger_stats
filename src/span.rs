@@ -10,6 +10,8 @@ use crate::{
 use chrono::{
     DateTime,
     Utc};
+use lazy_static::lazy_static;
+use regex::Regex;
 
 
 #[derive(Debug, Default)]
@@ -24,6 +26,7 @@ pub struct Span{
     pub rooted: bool,  // does this span trace back to the real root? (default = false)
     pub span_id: String,
     pub operation_name: String,
+    pub full_operation_name: Option<String>,
     pub start_dt: DateTime<Utc>,
     pub duration_micros: u64,
 //    pub process: &'a Process,
@@ -49,11 +52,12 @@ impl Span {
     fn new(js: &JaegerSpan, proc_map: &ProcessMap) -> Self {
         let parent = None;
         let span_id = js.spanID.to_owned();
-        let operation_name = js.operationName.to_owned();
+        let (operation_name, full_operation_name) = get_operation_unified(&js.operationName);
+
         let start_dt = micros_to_datetime(js.startTime);
         let duration_micros = js.duration;
         let process = proc_map.get(&js.processID).map(|proc| proc.to_owned());
-        let mut span = Span { parent, span_id, operation_name, start_dt, duration_micros, process,
+        let mut span = Span { parent, span_id, operation_name, full_operation_name, start_dt, duration_micros, process,
             ..Default::default()};
         span.add_tags(&js.tags);
         span
@@ -92,6 +96,57 @@ impl Span {
     //     self.get_process_str().to_owned()
     // }
 
+}
+
+
+
+fn replace_regex(s: String, re: &Regex, replacement: &str) -> (String, bool) {
+    let tmp = s.clone(); // TODO: this clone is usedless (just to satisfy the borrow-checker)
+    let found: Vec<&str> = re.find_iter(&tmp).map(|m| m.as_str()).collect();  
+    if found.len() > 0 {
+        let s = found.into_iter()
+            .fold(s, |s, obs| s.replace(obs, replacement));
+        (s, true)
+    } else {
+        (s, false)
+    }
+}
+
+fn get_operation_unified(js_operation: &str) -> (String, Option<String>) {
+    lazy_static! {
+        static ref RE_REK: Regex = Regex::new(r"/\d{6,11}/").unwrap();  // actually 9-10
+        // should be a T{0,1}  however, that is inconsistency in source
+        static ref RE_TIME: Regex = Regex::new(r"(?x)
+            /T\d{4}-\d{2}-\d{2}_
+            \d{5,10}").unwrap();
+        static ref RE_SPAAR: Regex = Regex::new(r"(?x)
+            /[0-9a-f]{8}-
+            [0-9a-f]{4}-
+            [0-9a-f]{4}-
+            [0-9a-f]{4}-
+            [0-99-f]{12}").unwrap();
+        static ref RE_BASE: Regex = Regex::new(r"(?x)
+            /[a-zA-Z0-9\-_]{39,40}
+            ={0,1}
+            /").unwrap();
+        static ref RE_JAARREK: Regex = Regex::new(r"\-\d{5,9}\-20\d{2}").unwrap();
+    }
+
+    
+    let oper_name = js_operation.to_owned();
+    let (oper_name, repl_rek) = replace_regex(oper_name, &RE_REK, "/{ACCOUNT}/");
+    let (oper_name, repl_time) = replace_regex(oper_name, &RE_TIME, "/{TIME}");
+    let (oper_name, repl_spaarpot) = replace_regex(oper_name, &RE_SPAAR, "/{SPAAR}");
+    let (oper_name, repl_base) = replace_regex(oper_name, &RE_BASE, "/{BASE}/");
+    let (oper_name, repl_jaarrek) = replace_regex(oper_name, &RE_JAARREK, "-{JAARREK}");
+
+    if repl_rek || repl_time || repl_spaarpot || repl_base || repl_jaarrek {
+        (oper_name, Some(js_operation.to_owned()))
+    } else {
+        (oper_name, None)
+    }
+
+   
 }
 
 

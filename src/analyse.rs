@@ -178,7 +178,7 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
         });
 
         println!();
-        report(Chapter::Summary, format!("Processed {total_traces} traces covering {num_end_points} end-points  (on average {:.1} per end-point).", total_traces as f64/num_end_points as f64));
+        report(Chapter::Summary, format!("Processed {total_traces} traces covering {num_end_points} end-points  (on average {:.1} trace per end-point).", total_traces as f64/num_end_points as f64));
         report(Chapter::Summary, format!("Observed {incomplete_traces}, which is {:.1}% of the total", 100.0 * incomplete_traces as f64/total_traces as f64));
 }
 

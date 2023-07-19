@@ -35,7 +35,6 @@ pub fn report(chapter: Chapter, msg: String) {
     {
         let mut guard = STORE.lock().unwrap();
         while guard.len() <= idx {
-            println!("Pushed one more as length {}  < {idx}", guard.len());
             guard.push(Vec::new());
         }
         guard[idx].push(msg);
