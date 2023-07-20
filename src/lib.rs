@@ -13,6 +13,7 @@ mod stats;
 mod method_stats;
 mod analyse;
 mod report;
+mod hash;
 
 use raw_jaeger::{
     JaegerTrace,
@@ -30,3 +31,4 @@ pub use stats::{chained_stats, StatsRec, set_comma_float};
 pub use analyse::process_file_or_folder;
 pub use cchain_cache::CChainEndPointCache;
 pub use report::{report, write_report};
+pub use hash::{hash, string_hash};

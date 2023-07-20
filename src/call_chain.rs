@@ -16,6 +16,14 @@ pub struct Call {
     pub method: String,
 }
 
+impl Call {
+    pub fn get_process_method(&self) -> String {
+        let process = &self.process;
+        let method = &self.method;
+        format!("{process}/{method}")
+    }
+}
+
 pub type CallChain = Vec<Call>;
 
 

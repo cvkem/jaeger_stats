@@ -42,7 +42,7 @@ pub struct StatsRec {
     pub duration_micros: Vec<u64>,
     pub time_to_respond_micros: Vec<u64>,
     pub caching_process: Vec<String>,
-    pub stats: HashMap<String, Stats>
+    pub stats: HashMap<String, Stats>  // hashmap base on the leaf process (as that is the initial level of reporting)
 }
 
 impl StatsRec {
@@ -54,7 +54,7 @@ impl StatsRec {
             ..Default::default()}
     }
 
-    /// Calcullate the contents of the call-chain-file
+    /// Calculate the contents of the call-chain-file
     pub fn call_chain_str(&self) -> String {
         let tmp: Vec<_> = self.stats
             .values()
@@ -220,7 +220,7 @@ impl StatsRec {
 
         s.push("#The unique key of the next table is 'Call_Chain' (which includes full path and the leaf-marker). So the Process column contains duplicates".to_owned());
 
-        s.push("Process; Is_leaf; Depth; Count; Looped; Revisit; Call_chain; min_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;".to_owned());
+        s.push("Call_chain; cc_hash; End_point; Process/operation; Is_leaf; Depth; Count; Looped; Revisit; Caching_proces; min_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;".to_owned());
 
         // reorder data based on the full call-chain
         //  key is the ProcessKey and ps_key is the PathStatsKey (a.o. call-chain)

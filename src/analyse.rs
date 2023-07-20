@@ -167,7 +167,7 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
                 let trace_len = traces.len();
                 let tot_trace = trace_len + part_trace_len;
                 let part_frac = 100.0 * part_trace_len as f64 / tot_trace as f64;
-                println!("For end-point (root) '{k}' found {part_trace_len} incomplete out of {tot_trace} traces ({part_frac:.1}%)");
+                report(Chapter::Analysis, format!("For end-point (root) '{k}' found {part_trace_len} incomplete out of {tot_trace} traces ({part_frac:.1}%)"));
             }
 
             // amend/fix traces

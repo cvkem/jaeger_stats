@@ -45,7 +45,7 @@ impl TraceExt {
 
     /// Translate the root_call of this trace in an endpoint-key that can be used as base for the file-name to store the call-chains for this endpoint
     pub fn get_endpoint_key(&self) -> String {
-        self.trace.root_call.replace(&['/','\\',';'][..], "_")
+        self.trace.root_call.replace(&['/','\\',';',':'][..], "_")
     }
 
     pub fn write_trace(&self) {
