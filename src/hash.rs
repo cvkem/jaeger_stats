@@ -1,9 +1,9 @@
 use std::hash::{Hash, Hasher};
 
-use fasthash::{city, CityHasher};
+use fxhash::FxHasher;
 
 pub fn hash<T: Hash>(t: &T) -> u64 {
-    let mut s: CityHasher = Default::default();
+    let mut s: FxHasher = Default::default();
     t.hash(&mut s);
     s.finish()
 }
