@@ -50,7 +50,26 @@ The statistics files, such as 'Stats/cummulative_trace_stats.csv' use the ';' as
 4. Call-chain: List statistics for the full-call chain and also shows whether a service is a leaf-node or contains further downstream calls. Please note that the execution-time of a service/operation includes the execution time of all downstream calls performed. However, if you all heavy lifting is done in leaf-nodes the sum of the average time of the Leaf-nodes should come close to the average trace duration.
 
 ## Correction of call-chains
+Jaeger tracing spans are send over UDP, which is a protocol that does not give strong delivery guarantees. So occasionally a span might be lost which results in an incomplete trace, and thus broken call-chains in the trace. This is where the weird '-c' option pops up as seen in the previous example: `trace_analysis  <data_folder>  -c <data_folder>/CallChain`. Here the CallChain produced by the first run of the tool (only showing complete chains) will be used in the subsequent runs of the tool to correct incomplete call-chains for missing spans. However, the preferred option is to set up a separate folder to contain the call-chains, refer the '--call-chain-folder' or '-c' to this folder.
 
+The call-chain corrections are only applied:
+* to traces that do miss some of the spans.
+* to call-chains that do not exist in the call-chain-file for the end-point of the current trace
+* in case the call-chain can be matched exactly on the tail of 1 other call-chain. So if more than one match exist the correction will not be applied.
+
+
+## Correction of operations (path parameters)
+Path parameters might wreak havoc on our analysis as path parameters make each URL unique while we are looking for averages over a number of invocations Therefore the system does correction on the URL's to extract the parameters, for example an order number and replaces that with a symbolic value '{ORDER}'. However, these replacements are currently hardcoded and we need to take some steps to make this configurable.
+
+## Extracting Jaeger JSON data
+In the Jaeger web-based front end it is possible to make a selection of traces. After these traces have been returned you have two methods to extract the JSON files:
+1. Click on a single trace and in the right-top of the page select Download as 'JSON'.
+2. Open the developers tools and navigate to the network-tab. Now fire the request:
+   1. Navigate to the response page. It might take some time to download the data and to transform and pretty-print the JSON. Select the full response and copy-paste it to a file
+   2. Right-click on the response and select 'Copy Curl-URL' (for your system). Paste this URL in a console and redirect the output to a file.
+Using method 2.1 you can get approximately 1000 traces in a batch. The batch will be available as pretty-printed JSON in UTF8.
+
+Method 2.2 allows you to select 1000 traces or more. However, the output a single line of raw json (not-pretty-printed) and the file is encoded in UTF-16-LE with BOM. The 'trace_analysis' can handle these files and will do an in-memory conversion to UTF8 before processing. Beware that this is a non-streaming conversion so the full file is in memory twice.
 
 
 ## How to build trace_analysis
