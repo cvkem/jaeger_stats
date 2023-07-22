@@ -108,7 +108,7 @@ impl StatsRec {
 
                     let duration_micros = span.duration_micros;
                     // add a count per method
-                    stat.method
+                    stat.method.0
                         .entry(method.to_owned())
                         .and_modify(|meth_stat| {
                             meth_stat.count += 1;
@@ -209,7 +209,7 @@ impl StatsRec {
         s.push("Process; Count; min_millis; avg_millis; max_millis; freq.; expect_duration;".to_owned());
         data.iter()
             .for_each(|(k, stat)| {
-                stat.method
+                stat.method.0
                     .iter()
                     .for_each(|(method, meth_stat)| {
                         let line = meth_stat.report_stats_line(k, method, num_traces);
@@ -405,3 +405,5 @@ fn root_call_list(trace_ids: &Vec<String>, root_calls: &Vec<String>) -> String {
     labelled
         .join(",   ")
 }
+
+

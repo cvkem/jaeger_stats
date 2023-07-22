@@ -8,12 +8,14 @@ use crate::{
         extract_traces},
     traceext::{
         TraceExt,
-        write_stats_to_csv_file, write_string_to_file}};
+        write_stats_to_csv_file, write_string_to_file}, 
+        stats_json::StatsRecJson};
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
     ffi::OsStr,
     fs,
+    io::BufWriter,
     path::{Path, PathBuf}};
 
 /// read a single file and return a set of traces, or an error
@@ -99,6 +101,18 @@ fn deduplicate(traces: Vec<TraceExt>) -> Vec<TraceExt> {
     traces
 }
 
+fn dump_as_json(file_name: &str, stats: StatsRec) {
+    let file_name = file_name.replace(".csv", ".json");
+    let f = fs::File::create(file_name).expect("Failed to open file");
+    let mut writer = BufWriter::new(f);
+    let srj: StatsRecJson = stats.into();
+    // on a large dataset to_write pretty takes 15.5 seconds while to_write takes 12 sec (so 30% extra for pretty printing to make it human readible)
+    match serde_json::to_writer_pretty(writer, &srj) {
+        Ok(()) => (),
+        Err(err) => panic!("failled to Serialize !! {err:?}")
+    }
+
+}
 
 /// process a vector of traces
 fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<String>, cchain_cache: &mut CChainEndPointCache) {
@@ -130,6 +144,7 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
         let traces = traces.iter().collect(); // switch to references
         let cumm_stats = create_trace_statistics(&traces, &caching_processes);
         write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats);
+        dump_as_json(&csv_file.to_str().unwrap(), cumm_stats);
     }
 
     let mut sort_traces = HashMap::new();
@@ -175,6 +190,7 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
             // and add these to the statistics
             part_traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );
             write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats);
+            dump_as_json(&csv_file.to_str().unwrap(), cumm_stats);
         });
 
         println!();

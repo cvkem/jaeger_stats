@@ -2,7 +2,7 @@ use crate::{
     cchain_cache::CChainEndPointCache,
     report::{Chapter, report},
     StatsRec,
-    trace::Trace, cchain_stats::CChainStatsValue};
+    trace::Trace, cchain_stats::CChainStatsValue, cchain_stats::CChainStats};
 use std::{
     error::Error,
     fs::File,
@@ -23,9 +23,11 @@ pub fn write_string_to_file(filename: &str, data: String) -> Result<(), Box<dyn 
 pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec) {
     //println!("Now writing the trace statistics to {csv_file}");
     let stats_csv_str = stats.to_csv_string();
-    write_string_to_file(&csv_file, stats_csv_str);    
-
+    if let Err(err) = write_string_to_file(&csv_file, stats_csv_str) {
+        panic!("Writing to file '{csv_file}' failed with error: {err:?}");
+    };    
 }
+
 pub struct TraceExt {
     pub base_name: String,
     pub trace: Trace,

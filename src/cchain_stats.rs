@@ -6,9 +6,11 @@ use std::{
 use crate::{call_chain::{Call, CallChain, call_chain_key, LEAF_LABEL},
     stats::{format_float, chained_stats}, 
     report::{Chapter, report}, string_hash};
+use serde::{Deserialize, Serialize};
 
 
-#[derive(Debug, Default)]
+
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct CChainStatsValue {
     pub count: usize,
     pub depth: usize,
@@ -19,7 +21,7 @@ pub struct CChainStatsValue {
 
 
 /// Key for the CChain containing part of the CChain-values 
-#[derive(Hash, Eq, PartialEq, Debug, PartialOrd, Ord)]
+#[derive(Hash, Eq, PartialEq, Debug, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct CChainStatsKey {
     pub call_chain: CallChain,
     pub caching_process: String,  // an empty string or a one or more caching-processes between square brackets
@@ -156,4 +158,5 @@ impl CChainStatsValue {
 
 /// the information is distributed over the key and the value (no duplication in value)
 pub type CChainStats = HashMap<CChainStatsKey, CChainStatsValue>;
-
+//#[derive(Default, Debug, Serialize, Deserialize)]
+//pub struct CChainStats (pub HashMap<CChainStatsKey, CChainStatsValue>);

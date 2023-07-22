@@ -5,9 +5,10 @@ use std::{
     // path::Path,
     collections::HashMap};
 use crate::stats::format_float;
+use serde::{Deserialize, Serialize};
 
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct MethodStatsValue {
     pub count: usize,
     pub duration_micros: Vec<u64>,
@@ -39,5 +40,6 @@ impl MethodStatsValue {
 }
 
 /// the information is distributed over the key and the value (no duplication in value)
-pub type MethodStats = HashMap<String, MethodStatsValue>;
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct MethodStats  (pub HashMap<String, MethodStatsValue>);
 

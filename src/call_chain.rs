@@ -3,14 +3,13 @@ use std::{
     fs::File,
     io::{self, BufRead},
     path::Path};
-
 use crate::{
     cchain_stats::CChainStatsKey,
     cchain_cache::EndPointCChain};
+use serde::{Deserialize, Serialize};
 
 
-
-#[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Debug, Default, Clone)]
+#[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Call {
     pub process: String,
     pub method: String,
