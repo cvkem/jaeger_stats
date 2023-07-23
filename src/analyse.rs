@@ -29,7 +29,8 @@ fn read_trace_file(input_file: &Path) -> Result<Vec<Trace>, Box<dyn Error>> {
 
 
 
-fn read_trace_folder(folder: &Path) -> Result<Vec<Trace>, Box<dyn Error>> {
+fn read_trace_folder(folder: &Path) -> Result<(Vec<Trace>, i32), Box<dyn Error>> {
+    let mut num_files = 0;
     let traces = fs::read_dir(folder)
         .expect("Failed to read directory")
         .into_iter()
@@ -41,6 +42,7 @@ fn read_trace_folder(folder: &Path) -> Result<Vec<Trace>, Box<dyn Error>> {
             if metadata.is_file() {
                 let file_name = path.to_str().expect("path-string").to_owned();
                 if file_name.ends_with(".json") {
+                    num_files += 1;
                     read_trace_file(&path).ok()
                 } else {
                     println!("Ignore '{file_name} as it does not have suffix '.json'.");
@@ -52,7 +54,7 @@ fn read_trace_folder(folder: &Path) -> Result<Vec<Trace>, Box<dyn Error>> {
         })
         .flatten()
         .collect();
-        Ok(traces)
+        Ok((traces, num_files))
     }
 
 /// create the statistics over all traces using the caching_processes and write them to the file
@@ -115,7 +117,7 @@ fn dump_as_json(file_name: &str, stats: StatsRec) {
 }
 
 /// process a vector of traces
-fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<String>, cchain_cache: &mut CChainEndPointCache) {
+fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<String>, cchain_cache: &mut CChainEndPointCache, num_files: i32) {
 
     folder.canonicalize().expect("Failed to make canonical path. Path probably does not exist!");
 
@@ -143,7 +145,7 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
         //println!("Writing to file: {:?}", csv_file);
         let traces = traces.iter().collect(); // switch to references
         let cumm_stats = create_trace_statistics(&traces, &caching_processes);
-        write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats);
+        write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats, num_files);
         dump_as_json(&csv_file.to_str().unwrap(), cumm_stats);
     }
 
@@ -189,7 +191,7 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
             part_traces.iter_mut().for_each(|tr| tr.fix_cchains(cchain_cache));
             // and add these to the statistics
             part_traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );
-            write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats);
+            write_stats_to_csv_file(&csv_file.to_str().unwrap(), &cumm_stats, num_files);
             dump_as_json(&csv_file.to_str().unwrap(), cumm_stats);
         });
 
@@ -201,20 +203,20 @@ fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<St
     
 pub fn process_file_or_folder(path: &Path, caching_processes: Vec<String>, cc_path: &Path) -> PathBuf {
     report(Chapter::Summary, format!("Reading all traces from folder: {}", path.display()));
-    let (traces, folder) = if path.is_file() && path.extension() == Some(OsStr::new("json")) {
+    let (traces, num_files, folder) = if path.is_file() && path.extension() == Some(OsStr::new("json")) {
         let traces = read_trace_file(&path).unwrap();
         //let path = Path::new(input_file);
-        (traces, path.parent().expect("Could not extract parent of input_file"))
+        (traces, 1, path.parent().expect("Could not extract parent of input_file"))
     } else if path.is_dir() {
-        let traces = read_trace_folder(&path).unwrap();
-        (traces, path)
+        let (traces, num_files) = read_trace_folder(&path).unwrap();
+        (traces, num_files, path)
     } else {
         panic!(" Expected file with extention '.json' or folder. Received: '{}' ", path.display());
     };
-    report(Chapter::Summary, format!("Read {} traces in total", traces.len()));
+    report(Chapter::Summary, format!("Read {} traces in total from {} files.", traces.len(), num_files));
 
     let mut cache = CChainEndPointCache::new(cc_path.to_path_buf());
     let folder = folder.to_path_buf();
-    process_traces(folder.clone(), traces, caching_processes, &mut cache);
+    process_traces(folder.clone(), traces, caching_processes, &mut cache, num_files);
     folder
 }

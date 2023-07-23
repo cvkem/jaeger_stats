@@ -107,13 +107,15 @@ impl StatsRec {
                     }
 
                     let duration_micros = span.duration_micros;
+                    let start_dt_micros = span.start_dt.timestamp_micros();
                     // add a count per method
                     stat.method.0
                         .entry(method.to_owned())
                         .and_modify(|meth_stat| {
                             meth_stat.count += 1;
+                            meth_stat.start_dt_micros.push(start_dt_micros);
                             meth_stat.duration_micros.push(duration_micros);})
-                        .or_insert(MethodStatsValue::new(duration_micros));
+                        .or_insert(MethodStatsValue::new(duration_micros, start_dt_micros));
 
                     // // add a count per method_including-cached
                     let call_chain = get_call_chain(idx, &spans);
@@ -130,11 +132,13 @@ impl StatsRec {
                         .entry(ps_key)
                         .and_modify(|ps| {
                             ps.count += 1;
+                            ps.start_dt_micros.push(start_dt_micros);
                             ps.duration_micros.push(duration_micros);})
                         .or_insert_with(|| {
                             let dms: Box<[_]> = Box::new([duration_micros]);
                             let duration_micros = dms.into_vec();
-                            CChainStatsValue{count: 1, depth, duration_micros, looped, rooted}
+                            let start_dt_micros = [start_dt_micros].to_vec();
+                            CChainStatsValue{count: 1, depth, duration_micros, start_dt_micros, looped, rooted}
                         });
                     
                 };
@@ -151,7 +155,7 @@ impl StatsRec {
     }
 
 
-    pub fn to_csv_string(&self) -> String {
+    pub fn to_csv_string(&self, num_files: i32) -> String {
         let mut s = Vec::new();
         let num_traces = self.trace_id.len() as u64;
 
@@ -192,7 +196,7 @@ impl StatsRec {
         let mut data: Vec<_> = self.stats.iter().collect();
         data.sort_by(|a,b| { a.0.cmp(&b.0)});
 
-        s.push("Process; Num_received_calls; Num_outbound_calls; Num_unknown_calls; Freq_received_calls; Freq_outbound_calls; Freq_unknown_calls".to_owned());
+        s.push("Process; Num_received_calls; Num_outbound_calls; Num_unknown_calls; Perc_received_calls; Perc_outbound_calls; Perc_unknown_calls".to_owned());
         data.iter()
             .for_each(|(k, stat)| {
                 let freq_rc = stat.num_received_calls as f64/ num_traces as f64;
@@ -206,13 +210,13 @@ impl StatsRec {
         s.push("\n".to_owned());
 
         let num_traces = num_traces as f64; 
-        s.push("Process; Count; min_millis; avg_millis; max_millis; freq.; expect_duration;".to_owned());
+        s.push("Process; Count; Min_millis; Avg_millis; Max_millis; Percentage; Rate; Expect_duration;".to_owned());
         data.iter()
             .for_each(|(k, stat)| {
                 stat.method.0
                     .iter()
                     .for_each(|(method, meth_stat)| {
-                        let line = meth_stat.report_stats_line(k, method, num_traces);
+                        let line = meth_stat.report_stats_line(k, method, num_traces, num_files);
                         s.push(line);
                             })
             });
@@ -220,7 +224,7 @@ impl StatsRec {
 
         s.push("#The unique key of the next table is 'Call_Chain' (which includes full path and the leaf-marker). So the Process column contains duplicates".to_owned());
 
-        s.push("Call_chain; cc_hash; End_point; Process/operation; Is_leaf; Depth; Count; Looped; Revisit; Caching_proces; min_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;".to_owned());
+        s.push("Call_chain; cc_hash; End_point; Process/operation; Is_leaf; Depth; Count; Looped; Revisit; Caching_proces; Min_millis; Avg_millis; Max_millis; Percentage; Rate; expect_duration; expect_contribution;".to_owned());
 
         // reorder data based on the full call-chain
         //  key is the ProcessKey and ps_key is the PathStatsKey (a.o. call-chain)
@@ -237,7 +241,7 @@ impl StatsRec {
         ps_data.sort_by(|a,b| { a.0.cmp(&b.0)});
         ps_data
             .into_iter()
-            .for_each(|(ps_key, key, cchain_stats)| s.push(cchain_stats.report_stats_line(&key, ps_key, num_traces)));
+            .for_each(|(ps_key, key, cchain_stats)| s.push(cchain_stats.report_stats_line(&key, ps_key, num_traces, num_files)));
             s.push("\n".to_owned());
     
             s.join("\n")
@@ -306,6 +310,15 @@ pub fn format_float(val: f64) -> String {
         s.replace('.',",")
     } else {
         s
+    }
+}
+
+
+/// format_float will format will replace the floating point '.' with a comma ',' such that the excel is readable in the Dutch Excel :-(
+pub fn format_float_opt(val: Option<f64>) -> String {
+    match val {
+        Some(v) => format_float(v),
+        None => "--".to_owned()
     }
 }
 

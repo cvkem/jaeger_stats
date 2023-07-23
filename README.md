@@ -61,6 +61,10 @@ The call-chain corrections are only applied:
 ## Correction of operations (path parameters)
 Path parameters might wreak havoc on our analysis as path parameters make each URL unique while we are looking for averages over a number of invocations Therefore the system does correction on the URL's to extract the parameters, for example an order number and replaces that with a symbolic value '{ORDER}'. However, these replacements are currently hardcoded and we need to take some steps to make this configurable.
 
+## Computation of the rates (request/second)
+If data is provided in a large batches it is possible to compute the rate from the data. However, we do not want to assume that all files with traces fall in the same time-period. Therefore we compute frequencies by computing times between subsequent calls and dropping the num_files largest intervals, as these might corresponds to gaps inbetween files. Based on this time the rate is computed as a frequency by the formula f=1/T  where T is the duration in seconds between subsequent calls.
+
+
 ## Extracting Jaeger JSON data
 In the Jaeger web-based front end it is possible to make a selection of traces. After these traces have been returned you have two methods to extract the JSON files:
 1. Click on a single trace and in the right-top of the page select Download as 'JSON'.

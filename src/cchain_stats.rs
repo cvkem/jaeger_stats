@@ -1,12 +1,16 @@
 use std::{
     cmp::Ordering,
     error::Error,
-    path::Path,
     collections::HashMap};
-use crate::{call_chain::{Call, CallChain, call_chain_key, LEAF_LABEL},
-    stats::{format_float, chained_stats}, 
+use crate::{
+    call_chain::{Call, CallChain, call_chain_key, LEAF_LABEL},
+    frequency::calculate_frequency,
+    stats::{format_float, format_float_opt}, 
     report::{Chapter, report}, string_hash};
 use serde::{Deserialize, Serialize};
+use chrono::{
+    DateTime,
+    Utc};
 
 
 
@@ -15,6 +19,7 @@ pub struct CChainStatsValue {
     pub count: usize,
     pub depth: usize,
     pub duration_micros: Vec<u64>,
+    pub start_dt_micros: Vec<i64>,   // represented via start_dt.timestamp_micros()
     pub looped: Vec<String>,
     pub rooted: bool,    //does this call-chain originate from the root of this trace.
 }
@@ -131,14 +136,15 @@ impl CChainStatsValue {
     }
 
     /// reports the statistics for a single line
-    pub fn report_stats_line(&self, process_key: &str, ps_key: &CChainStatsKey, n: f64) -> String {
+    pub fn report_stats_line(&self, process_key: &str, ps_key: &CChainStatsKey, n: f64, num_files: i32) -> String {
         assert_eq!(process_key, ps_key.call_chain.last().expect("Call chain is empty!").process);
         let min_millis = *self.duration_micros.iter().min().expect("Not an integer") as f64 / 1000 as f64;
         let avg_millis = self.duration_micros.iter().sum::<u64>() as f64 / (1000 as f64 * self.duration_micros.len() as f64);
         let max_millis = *self.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
         let caching_process = &ps_key.caching_process;
-        let freq = self.count as f64 / n;
-        let expect_duration = freq * avg_millis;
+        let percentage = self.count as f64 / n;
+        let rate = calculate_frequency(&self.start_dt_micros, num_files);
+        let expect_duration = percentage * avg_millis;
         let expect_contribution = if ps_key.is_leaf { expect_duration } else { 0.0 };
         let call_chain = ps_key.call_chain_key();
         let cc_hash = string_hash(&call_chain);
@@ -147,10 +153,10 @@ impl CChainStatsValue {
 
         // Call_chain; cc_hash; End_point; Process/operation; Is_leaf; Depth; Count; Looped; Revisit; Caching_proces; min_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;
 
-        let line = format!("{call_chain};{cc_hash}; {end_point}; {leaf}; {}; {}; {}; {}; {:?}; {caching_process}; {}; {}; {}; {}; {}; {}", 
+        let line = format!("{call_chain};{cc_hash}; {end_point}; {leaf}; {}; {}; {}; {}; {:?}; {caching_process}; {}; {}; {}; {}; {}; {}; {};", 
             ps_key.is_leaf, self.depth, self.count, self.looped.len()> 0, self.looped,  
             format_float(min_millis), format_float(avg_millis), format_float(max_millis),
-            format_float(freq), format_float(expect_duration), format_float(expect_contribution));
+            format_float(percentage), format_float_opt(rate), format_float(expect_duration), format_float(expect_contribution));
         line
     }
 

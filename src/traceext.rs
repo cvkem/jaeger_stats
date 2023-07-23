@@ -20,9 +20,9 @@ pub fn write_string_to_file(filename: &str, data: String) -> Result<(), Box<dyn 
 }
 
 /// Collect statistics as a string and write it to a textfile in CSV format
-pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec) {
+pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec, num_files: i32) {
     //println!("Now writing the trace statistics to {csv_file}");
-    let stats_csv_str = stats.to_csv_string();
+    let stats_csv_str = stats.to_csv_string(num_files);
     if let Err(err) = write_string_to_file(&csv_file, stats_csv_str) {
         panic!("Writing to file '{csv_file}' failed with error: {err:?}");
     };    

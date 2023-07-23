@@ -11,6 +11,7 @@ mod cchain_cache;
 mod cchain_stats;
 mod stats;
 mod stats_json;
+mod frequency;
 mod method_stats;
 mod analyse;
 mod report;
