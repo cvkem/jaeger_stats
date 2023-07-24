@@ -6,7 +6,7 @@ use std::{
     collections::HashMap};
 use crate::{
     stats::{format_float, format_float_opt}, 
-    frequency::calculate_frequency};
+    rate::calc_rate};
 use serde::{Deserialize, Serialize};
 
 
@@ -32,7 +32,7 @@ impl MethodStatsValue {
         let avg_millis = self.duration_micros.iter().sum::<u64>() as f64 / (1000 as f64 * self.duration_micros.len() as f64);
         let max_millis = *self.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
         let percentage = self.count as f64 / n;
-        let rate = calculate_frequency(&self.start_dt_micros, num_files);
+        let rate = calc_rate(&self.start_dt_micros, num_files);
         let expect_duration = percentage * avg_millis;
         // let expect_contribution = if ps_key.is_leaf { expect_duration } else { 0.0 };
         let line = format!("{process_key}/{method}; {}; {}; {}; {}; {}; {}; {};", 

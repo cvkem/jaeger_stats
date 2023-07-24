@@ -4,7 +4,7 @@ use std::{
     collections::HashMap};
 use crate::{
     call_chain::{Call, CallChain, call_chain_key, LEAF_LABEL},
-    frequency::calculate_frequency,
+    rate::calc_rate,
     stats::{format_float, format_float_opt}, 
     report::{Chapter, report}, string_hash};
 use serde::{Deserialize, Serialize};
@@ -143,7 +143,7 @@ impl CChainStatsValue {
         let max_millis = *self.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
         let caching_process = &ps_key.caching_process;
         let percentage = self.count as f64 / n;
-        let rate = calculate_frequency(&self.start_dt_micros, num_files);
+        let rate = calc_rate(&self.start_dt_micros, num_files);
         let expect_duration = percentage * avg_millis;
         let expect_contribution = if ps_key.is_leaf { expect_duration } else { 0.0 };
         let call_chain = ps_key.call_chain_key();
