@@ -16,9 +16,9 @@ use std::{
 
 
 /// Collect statistics as a string and write it to a textfile in CSV format
-pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec, num_files: i32) {
+pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec) {
     //println!("Now writing the trace statistics to {csv_file}");
-    let stats_csv_str = stats.to_csv_string(num_files);
+    let stats_csv_str = stats.to_csv_string(stats.num_files);
     if let Err(err) = write_string_to_file(&csv_file, stats_csv_str) {
         panic!("Writing to file '{csv_file}' failed with error: {err:?}");
     };    
@@ -32,10 +32,10 @@ pub struct TraceExt {
 
 impl TraceExt {
 
-    pub fn new(trace: Trace, folder: &PathBuf, caching_processes: &Vec<String>) -> Self {
+    pub fn new(trace: Trace, folder: &PathBuf, caching_processes: &Vec<String>, num_files: i32) -> Self {
         let base_name = trace.base_name(&folder);
 
-        let mut stats = StatsRec::new(caching_processes);
+        let mut stats = StatsRec::new(caching_processes, num_files);
         stats.extend_statistics(&trace, false);
     
         Self{base_name: base_name.into_string().unwrap(), trace, stats_rec: stats}

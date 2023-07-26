@@ -129,9 +129,19 @@ struct Key {
     operation: String
 }
 
-struct MethodStatsReporter{
-    
-}
+// struct MethodStatsReporter{
+//     buffer: &mut Vec<String>,
+//     data: &Vec<Option<StatsRecJson>>,
+//     keys: 
+// }
+
+// impl MethodStatsReporter {
+
+//     fn build_reporter(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>) -> Self {
+//         Self{buffer, data, keys}
+//     }
+
+// }
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
 fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>) {

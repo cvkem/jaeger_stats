@@ -54,7 +54,7 @@ impl From<StatsRec> for StatsRecJson {
             trace_id: sr.trace_id,
             root_call: sr.root_call,
             num_spans: sr.num_spans,
-            num_files: None,               // should be sr.num_files
+            num_files: Some(sr.num_files),               // Made optional for backward compatibility
             start_dt: sr.start_dt.into_iter().map(|dt| dt.to_string()).collect(),
             end_dt: sr.end_dt.into_iter().map(|dt| dt.to_string()).collect(),
             duration_micros: sr.duration_micros,

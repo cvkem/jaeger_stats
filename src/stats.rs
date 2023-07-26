@@ -37,6 +37,7 @@ pub struct StatsRec {
     pub trace_id: Vec<String>,
     pub root_call: Vec<String>,
     pub num_spans: Vec<usize>,
+    pub num_files: i32,  // the number of files is needed when computing the rate of requests.
     pub start_dt: Vec<DateTime<Utc>>,
     pub end_dt: Vec<DateTime<Utc>>,
     pub duration_micros: Vec<u64>,
@@ -47,10 +48,11 @@ pub struct StatsRec {
 
 impl StatsRec {
 
-    pub fn new(caching_process: &Vec<String>) -> Self {
+    pub fn new(caching_process: &Vec<String>, num_files: i32) -> Self {
         let caching_process = caching_process.clone();
         StatsRec{
             caching_process,
+            num_files,
             ..Default::default()}
     }
 
