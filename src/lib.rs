@@ -1,4 +1,5 @@
 
+mod aux;
 mod raw_jaeger;
 mod read_jaeger;
 mod process_map;
@@ -16,6 +17,7 @@ mod method_stats;
 mod analyse;
 mod report;
 mod hash;
+mod stitch;
 
 use raw_jaeger::{
     JaegerTrace,
@@ -34,3 +36,4 @@ pub use analyse::process_file_or_folder;
 pub use cchain_cache::CChainEndPointCache;
 pub use report::{report, write_report};
 pub use hash::{hash, string_hash};
+pub use stitch::{read_stitch_list, StitchList};

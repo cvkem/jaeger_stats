@@ -1,4 +1,5 @@
 use crate::{
+    aux::write_string_to_file,
     call_chain::cchain_filename,
     cchain_cache::CChainEndPointCache,
     read_jaeger_trace_file,StatsRec,
@@ -8,7 +9,7 @@ use crate::{
         extract_traces},
     traceext::{
         TraceExt,
-        write_stats_to_csv_file, write_string_to_file}, 
+        write_stats_to_csv_file}, 
         stats_json::StatsRecJson};
 use std::{
     collections::{HashMap, HashSet},
@@ -119,7 +120,7 @@ fn dump_as_json(file_name: &str, stats: StatsRec) {
 /// process a vector of traces
 fn process_traces(folder: PathBuf, traces: Vec<Trace>, caching_processes: Vec<String>, cchain_cache: &mut CChainEndPointCache, num_files: i32) {
 
-    folder.canonicalize().expect("Failed to make canonical path. Path probably does not exist!");
+    let folder = folder.canonicalize().expect("Failed to make canonical path. Path probably does not exist!");
 
     let total_traces = traces.len();
 

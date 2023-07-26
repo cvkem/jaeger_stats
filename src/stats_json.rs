@@ -1,4 +1,9 @@
-use std::collections::HashMap;
+use std::{
+    error::Error,
+    ffi::OsString,
+    fs::File,
+    io::{BufReader, self},
+    collections::HashMap};
 use crate::{
     cchain_stats::{CChainStatsKey, CChainStatsValue},
     method_stats::MethodStats,
@@ -32,6 +37,7 @@ pub struct StatsRecJson {
     pub trace_id: Vec<String>,
     pub root_call: Vec<String>,
     pub num_spans: Vec<usize>,
+    pub num_files: Option<i32>,   //Optional for backward compatibility
     pub start_dt: Vec<String>,
     pub end_dt: Vec<String>,
     pub duration_micros: Vec<u64>,
@@ -48,6 +54,7 @@ impl From<StatsRec> for StatsRecJson {
             trace_id: sr.trace_id,
             root_call: sr.root_call,
             num_spans: sr.num_spans,
+            num_files: None,               // should be sr.num_files
             start_dt: sr.start_dt.into_iter().map(|dt| dt.to_string()).collect(),
             end_dt: sr.end_dt.into_iter().map(|dt| dt.to_string()).collect(),
             duration_micros: sr.duration_micros,
@@ -55,5 +62,17 @@ impl From<StatsRec> for StatsRecJson {
             caching_process: sr.caching_process,
             stats: stats,
         }
+    }
+}
+
+
+impl StatsRecJson {
+
+    /// StatsJson file and parse it
+    pub fn read_file(path: &OsString) -> Result<Self, Box<dyn Error>> {
+        let f = File::open(path)?;
+        let reader = io::BufReader::new(f);
+        let sj =  serde_json::from_reader(reader)?;
+        Ok(sj)
     }
 }

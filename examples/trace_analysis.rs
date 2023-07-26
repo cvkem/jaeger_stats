@@ -4,7 +4,6 @@ use jaeger_stats::{
     set_tz_offset_minutes,
     write_report};
 use std::{
-    env,
     path::Path};
 use clap;
 use clap::Parser;
@@ -31,18 +30,6 @@ struct Args {
     comma_float: bool,
 }
 
-
-
-//const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadTest-prodinz-prodGroep/28adb54b8868eef9.json";
-
-//const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadTest-prodinz-prodGroep/";
-//const INPUT_FILE: &str = "/home/ceesvk/jaeger/prodinzicht-23-juni-14u/";
-// const INPUT_FILE: &str = "/home/ceesvk/jaeger/prodInzBatch/";
-// const CACHING_PROCESS: &str = "bspc-productinzicht,bspc-partijrolbeheer";
-// //const CALL_CHAIN_REPO: &str = "~/CallChain/";
-// const CALL_CHAIN_REPO: &str = "/home/ceesvk/CallChain/";
-
-// const TIME_ZONE_MINUTES: u64 = 2*60;
 
 fn main()  {
  

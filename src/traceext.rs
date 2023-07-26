@@ -1,23 +1,19 @@
 use crate::{
+    aux::write_string_to_file,
     cchain_cache::CChainEndPointCache,
     report::{Chapter, report},
     StatsRec,
     trace::Trace, cchain_stats::CChainStatsValue, cchain_stats::CChainStats};
 use std::{
-    error::Error,
-    fs::File,
-    io::Write, collections::HashMap,
+    // error::Error,
+    // fs::File,
+    // io::Write, 
+    collections::HashMap,
     mem,
     path::PathBuf};
 
 
 
-
-pub fn write_string_to_file(filename: &str, data: String) -> Result<(), Box<dyn Error>> {
-    let mut file = File::create(filename)?;
-    file.write_all(data.as_bytes())?;
-    Ok(())
-}
 
 /// Collect statistics as a string and write it to a textfile in CSV format
 pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec, num_files: i32) {

@@ -1,9 +1,8 @@
 use std::{  
     error::Error,
-    fs::File,
-    io::{self, BufRead},
     path::Path};
 use crate::{
+    aux::read_lines,
     cchain_stats::CChainStatsKey,
     cchain_cache::EndPointCChain};
 use serde::{Deserialize, Serialize};
@@ -49,13 +48,6 @@ pub fn call_chain_key(call_chain: &CallChain, caching_process: &str, is_leaf: bo
     call_chain_str + &"& " + &caching_process + &"& "+ &leaf_str    // using '&' as separator as a ';' separator would break the CSV-files
 }
 
-// The output is wrapped in a Result to allow matching on errors
-// Returns an Iterator to the Reader of the lines of the file.
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where P: AsRef<Path>, {
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
-}
 
 /// read a cchain-file and parse it
 pub fn read_cchain_file(path: &Path) -> Result<EndPointCChain, Box<dyn Error>> {
