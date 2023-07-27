@@ -132,7 +132,8 @@ fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>
 
     // build the stack of reports that need to be calculated
     let mut report_items = Vec::new();
-    report_items.push(ReportItem::new("rate", |msv, num_files| msv.get_rate_str(num_files)));
+    report_items.push(ReportItem::new("rate (avg)", |msv, num_files| msv.get_avg_rate_str(num_files)));
+    report_items.push(ReportItem::new("rate (median)", |msv, num_files| msv.get_median_rate_str(num_files)));
     report_items.push(ReportItem::new("min_millis", |msv, _| msv.get_min_millis_str()));
     report_items.push(ReportItem::new("avg_millis", |msv, _| msv.get_avg_millis_str()));
     report_items.push(ReportItem::new("max_millis", |msv, _| msv.get_max_millis_str()));

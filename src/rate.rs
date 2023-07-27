@@ -1,8 +1,8 @@
 
 
-
-pub fn calc_rate(data: &Vec<i64>, num_outliers: i32) -> Option<f64> {
-    assert!(num_outliers > 0);
+// returns an average and a median rate (after dropping the outliers)
+pub fn calc_rate(data: &Vec<i64>, num_outliers: i32) -> Option<(f64, f64)> {
+    assert!(num_outliers >= 0);
     if data.len() as i32 - num_outliers - 2 < 0 {
         return None;
     }
@@ -24,8 +24,13 @@ pub fn calc_rate(data: &Vec<i64>, num_outliers: i32) -> Option<f64> {
         return None;
     }
 
-    let t = data.iter().sum::<i64>() as f64/data.len() as f64/1e6;
-    let rate = 1.0/t as f64;
+    let t_avg = data.iter().sum::<i64>() as f64/data.len() as f64/1e6;
+    let avg_rate = 1.0/t_avg;
 
-    Some(rate)
+
+    let med_idx = data.len()/2;
+    let t_med = data[med_idx] as f64 / 1e6;
+    let med_rate = 1.0/t_med;
+
+    Some((avg_rate, med_rate))
 }

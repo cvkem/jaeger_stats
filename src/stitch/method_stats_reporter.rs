@@ -57,7 +57,7 @@ impl<'a> MethodStatsReporter<'a> {
                 Some(str) => {
                     match str.stats.get(&process) {
                         Some(st) => match st.method.0.get(&operation) {
-                            Some(oper) => Some((oper, str.num_files.unwrap_or_else(|| str.trace_id.len() as i32/10))),
+                            Some(oper) => Some((oper, str.num_files.unwrap_or(0))),
                             None => None
                         },
                         None => None

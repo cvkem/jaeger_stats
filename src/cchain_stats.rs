@@ -143,7 +143,7 @@ impl CChainStatsValue {
         let max_millis = *self.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
         let caching_process = &ps_key.caching_process;
         let percentage = self.count as f64 / n;
-        let rate = calc_rate(&self.start_dt_micros, num_files);
+        let rate = if let Some((avg_rate, _)) = calc_rate(&self.start_dt_micros, num_files) {Some(avg_rate)} else {None};
         let expect_duration = percentage * avg_millis;
         let expect_contribution = if ps_key.is_leaf { expect_duration } else { 0.0 };
         let call_chain = ps_key.call_chain_key();
