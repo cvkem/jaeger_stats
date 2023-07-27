@@ -76,6 +76,39 @@ Using method 2.1 you can get approximately 1000 traces in a batch. The batch wil
 Method 2.2 allows you to select 1000 traces or more. However, the output a single line of raw json (not-pretty-printed) and the file is encoded in UTF-16-LE with BOM. The 'trace_analysis' can handle these files and will do an in-memory conversion to UTF8 before processing. Beware that this is a non-streaming conversion so the full file is in memory twice.
 
 
+## Using stitch-tool to merges results of different runs 
+```
+$ stitch -h`
+Stitching results of different runs of trace_analysis into a single CSV for visualization in Excel
+
+Usage: stitch [OPTIONS]
+
+Options:
+  -s, --stitch-list <STITCH_LIST>  [default: input.stitch]
+  -o, --output <OUTPUT>            [default: stitched.csv]
+  -c, --comma-float                
+  -h, --help                       Print help
+  -V, --version                    Print version
+```
+The options are:
+* --stitch_list: a file that shows the paths for all result.json files that need to be stitched together. All text after a '#' is considered comments. Empty lines are ignored (including lines that start with a comment) and lines that start with a % will show up as an empty column in the analysis (used to temporarily exclude a missing file or file containing outliers). Text after the '%' is ignored. All relative paths in the stitch-list are expected to start in the folder that contains the 'input.stitch' file, such that you can move the complete folder of the 'input.stitch' to a different location.   
+* --output: The output-file in CSV-format that contains the data stitched together. Each column in this file represents a single input-file from 'input.stitch'. Each statistic is a separate line and the second column represents the name of the statistic. 
+* -- comma-float: In CSV files floating point values are using a comma as separator instead of the '.' to allow the file to be read in an Excel. The default value is 'true' (using )
+
+
+An example of an input-file ('input.stitch') is:
+```
+#  comment line: this line is full ignored
+/home/ceesvk/jaeger/batch/Stats/cummulative_trace_stats.json       # an absolute path
+../../jaeger/get_order/Stats/cummulative_trace_stats.json    # a relative path
+% ../../jaeger/post_order/Stats/cummulative_trace_stats.json  # This line is showing up as an empty column due to the % in front
+
+# yet another comment (empty line above is ignored)
+```
+
+Beware that ALL files in the 'input.stitch' should exist and should be valid input files, otherwise the 'stitch' program will terminate with no output. 
+
+
 ## How to build trace_analysis
 The tool is include in the examples folder and can be build via the command:
 
@@ -101,3 +134,5 @@ cargo install --release trace_analysis
 ```
 
 On linux this will deploy a release version of 'trace_analysis' in the folder '$HOME/.cargo/bin/' which is assumed to be included in your path. 
+
+

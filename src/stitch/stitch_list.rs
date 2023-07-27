@@ -76,13 +76,11 @@ impl StitchList {
                 }
             })
             .collect();
-        
+            
         let mut csv_string = self.lines;
 
-        csv_string.push("\n\n# Method table".to_owned());
+        append_basic_stats(&mut csv_string, &data);
         append_method_table(&mut csv_string, &data);
-
-        csv_string.push("\n\n# Call-chain table".to_owned());
         append_callchain_table(&mut csv_string, &data);
 
         match write_string_to_file(path.to_str().unwrap(), csv_string.join("\n")) {
@@ -128,7 +126,15 @@ pub fn read_stitch_list(path: &Path) -> Result<StitchList, Box<dyn Error>> {
 
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
+fn append_basic_stats(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>) {
+    buffer.push("\n\n# Basic statistics over alle stitched files".to_owned());
+
+    buffer.push("<< TO BE ADDED>>".to_owned());
+}
+
+/// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
 fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>) {
+    buffer.push("\n\n# Method table".to_owned());
 
     // build the stack of reports that need to be calculated
     let mut report_items = Vec::new();
@@ -149,6 +155,7 @@ fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
 fn append_callchain_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>) {
+    buffer.push("\n\n# Call-chain table".to_owned());
 
-
+    buffer.push("<< TO BE ADDED>>".to_owned());
 }

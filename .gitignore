@@ -17,5 +17,5 @@ Cargo.lock
 out.txt
 report.txt
 ble*
-test.stitch
+*.stitch
 
