@@ -9,7 +9,7 @@ use super::{
     key::Key,
     method_stats_reporter::{
         MethodStatsReporter,
-        ReportItem}};
+        MSReportItem}, stats_rec_reporter::{SRJReportItem, StatsRecReporter}};
 
 
 #[derive(Default, Debug)]
@@ -40,9 +40,8 @@ impl StitchList {
                 let mut base_path = base_path.clone();
                 while path.starts_with("../") || path.starts_with(r"..\") {
                     path = &path[3..];
-                    println!("TMP skipped .. now using {path}");
                     if !base_path.pop() {
-                        println!("can not backtrack via .. beyond the root basepath");
+                        panic!("can not backtrack via .. beyond the root basepath {base_path:?} for path {path}");
                     }
                 }
                         
@@ -128,8 +127,14 @@ pub fn read_stitch_list(path: &Path) -> Result<StitchList, Box<dyn Error>> {
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
 fn append_basic_stats(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>) {
     buffer.push("\n\n# Basic statistics over alle stitched files".to_owned());
+    let mut report_items = Vec::new();
+    report_items.push(SRJReportItem::new("num_files", |srj| srj.num_files.unwrap_or(0).to_string()));
+    report_items.push(SRJReportItem::new("num_traces", |srj| srj.trace_id.len().to_string()));
+    report_items.push(SRJReportItem::new("avg_duration_micros", |srj| (srj.duration_micros.iter().sum::<u64>() as usize/srj.duration_micros.len()).to_string()));
+    report_items.push(SRJReportItem::new("avg_duration_micros", |srj| (srj.time_to_respond_micros.iter().sum::<u64>() as usize/srj.time_to_respond_micros.len()).to_string()));
 
-    buffer.push("<< TO BE ADDED>>".to_owned());
+    let mut reporter = StatsRecReporter::new(buffer, data, report_items);
+    reporter.append_report()
 }
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
@@ -138,11 +143,13 @@ fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>
 
     // build the stack of reports that need to be calculated
     let mut report_items = Vec::new();
-    report_items.push(ReportItem::new("rate (avg)", |msv, num_files| msv.get_avg_rate_str(num_files)));
-    report_items.push(ReportItem::new("rate (median)", |msv, num_files| msv.get_median_rate_str(num_files)));
-    report_items.push(ReportItem::new("min_millis", |msv, _| msv.get_min_millis_str()));
-    report_items.push(ReportItem::new("avg_millis", |msv, _| msv.get_avg_millis_str()));
-    report_items.push(ReportItem::new("max_millis", |msv, _| msv.get_max_millis_str()));
+    report_items.push(MSReportItem::new("count", |msv, _, _| msv.count.to_string()));
+    report_items.push(MSReportItem::new("Occurance percentage", |msv,_, num_traces| (msv.count as f64/ num_traces as f64).to_string()));
+    report_items.push(MSReportItem::new("rate (avg)", |msv, num_files, _| msv.get_avg_rate_str(num_files)));
+//    report_items.push(MSReportItem::new("rate (median)", |msv, num_files, _| msv.get_median_rate_str(num_files)));
+    report_items.push(MSReportItem::new("min_millis", |msv, _, _| msv.get_min_millis_str()));
+    report_items.push(MSReportItem::new("avg_millis", |msv, _, _| msv.get_avg_millis_str()));
+    report_items.push(MSReportItem::new("max_millis", |msv, _, _| msv.get_max_millis_str()));
     
     let mut reporter = MethodStatsReporter::new(buffer, data, report_items);
 

@@ -1,19 +1,22 @@
 use std::collections::HashSet;
 use crate::{
     stats_json::StatsRecJson, 
+    //rate::set_show_rate_output,
     method_stats::MethodStatsValue};
 
 
 use super::key::Key;
 
 
-pub struct ReportItem {
+type Processor = fn(&MethodStatsValue, i32, usize) -> String;
+
+pub struct MSReportItem {
     label: &'static str,
-    processor: fn(&MethodStatsValue, i32) -> String,
+    processor: Processor,
 }
 
-impl ReportItem {
-    pub fn new (label: &'static str, processor: fn(&MethodStatsValue, i32) -> String) -> Self {
+impl MSReportItem {
+    pub fn new (label: &'static str, processor: Processor) -> Self {
         Self{label, processor}
     }
 }
@@ -21,12 +24,12 @@ impl ReportItem {
 pub struct MethodStatsReporter<'a>{
     buffer: &'a mut Vec<String>,
     data: &'a Vec<Option<StatsRecJson>>,
-    report_items: Vec<ReportItem>
+    report_items: Vec<MSReportItem>
 }
 
 impl<'a> MethodStatsReporter<'a> {
 
-    pub fn new(buffer: &'a mut Vec<String>, data: &'a Vec<Option<StatsRecJson>>, report_items: Vec<ReportItem>) -> Self {
+    pub fn new(buffer: &'a mut Vec<String>, data: &'a Vec<Option<StatsRecJson>>, report_items: Vec<MSReportItem>) -> Self {
         // find a deduplicated set of all keys and sort them 
 
         Self{buffer, data, report_items}
@@ -57,7 +60,7 @@ impl<'a> MethodStatsReporter<'a> {
                 Some(str) => {
                     match str.stats.get(&process) {
                         Some(st) => match st.method.0.get(&operation) {
-                            Some(oper) => Some((oper, str.num_files.unwrap_or(0))),
+                            Some(oper) => Some((oper, str.num_files.unwrap_or(0), str.trace_id.len())),
                             None => None
                         },
                         None => None
@@ -71,11 +74,14 @@ impl<'a> MethodStatsReporter<'a> {
         let process_operation = format!("{process}/{operation}");
         self.buffer.push(format!("# statistics for {process_operation}"));
 
+        // set_show_rate_output(&process_operation[..] == "bspc-productinzicht/GET");
+
         self.report_items
             .iter()
-            .for_each(|ReportItem{label, processor}| {
+            .for_each(|MSReportItem{label, processor}| {
+
                 let values = meth_stats.iter()
-                    .map(|ms| ms.map_or("".to_owned(),|msv_nf |processor(msv_nf.0, msv_nf.1)))
+                    .map(|ms| ms.map_or("".to_owned(),|msv_nf |processor(msv_nf.0, msv_nf.1, msv_nf.2)))
                     .collect::<Vec<_>>()
                     .join("; ");
                 self.buffer.push(format!("{process_operation}; {label}; {values}"));    
