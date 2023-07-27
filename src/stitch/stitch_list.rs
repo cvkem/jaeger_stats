@@ -1,13 +1,15 @@
 use std::{
-    collections::HashSet,
     error::Error,
     ffi::OsString,
     path::{Path, PathBuf}};
 use crate::{
     aux::{read_lines, write_string_to_file},
-    stats_json::StatsRecJson, 
-    method_stats::MethodStatsValue};
-
+    stats_json::StatsRecJson};
+use super::{
+    key::Key,
+    method_stats_reporter::{
+        MethodStatsReporter,
+        ReportItem}};
 
 
 #[derive(Default, Debug)]
@@ -125,99 +127,15 @@ pub fn read_stitch_list(path: &Path) -> Result<StitchList, Box<dyn Error>> {
 }
 
 
-#[derive(PartialEq, Eq, Hash, PartialOrd, Ord)]
-struct Key {
-    process: String,
-    operation: String
-}
-
-// struct OperationProcesor<F> 
-//     where F: Fn(&MethodStatsValue) -> String {
-//     label: String,
-//     processor: F,
-// }
-
-struct ReportItem {
-    label: &'static str,
-    processor: fn(&MethodStatsValue, i32) -> String,
-}
-
-
-struct MethodStatsReporter<'a>{
-    buffer: &'a mut Vec<String>,
-    data: &'a Vec<Option<StatsRecJson>>,
-    report_items: Vec<ReportItem>
-}
-
-impl<'a> MethodStatsReporter<'a> {
-
-    fn new(buffer: &'a mut Vec<String>, data: &'a Vec<Option<StatsRecJson>>, report_items: Vec<ReportItem>) -> Self {
-        // find a deduplicated set of all keys and sort them 
-
-        Self{buffer, data, report_items}
-    }
-
-    fn get_keys(&self) -> Vec<Key> {
-        let mut keys  = HashSet::new();
-        self.data.iter()
-            .for_each(|str| {
-                if let Some(str) = str {
-                    str.stats.iter()
-                        .for_each(|(proc_key, st)| {
-                            st.method.0.iter()
-                                .for_each(|(oper_key, _)| _ = keys.insert(Key{process: proc_key.to_owned(), operation: oper_key.to_owned()}))
-                        })
-                }
-            });
-        let mut keys: Vec<_> = keys.into_iter().collect();
-        keys.sort();
-        keys
-    }
-
-
-    fn append_report(&mut self, process: String, operation: String) {
-        let meth_stats: Vec<_> = self.data.iter()
-        .map(|str| {
-            match str {
-                Some(str) => {
-                    match str.stats.get(&process) {
-                        Some(st) => match st.method.0.get(&operation) {
-                            Some(oper) => Some((oper, str.num_files.unwrap_or_else(|| str.trace_id.len() as i32/10))),
-                            None => None
-                        },
-                        None => None
-                    }
-                }
-                None => None
-            }
-        })
-        .collect();
-
-        let process_operation = format!("{process}/{operation}");
-        self.buffer.push(format!("# statistics for {process_operation}"));
-
-        self.report_items
-            .iter()
-            .for_each(|ReportItem{label, processor}| {
-                let values = meth_stats.iter()
-                    .map(|ms| ms.map_or("".to_owned(),|msv_nf |processor(msv_nf.0, msv_nf.1)))
-                    .collect::<Vec<_>>()
-                    .join("; ");
-                self.buffer.push(format!("{process_operation}; {label}; {values}"));    
-            });
-
-    }
-}
-
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
 fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>) {
 
     // build the stack of reports that need to be calculated
     let mut report_items = Vec::new();
-    report_items.push(ReportItem{label: "rate", processor: |msv, num_files| msv.get_rate_str(num_files)});
-    report_items.push(ReportItem{label: "min_millis", processor: |msv, _| msv.get_min_millis_str()});
-    report_items.push(ReportItem{label: "avg_millis", processor: |msv, _| msv.get_avg_millis_str()});
-    report_items.push(ReportItem{label: "max_millis", processor: |msv, _| msv.get_max_millis_str()});
+    report_items.push(ReportItem::new("rate", |msv, num_files| msv.get_rate_str(num_files)));
+    report_items.push(ReportItem::new("min_millis", |msv, _| msv.get_min_millis_str()));
+    report_items.push(ReportItem::new("avg_millis", |msv, _| msv.get_avg_millis_str()));
+    report_items.push(ReportItem::new("max_millis", |msv, _| msv.get_max_millis_str()));
     
     let mut reporter = MethodStatsReporter::new(buffer, data, report_items);
 
