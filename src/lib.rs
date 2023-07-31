@@ -1,3 +1,4 @@
+//#![allow(non_snake_case)]
 
 mod aux;
 mod raw_jaeger;
@@ -18,6 +19,7 @@ mod analyse;
 mod report;
 mod hash;
 mod stitch;
+mod graph;
 
 use raw_jaeger::{
     JaegerTrace,

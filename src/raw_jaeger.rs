@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 /// This file represents the raw structure of th yeager trace
 use serde::{Deserialize, Serialize};
 //use serde_json::Value;

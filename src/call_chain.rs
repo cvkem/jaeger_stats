@@ -7,11 +7,53 @@ use crate::{
     cchain_cache::EndPointCChain};
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Clone)]
+pub enum CallDirection {
+    Inbound,
+    Outbound,
+    #[default]
+    Unknown,
+}
+
+impl From<&str> for CallDirection {
+    fn from(s: &str) -> Self {
+        match s {
+            "Inbound" => CallDirection::Inbound,   // would be nice if "Inbound" could be taken from 'CallDirection::Inbound.as_str()'
+            "Outbound" => CallDirection::Outbound,
+            "Unknown" => CallDirection::Unknown,
+            _ => panic!("Invalid value for CallDirection")
+        }
+    }
+}
+
+impl From<Option<&String>> for CallDirection {
+    fn from(s: Option<&String>) -> Self {
+        match s {
+            Some(s) if &s[..] == "Server" => CallDirection::Inbound,
+            Some(s) if &s[..] == "Client" => CallDirection::Outbound,
+            None => CallDirection::Unknown,
+            _ => panic!("Invalid value for CallDirection")
+        }
+    }
+}
+
+
+impl CallDirection {
+    fn as_str(&self) -> &'static str {
+        match self {
+            CallDirection::Inbound => "Inbound",
+            CallDirection::Outbound => "Outbound",
+            CallDirection::Unknown => "Unknown",
+        }
+
+    }
+}
 
 #[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Call {
     pub process: String,
     pub method: String,
+    pub call_direction: CallDirection,
 }
 
 impl Call {
@@ -20,6 +62,16 @@ impl Call {
         let method = &self.method;
         format!("{process}/{method}")
     }
+}
+
+impl ToString for Call {
+    fn to_string(&self) -> String {
+        match self.call_direction {
+            CallDirection::Unknown => self.process.to_owned() + "/" + &self.method,
+            _ => self.process.to_owned() + "/" + &self.method + " [" + self.call_direction.as_str()
+        }
+    }
+
 }
 
 pub type CallChain = Vec<Call>;
@@ -42,7 +94,7 @@ pub fn call_chain_key(call_chain: &CallChain, caching_process: &str, is_leaf: bo
         .iter()
         .fold(String::new(), |a, b| {
             let sep = if a.len() > 0 { " | " } else { "" };
-            a + sep + &b.process + "/" + &b.method
+            a + sep + &b.to_string()
         });
     let leaf_str = if is_leaf { LEAF_LABEL_WITH_SPACE } else { "" };
     call_chain_str + &"& " + &caching_process + &"& "+ &leaf_str    // using '&' as separator as a ';' separator would break the CSV-files
@@ -72,7 +124,7 @@ pub fn caching_process_label(caching_process: &Vec<String>, call_chain: &CallCha
     let mut cached = Vec::new();
 
     call_chain.iter()
-    .for_each(|Call{process, method}| {
+    .for_each(|Call{process, method, ..}| {
         match &method[..] {
             "GET" | "POST" | "HEAD" | "QUERY" => (),  // ignore these methods as the inbound call has been matched already. (prevent duplicates of cached names)
             _ => match caching_process.iter().find(|&s| *s == *process) {

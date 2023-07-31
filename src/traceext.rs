@@ -65,7 +65,7 @@ impl TraceExt {
                     .partition(|(k2, v2)| v2.rooted);
 
                 if non_rooted.len() > 0 {
-                    let depths: Vec<_> = non_rooted.iter().map(|(k,v)| v.depth).collect();
+                    let depths: Vec<_> = non_rooted.iter().map(|(_k,v)| v.depth).collect();
                     report(Chapter::Details, format!("For key '{key}'  found {} non-rooted out of {} traces at depths {depths:?}", non_rooted.len(), non_rooted.len() + rooted.len()));
                 }
 

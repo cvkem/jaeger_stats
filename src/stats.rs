@@ -4,7 +4,7 @@ use std::{
 use crate::{
     cchain_stats::{CChainStatsKey, CChainStatsValue, CChainStats},
     method_stats::{MethodStats, MethodStatsValue},
-    call_chain::{Call, CallChain, caching_process_label, call_chain_key},
+    call_chain::{Call, CallChain, caching_process_label, call_chain_key, CallDirection},
     Trace,
     span::Spans};
 use chrono::{
@@ -13,7 +13,7 @@ use chrono::{
 
 
 
-type ProcessKey = String;
+//type ProcessKey = String;    // does not deliver any additional type-safety
 
 #[derive(Debug, Default)]
 pub struct Stats {
@@ -87,7 +87,7 @@ impl StatsRec {
         spans
             .iter()
             .enumerate()
-            .filter(|(idx, span)| {
+            .filter(|(_, span)| {
                 if rooted_spans {
                     span.rooted
                 } else {
@@ -336,7 +336,12 @@ fn get_call_chain(idx: usize, spans: &Spans) -> CallChain {
     // and push all proces names starting from the root
     let process = span.get_process_str().to_owned();
     let method = span.operation_name.to_owned();
-    call_chain.push( Call{process, method} );
+    let call_direction = if let Some(call_dir) = &span.span_kind {
+        Some(call_dir).into()
+    } else {
+        CallDirection::Unknown
+    };
+    call_chain.push( Call{process, method, call_direction});
     call_chain
 }
 

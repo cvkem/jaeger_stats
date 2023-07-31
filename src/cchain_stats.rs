@@ -3,7 +3,7 @@ use std::{
     error::Error,
     collections::HashMap};
 use crate::{
-    call_chain::{Call, CallChain, call_chain_key, LEAF_LABEL},
+    call_chain::{Call, CallChain, call_chain_key, LEAF_LABEL, CallDirection},
     rate::calc_rate,
     stats::{format_float, format_float_opt}, 
     report::{Chapter, report}, string_hash};
@@ -67,11 +67,12 @@ impl CChainStatsKey {
             Some(s) => s.to_owned(),
             None => "".to_owned()
         };
-        let leaf_label = LEAF_LABEL; // used in match as the static LEAF_LABEL is nog allowed directly
+//        let leaf_label = LEAF_LABEL; // used in match as the static LEAF_LABEL is nog allowed directly
         let is_leaf = match parts.next() {
             Some(s) => match s {
-                    leaf_label => true,
-                    "" => false,
+//                leaf_label => true,
+                LEAF_LABEL => true,
+                "" => false,
                     s => panic!("Expected {LEAF_LABEL} or empty string. Found {s}")
                 },
             None => false
@@ -79,10 +80,17 @@ impl CChainStatsKey {
 
         let call_chain = cchain.split("|")
             .map(|s| {
-                    let Some((proc, meth)) = s.trim().split_once("/") else {
+                    let Some((proc, meth_dir)) = s.trim().split_once("/") else {
                         panic!("Failed to unpack '{s}' in a process/operation pair.");
                     };
-                    Call{process: proc.to_owned(), method: meth.to_owned()}
+                    let (meth, call_direction) = match meth_dir.split_once("[") {
+                        Some((meth, dir)) => {
+                            let dir = &dir[0..(dir.len()-1)];
+                            (meth, dir.into())
+                        },
+                        None => (meth_dir, CallDirection::Unknown) 
+                    };
+                    Call{process: proc.trim().to_owned(), method: meth.trim().to_owned(), call_direction}
                 })
             .collect();
         Ok(Self{call_chain, caching_process, is_leaf})

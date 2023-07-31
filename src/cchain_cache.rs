@@ -55,7 +55,7 @@ impl CChainEndPointCache {
                                 Some(cchain_key)
                             },
                         Err(err) => {
-                            println!("Loading of entry '{key}' failed");
+                            println!("Loading of entry '{key}' failed with error: {err:?}");
                             None
                         }
                     }
@@ -78,7 +78,7 @@ impl CChainEndPointCache {
                         Some(cchain_key)
                     },
                 Err(err) => {
-                    println!("Loading of entry '{key}' failed");
+                    println!("Loading of entry '{key}' failed with error: {err:?}");
                     None
                 }
             }

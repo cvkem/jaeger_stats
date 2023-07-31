@@ -34,7 +34,7 @@ pub fn calc_rate(data: &Vec<i64>, num_outliers: i32) -> Option<(f64, f64)> {
             .for_each(|(idx, v)| println!("{idx}:  {v}    check:  {}", data[idx]) );
     }
 
-    for i in 0..num_outliers {
+    for _i in 0..num_outliers {
         data.pop();
     }
 
