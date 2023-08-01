@@ -53,6 +53,7 @@ impl CallDirection {
 pub struct Call {
     pub process: String,
     pub method: String,
+    #[serde(default)]
     pub call_direction: CallDirection,
 }
 

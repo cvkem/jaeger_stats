@@ -39,3 +39,5 @@ pub use cchain_cache::CChainEndPointCache;
 pub use report::{report, write_report};
 pub use hash::{hash, string_hash};
 pub use stitch::{read_stitch_list, StitchList};
+pub use graph::build_graph;
+pub use stats_json::StatsRecJson;

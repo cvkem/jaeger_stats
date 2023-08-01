@@ -8,9 +8,6 @@ use crate::{
     stats::{format_float, format_float_opt}, 
     report::{Chapter, report}, string_hash};
 use serde::{Deserialize, Serialize};
-use chrono::{
-    DateTime,
-    Utc};
 
 
 
@@ -67,10 +64,8 @@ impl CChainStatsKey {
             Some(s) => s.to_owned(),
             None => "".to_owned()
         };
-//        let leaf_label = LEAF_LABEL; // used in match as the static LEAF_LABEL is nog allowed directly
         let is_leaf = match parts.next() {
             Some(s) => match s {
-//                leaf_label => true,
                 LEAF_LABEL => true,
                 "" => false,
                     s => panic!("Expected {LEAF_LABEL} or empty string. Found {s}")

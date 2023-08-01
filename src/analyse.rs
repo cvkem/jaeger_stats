@@ -58,7 +58,7 @@ fn read_trace_folder(folder: &Path) -> Result<(Vec<Trace>, i32), Box<dyn Error>>
         Ok((traces, num_files))
     }
 
-/// create the statistics over all traces using the caching_processes and write them to the file
+/// create the statistics over all traces using the caching_processes
 fn create_trace_statistics(traces: &Vec<&TraceExt>, caching_processes: &Vec<String>, num_files: i32) -> StatsRec {
     let mut cumm_stats = StatsRec::new(&caching_processes, num_files);
     traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );

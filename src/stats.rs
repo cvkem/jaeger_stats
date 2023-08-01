@@ -65,12 +65,13 @@ impl StatsRec {
                     .keys()
                     .map(|psk| psk.call_chain_key())
             })
-//            .intersperse("\n")
             .collect();
         tmp.join("\n")
     }
 
-    pub fn extend_statistics(&mut self, trace: &Trace, rooted_spans: bool) {
+    /// extend the statistics of this StatsRec with the spans of a provided trace.
+    /// The rooted_spans_only parameter determined the filtering. When set to true only spans that trace back to root are included in the analysis (parameter always false in current code)
+    pub fn extend_statistics(&mut self, trace: &Trace, rooted_spans_only: bool) {
 
         //println!("Extend statistics for trace: {}", trace.trace_id);
 
@@ -88,7 +89,8 @@ impl StatsRec {
             .iter()
             .enumerate()
             .filter(|(_, span)| {
-                if rooted_spans {
+                // determines which traces to include
+                if rooted_spans_only {
                     span.rooted
                 } else {
                     true
