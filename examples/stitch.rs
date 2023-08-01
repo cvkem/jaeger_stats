@@ -1,9 +1,7 @@
-use jaeger_stats::{read_stitch_list, StitchList, set_comma_float};
-use std::{
-    path::Path};
 use clap;
 use clap::Parser;
-
+use jaeger_stats::{read_stitch_list, set_comma_float, StitchList};
+use std::path::Path;
 
 /// Stitching results of different runs of trace_analysis into a single CSV for visualization in Excel
 #[derive(Parser, Debug)]
@@ -20,11 +18,7 @@ struct Args {
     comma_float: bool,
 }
 
-
-
-
-fn main()  {
- 
+fn main() {
     let args = Args::parse();
 
     let stitch_list_path = Path::new(&args.stitch_list);

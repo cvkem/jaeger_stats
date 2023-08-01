@@ -1,11 +1,6 @@
-use std::{  
-    error::Error,
-    path::Path};
-use crate::{
-    aux::read_lines,
-    cchain_stats::CChainStatsKey,
-    cchain_cache::EndPointCChain};
+use crate::{aux::read_lines, cchain_cache::EndPointCChain, cchain_stats::CChainStatsKey};
 use serde::{Deserialize, Serialize};
+use std::{error::Error, path::Path};
 
 #[derive(Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Clone)]
 pub enum CallDirection {
@@ -18,10 +13,10 @@ pub enum CallDirection {
 impl From<&str> for CallDirection {
     fn from(s: &str) -> Self {
         match s {
-            "Inbound" => CallDirection::Inbound,   // would be nice if "Inbound" could be taken from 'CallDirection::Inbound.as_str()'
+            "Inbound" => CallDirection::Inbound, // would be nice if "Inbound" could be taken from 'CallDirection::Inbound.as_str()'
             "Outbound" => CallDirection::Outbound,
             "Unknown" => CallDirection::Unknown,
-            _ => panic!("Invalid value for CallDirection")
+            _ => panic!("Invalid value for CallDirection"),
         }
     }
 }
@@ -32,11 +27,10 @@ impl From<Option<&String>> for CallDirection {
             Some(s) if &s[..] == "Server" => CallDirection::Inbound,
             Some(s) if &s[..] == "Client" => CallDirection::Outbound,
             None => CallDirection::Unknown,
-            _ => panic!("Invalid value for CallDirection")
+            _ => panic!("Invalid value for CallDirection"),
         }
     }
 }
-
 
 impl CallDirection {
     fn as_str(&self) -> &'static str {
@@ -45,7 +39,6 @@ impl CallDirection {
             CallDirection::Outbound => "Outbound",
             CallDirection::Unknown => "Unknown",
         }
-
     }
 }
 
@@ -69,14 +62,12 @@ impl ToString for Call {
     fn to_string(&self) -> String {
         match self.call_direction {
             CallDirection::Unknown => self.process.to_owned() + "/" + &self.method,
-            _ => self.process.to_owned() + "/" + &self.method + " [" + self.call_direction.as_str()
+            _ => self.process.to_owned() + "/" + &self.method + " [" + self.call_direction.as_str(),
         }
     }
-
 }
 
 pub type CallChain = Vec<Call>;
-
 
 /// get the file-name for a specific key (excluding path)
 pub fn cchain_filename(key: &str) -> String {
@@ -85,22 +76,18 @@ pub fn cchain_filename(key: &str) -> String {
 
 const LEAF_LABEL_WITH_SPACE: &str = " *LEAF*";
 
-pub const LEAF_LABEL: &str = "*LEAF*";  // LEAF_LABEL_WITH_SPACE.trim();
-
+pub const LEAF_LABEL: &str = "*LEAF*"; // LEAF_LABEL_WITH_SPACE.trim();
 
 /// build a call-chain-key based on parameters.
 /// This is a separate function as this allows us to put in another caching_process than contained in the CallChainStatsKey.
 pub fn call_chain_key(call_chain: &CallChain, caching_process: &str, is_leaf: bool) -> String {
-    let call_chain_str = call_chain
-        .iter()
-        .fold(String::new(), |a, b| {
-            let sep = if a.len() > 0 { " | " } else { "" };
-            a + sep + &b.to_string()
-        });
+    let call_chain_str = call_chain.iter().fold(String::new(), |a, b| {
+        let sep = if a.len() > 0 { " | " } else { "" };
+        a + sep + &b.to_string()
+    });
     let leaf_str = if is_leaf { LEAF_LABEL_WITH_SPACE } else { "" };
-    call_chain_str + &"& " + &caching_process + &"& "+ &leaf_str    // using '&' as separator as a ';' separator would break the CSV-files
+    call_chain_str + &"& " + &caching_process + &"& " + &leaf_str // using '&' as separator as a ';' separator would break the CSV-files
 }
-
 
 /// read a cchain-file and parse it
 pub fn read_cchain_file(path: &Path) -> Result<EndPointCChain, Box<dyn Error>> {
@@ -114,27 +101,29 @@ pub fn read_cchain_file(path: &Path) -> Result<EndPointCChain, Box<dyn Error>> {
                 Some(CChainStatsKey::parse(&l).unwrap())
             }
         })
-    .collect())
+        .collect())
 }
 
 /// the label shows whether cached processes are in the call-chain and if so returns a suffix to represent it.
 pub fn caching_process_label(caching_process: &Vec<String>, call_chain: &CallChain) -> String {
     if caching_process.len() == 0 {
-        return "".to_owned()
+        return "".to_owned();
     }
     let mut cached = Vec::new();
 
-    call_chain.iter()
-    .for_each(|Call{process, method, ..}| {
-        match &method[..] {
-            "GET" | "POST" | "HEAD" | "QUERY" => (),  // ignore these methods as the inbound call has been matched already. (prevent duplicates of cached names)
-            _ => match caching_process.iter().find(|&s| *s == *process) {
-                Some(_) => {
-                    cached.push(process.to_owned())},
-                None => ()
+    call_chain.iter().for_each(
+        |Call {
+             process, method, ..
+         }| {
+            match &method[..] {
+                "GET" | "POST" | "HEAD" | "QUERY" => (), // ignore these methods as the inbound call has been matched already. (prevent duplicates of cached names)
+                _ => match caching_process.iter().find(|&s| *s == *process) {
+                    Some(_) => cached.push(process.to_owned()),
+                    None => (),
+                },
             }
-        }
-    });
+        },
+    );
     if cached.len() > 0 {
         format!(" [{}]", cached.join(", "))
     } else {

@@ -1,13 +1,7 @@
-use jaeger_stats::{
-    process_file_or_folder,
-    set_comma_float,
-    set_tz_offset_minutes,
-    write_report};
-use std::{
-    path::Path};
 use clap;
 use clap::Parser;
-
+use jaeger_stats::{process_file_or_folder, set_comma_float, set_tz_offset_minutes, write_report};
+use std::path::Path;
 
 /// Parsing and analyzing Jaeger traces
 
@@ -26,13 +20,11 @@ struct Args {
     #[arg(short, long, default_value_t = 2*60)]
     timezone_minutes: u64,
 
-    #[arg(short='f', long, default_value_t = true)]
+    #[arg(short = 'f', long, default_value_t = true)]
     comma_float: bool,
 }
 
-
-fn main()  {
- 
+fn main() {
     let args = Args::parse();
 
     let caching_processes = if let Some(cache_proc) = args.caching_process {
@@ -45,7 +37,11 @@ fn main()  {
 
     set_comma_float(args.comma_float);
 
-    let mut path = process_file_or_folder(&Path::new(&args.input), caching_processes, &Path::new(&args.call_chain_folder));
+    let mut path = process_file_or_folder(
+        &Path::new(&args.input),
+        caching_processes,
+        &Path::new(&args.call_chain_folder),
+    );
     path.push("report.txt");
     write_report(path.to_str().unwrap());
 }

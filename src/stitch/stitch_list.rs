@@ -1,21 +1,22 @@
+use super::{
+    key::Key,
+    method_stats_reporter::{MSReportItem, MethodStatsReporter},
+    stats_rec_reporter::{SRJReportItem, StatsRecReporter},
+};
+use crate::{
+    aux::{read_lines, write_string_to_file},
+    stats_json::StatsRecJson,
+};
 use std::{
     error::Error,
     ffi::OsString,
-    path::{Path, PathBuf}};
-use crate::{
-    aux::{read_lines, write_string_to_file},
-    stats_json::StatsRecJson};
-use super::{
-    key::Key,
-    method_stats_reporter::{
-        MethodStatsReporter,
-        MSReportItem}, stats_rec_reporter::{SRJReportItem, StatsRecReporter}};
-
+    path::{Path, PathBuf},
+};
 
 #[derive(Default, Debug)]
 pub struct StitchList {
-    pub lines: Vec<String>,  // numbered Lines including comments
-    pub paths: Vec<Option<OsString>>  // a None represents a slot that is not filled (will become an empty column)
+    pub lines: Vec<String>,           // numbered Lines including comments
+    pub paths: Vec<Option<OsString>>, // a None represents a slot that is not filled (will become an empty column)
 }
 
 impl StitchList {
@@ -34,7 +35,7 @@ impl StitchList {
                 // skip comments at the tail of the path-string
                 let mut path = match path.find('#') {
                     Some(pos) => &path[0..pos].trim(),
-                    None => path            
+                    None => path,
                 };
                 // correct base-path for ".." on path
                 let mut base_path = base_path.clone();
@@ -44,14 +45,21 @@ impl StitchList {
                         panic!("can not backtrack via .. beyond the root basepath {base_path:?} for path {path}");
                     }
                 }
-                        
+
                 base_path.push(Path::new(path));
                 println!("base_path now is {base_path:?}");
-                base_path.canonicalize().
-                    map_err(|err| {eprintln!("\nFailed to handle path {base_path:?}. File probably does not exist!!"); err}).unwrap();
-                self.paths.push(Some(base_path.into_os_string()));        
-            },
-            None => self.paths.push(None)
+                base_path
+                    .canonicalize()
+                    .map_err(|err| {
+                        eprintln!(
+                            "\nFailed to handle path {base_path:?}. File probably does not exist!!"
+                        );
+                        err
+                    })
+                    .unwrap();
+                self.paths.push(Some(base_path.into_os_string()));
+            }
+            None => self.paths.push(None),
         }
     }
 
@@ -62,20 +70,21 @@ impl StitchList {
     }
 
     pub fn write_stitched_csv(self, path: &Path) {
-        let data = self.paths
+        let data = self
+            .paths
             .iter()
             .enumerate()
             .map(|(idx, p)| {
                 if let Some(p) = p {
-                    println!("{}: Reading {p:?}", idx+1);
+                    println!("{}: Reading {p:?}", idx + 1);
                     Some(StatsRecJson::read_file(p).expect("Failed to read JSON-file"))
                 } else {
-                    println!("{}: No Data", idx+1);
+                    println!("{}: No Data", idx + 1);
                     None
                 }
             })
             .collect();
-            
+
         let mut csv_string = self.lines;
 
         append_basic_stats(&mut csv_string, &data);
@@ -84,13 +93,13 @@ impl StitchList {
 
         match write_string_to_file(path.to_str().unwrap(), csv_string.join("\n")) {
             Ok(()) => (),
-            Err(err) => println!("Writing file '{}' failed with Error: {err:?}", path.display())
+            Err(err) => println!(
+                "Writing file '{}' failed with Error: {err:?}",
+                path.display()
+            ),
         };
     }
-
-    
 }
-
 
 /// Read a stitch-list file and return a struct showing the contents.
 pub fn read_stitch_list(path: &Path) -> Result<StitchList, Box<dyn Error>> {
@@ -101,37 +110,44 @@ pub fn read_stitch_list(path: &Path) -> Result<StitchList, Box<dyn Error>> {
         .expect("Could not extract base_path of stitch-list")
         .to_path_buf();
 
-    Ok(read_lines(path)?
-        .fold(StitchList::new(), |mut sl, l| {
-            let l = l.unwrap();
-            let l = l.trim();
-            if l.len() > 0 {
-                let ch = l.chars().next().unwrap();
-                match ch {
-                    '#' => sl.add_unnumbered(l),
-                    '%' => {
-                        sl.add_path(&base_path, None);
-                        sl.add_numbered(l);
-                    },
-                    _  => {
-                       sl.add_path(&base_path, Some(l));
-                       sl.add_numbered(l);
-                    }    
+    Ok(read_lines(path)?.fold(StitchList::new(), |mut sl, l| {
+        let l = l.unwrap();
+        let l = l.trim();
+        if l.len() > 0 {
+            let ch = l.chars().next().unwrap();
+            match ch {
+                '#' => sl.add_unnumbered(l),
+                '%' => {
+                    sl.add_path(&base_path, None);
+                    sl.add_numbered(l);
+                }
+                _ => {
+                    sl.add_path(&base_path, Some(l));
+                    sl.add_numbered(l);
                 }
             }
-            sl
-        }))
+        }
+        sl
+    }))
 }
-
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
 fn append_basic_stats(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>) {
     buffer.push("\n\n# Basic statistics over alle stitched files".to_owned());
     let mut report_items = Vec::new();
-    report_items.push(SRJReportItem::new("num_files", |srj| srj.num_files.unwrap_or(0).to_string()));
-    report_items.push(SRJReportItem::new("num_traces", |srj| srj.trace_id.len().to_string()));
-    report_items.push(SRJReportItem::new("avg_duration_micros", |srj| (srj.duration_micros.iter().sum::<u64>() as usize/srj.duration_micros.len()).to_string()));
-    report_items.push(SRJReportItem::new("avg_duration_micros", |srj| (srj.time_to_respond_micros.iter().sum::<u64>() as usize/srj.time_to_respond_micros.len()).to_string()));
+    report_items.push(SRJReportItem::new("num_files", |srj| {
+        srj.num_files.unwrap_or(0).to_string()
+    }));
+    report_items.push(SRJReportItem::new("num_traces", |srj| {
+        srj.trace_id.len().to_string()
+    }));
+    report_items.push(SRJReportItem::new("avg_duration_micros", |srj| {
+        (srj.duration_micros.iter().sum::<u64>() as usize / srj.duration_micros.len()).to_string()
+    }));
+    report_items.push(SRJReportItem::new("avg_duration_micros", |srj| {
+        (srj.time_to_respond_micros.iter().sum::<u64>() as usize / srj.time_to_respond_micros.len())
+            .to_string()
+    }));
 
     let mut reporter = StatsRecReporter::new(buffer, data, report_items);
     reporter.append_report()
@@ -143,22 +159,33 @@ fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>
 
     // build the stack of reports that need to be calculated
     let mut report_items = Vec::new();
-    report_items.push(MSReportItem::new("count", |msv, _, _| msv.count.to_string()));
-    report_items.push(MSReportItem::new("Occurance percentage", |msv,_, num_traces| (msv.count as f64/ num_traces as f64).to_string()));
-    report_items.push(MSReportItem::new("rate (avg)", |msv, num_files, _| msv.get_avg_rate_str(num_files)));
-//    report_items.push(MSReportItem::new("rate (median)", |msv, num_files, _| msv.get_median_rate_str(num_files)));
-    report_items.push(MSReportItem::new("min_millis", |msv, _, _| msv.get_min_millis_str()));
-    report_items.push(MSReportItem::new("avg_millis", |msv, _, _| msv.get_avg_millis_str()));
-    report_items.push(MSReportItem::new("max_millis", |msv, _, _| msv.get_max_millis_str()));
-    
+    report_items.push(MSReportItem::new("count", |msv, _, _| {
+        msv.count.to_string()
+    }));
+    report_items.push(MSReportItem::new(
+        "Occurance percentage",
+        |msv, _, num_traces| (msv.count as f64 / num_traces as f64).to_string(),
+    ));
+    report_items.push(MSReportItem::new("rate (avg)", |msv, num_files, _| {
+        msv.get_avg_rate_str(num_files)
+    }));
+    //    report_items.push(MSReportItem::new("rate (median)", |msv, num_files, _| msv.get_median_rate_str(num_files)));
+    report_items.push(MSReportItem::new("min_millis", |msv, _, _| {
+        msv.get_min_millis_str()
+    }));
+    report_items.push(MSReportItem::new("avg_millis", |msv, _, _| {
+        msv.get_avg_millis_str()
+    }));
+    report_items.push(MSReportItem::new("max_millis", |msv, _, _| {
+        msv.get_max_millis_str()
+    }));
+
     let mut reporter = MethodStatsReporter::new(buffer, data, report_items);
 
     let keys = reporter.get_keys();
     keys.into_iter()
-        .for_each(|Key{process, operation}| reporter.append_report(process, operation));
+        .for_each(|Key { process, operation }| reporter.append_report(process, operation));
 }
-
-
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
 fn append_callchain_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>) {

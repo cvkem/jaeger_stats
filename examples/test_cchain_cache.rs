@@ -1,15 +1,14 @@
 use jaeger_stats::CChainEndPointCache;
 use std::{
     env,
-    path::{Path, PathBuf}};
-
+    path::{Path, PathBuf},
+};
 
 //const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadTest-prodinz-prodGroep/";
 const INPUT_FOLDER: &str = "/home/ceesvk/jaeger/prodinzicht-23-juni-14u/CallChain";
 const INPUT_KEY: &str = "retail-gateway_GET:_services_apix-mobiel-accounts_api_cards";
 
-
-fn main()  {
+fn main() {
     let args: Vec<String> = env::args().collect();
 
     let input_folder = if args.len() > 1 {

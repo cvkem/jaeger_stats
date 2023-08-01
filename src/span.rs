@@ -1,37 +1,32 @@
 #![allow(non_snake_case)]
 
-use std::iter;
 use crate::{
+    micros_to_datetime,
+    process_map::{build_process_map, Process, ProcessMap},
+    raw_jaeger::{JaegerItem, JaegerSpan, JaegerTags},
     JaegerTrace,
-    raw_jaeger::{
-        JaegerSpan,
-        JaegerItem,
-        JaegerTags},
-    process_map::{build_process_map, ProcessMap, Process},
-    micros_to_datetime};
-use chrono::{
-    DateTime,
-    Utc};
+};
+use chrono::{DateTime, Utc};
 use lazy_static::lazy_static;
 use regex::Regex;
-
+use std::iter;
 
 #[derive(Debug, Default)]
-pub struct Span{
-// Process should be a reference, but that complicates things:
-//    - default is not possible
-//    - how to build a Vec (no copy)
-//    - passing lifetimes
-//pub struct Span<'a> {
+pub struct Span {
+    // Process should be a reference, but that complicates things:
+    //    - default is not possible
+    //    - how to build a Vec (no copy)
+    //    - passing lifetimes
+    //pub struct Span<'a> {
     pub parent: Option<usize>,
     pub is_leaf: bool,
-    pub rooted: bool,  // does this span trace back to the real root? (default = false)
+    pub rooted: bool, // does this span trace back to the real root? (default = false)
     pub span_id: String,
     pub operation_name: String,
     pub full_operation_name: Option<String>,
     pub start_dt: DateTime<Utc>,
     pub duration_micros: u64,
-//    pub process: &'a Process,
+    //    pub process: &'a Process,
     pub process: Option<Process>,
     // optional parameters from tags
     // to see statistics on all tags run:
@@ -45,7 +40,7 @@ pub struct Span{
     pub db_type: Option<String>,
     pub db_statement: Option<String>,
     pub warnings: Option<Vec<String>>,
-    pub eb_contract: Option<String>,     // either tag 'identity.eb_contract_id'  or 'eb_contract'
+    pub eb_contract: Option<String>, // either tag 'identity.eb_contract_id'  or 'eb_contract'
 }
 
 pub type Spans = Vec<Span>;
@@ -59,37 +54,40 @@ impl Span {
         let start_dt = micros_to_datetime(js.startTime);
         let duration_micros = js.duration;
         let process = proc_map.get(&js.processID).map(|proc| proc.to_owned());
-        let mut span = Span { parent, span_id, operation_name, full_operation_name, start_dt, duration_micros, process,
-            ..Default::default()};
+        let mut span = Span {
+            parent,
+            span_id,
+            operation_name,
+            full_operation_name,
+            start_dt,
+            duration_micros,
+            process,
+            ..Default::default()
+        };
         span.add_tags(&js.tags);
         span
-        }
-
+    }
 
     fn add_tags(&mut self, tags: &JaegerTags) {
-        tags
-            .iter()
-            .for_each(|tag| {
-                match &tag.key[..] {
-                    "span.kind" => self.span_kind = Some(tag.get_string()), 
-                    "http.status_code" => self.http_status_code = Some(tag.get_i32()),
-                    "http.method" => self.http_method = Some(tag.get_string()), 
-                    "http.url" => self.http_url = Some(tag.get_string()), 
-                    "component" => self.component = Some(tag.get_string()), 
-                    "db.instance" => self.db_instance = Some(tag.get_string()), 
-                    "db.type" => self.db_instance = Some(tag.get_string()), 
-                    "db.statement" => self.db_statement = Some(tag.get_string()), 
-                    "identity.eb_contract_id " | "eb_contract" => self.eb_contract = Some(tag.get_string()),
-                    _ => ()
-                }
-            })
+        tags.iter().for_each(|tag| match &tag.key[..] {
+            "span.kind" => self.span_kind = Some(tag.get_string()),
+            "http.status_code" => self.http_status_code = Some(tag.get_i32()),
+            "http.method" => self.http_method = Some(tag.get_string()),
+            "http.url" => self.http_url = Some(tag.get_string()),
+            "component" => self.component = Some(tag.get_string()),
+            "db.instance" => self.db_instance = Some(tag.get_string()),
+            "db.type" => self.db_instance = Some(tag.get_string()),
+            "db.statement" => self.db_statement = Some(tag.get_string()),
+            "identity.eb_contract_id " | "eb_contract" => self.eb_contract = Some(tag.get_string()),
+            _ => (),
+        })
     }
 
     //. get_process_name returns the string-slice of the process of this span (without the operation (method) that is called)
-    pub fn get_process_str(&self) -> & str {
+    pub fn get_process_str(&self) -> &str {
         match &self.process {
             Some(p) => &p.name[..],
-            None => "-"
+            None => "-",
         }
     }
 
@@ -97,16 +95,14 @@ impl Span {
     // pub fn get_process_name(&self) -> String {
     //     self.get_process_str().to_owned()
     // }
-
 }
-
-
 
 fn replace_regex(s: String, re: &Regex, replacement: &str) -> (String, bool) {
     let tmp = s.clone(); // TODO: this clone is usedless (just to satisfy the borrow-checker)
-    let found: Vec<&str> = re.find_iter(&tmp).map(|m| m.as_str()).collect();  
+    let found: Vec<&str> = re.find_iter(&tmp).map(|m| m.as_str()).collect();
     if found.len() > 0 {
-        let s = found.into_iter()
+        let s = found
+            .into_iter()
             .fold(s, |s, obs| s.replace(obs, replacement));
         (s, true)
     } else {
@@ -134,7 +130,6 @@ fn get_operation_unified(js_operation: &str) -> (String, Option<String>) {
         static ref RE_JAARREK: Regex = Regex::new(r"\-\d{5,9}\-20\d{2}").unwrap();
     }
 
-    
     let oper_name = js_operation.to_owned();
     let (oper_name, repl_time) = replace_regex(oper_name, &RE_TIME, "/{TIME}");
     let (oper_name, repl_spaarpot) = replace_regex(oper_name, &RE_SPAAR, "/{SPAAR}");
@@ -148,20 +143,15 @@ fn get_operation_unified(js_operation: &str) -> (String, Option<String>) {
     } else {
         (oper_name, None)
     }
-
-   
 }
-
 
 /// mark_leafs sets the is_leaf value of each span.
 fn mark_leafs(spans: &mut Spans) {
     let mut is_leaf = Vec::with_capacity(spans.len());
     (0..spans.len()).for_each(|_| is_leaf.push(true));
-    spans.iter().for_each(|span| {
-        match span.parent {
-            None => (),
-            Some(par) => is_leaf[par] = false
-        }
+    spans.iter().for_each(|span| match span.parent {
+        None => (),
+        Some(par) => is_leaf[par] = false,
     });
 
     iter::zip(spans, is_leaf).for_each(|(mut span, is_leaf)| span.is_leaf = is_leaf);
@@ -189,18 +179,20 @@ fn add_parents(spans: &mut Spans, jspans: &Vec<JaegerSpan>) -> Vec<String> {
                 if !parent_found {
                     missing_span_ids.push(parentID.to_owned());
                 }
-            },
-            num => panic!("Span '{}' has {num} parent-references.", jspan.spanID)
+            }
+            num => panic!("Span '{}' has {num} parent-references.", jspan.spanID),
         }
     });
     missing_span_ids
-} 
-
+}
 
 /// mark all spans that are connected to the root.
 fn mark_rooted(spans: &mut Spans) {
     if spans[0].parent.is_some() {
-        println!("Could not find root at index=0, as it has parent {}", spans[0].parent.unwrap());
+        println!(
+            "Could not find root at index=0, as it has parent {}",
+            spans[0].parent.unwrap()
+        );
         return;
     }
     spans[0].rooted = true;
@@ -218,20 +210,19 @@ fn mark_rooted(spans: &mut Spans) {
         }
     }
 
-    (0..spans.len()).for_each(|idx| { mark_root_path(spans, idx); });
-
+    (0..spans.len()).for_each(|idx| {
+        mark_root_path(spans, idx);
+    });
 }
-
 
 /// build the list of spans (including parent links and proces-mapping)
 pub fn build_spans(item: &JaegerItem) -> (Spans, Vec<String>) {
     let proc_map = build_process_map(item);
 
-    let mut spans: Vec<_> = item.spans
+    let mut spans: Vec<_> = item
+        .spans
         .iter()
-        .map(|jspan| {
-            Span::new(jspan, &proc_map)
-        })
+        .map(|jspan| Span::new(jspan, &proc_map))
         .collect();
 
     let missing_span_ids = add_parents(&mut spans, &item.spans);
@@ -241,9 +232,3 @@ pub fn build_spans(item: &JaegerItem) -> (Spans, Vec<String>) {
 
     (spans, missing_span_ids)
 }
-
-
-
-
-
-

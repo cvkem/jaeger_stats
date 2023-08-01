@@ -1,41 +1,31 @@
 use jaeger_stats::{
-    read_jaeger_trace_file,
+    datetime_micros_str, datetime_millis_str, micros_to_datetime, read_jaeger_trace_file,
     JaegerTrace,
-    micros_to_datetime,
-    datetime_millis_str,
-    datetime_micros_str};
-use std::{
-    error::Error};
+};
+use std::error::Error;
 // use chrono::{
 //     DateTime,
 //     NaiveDateTime,
 //     Utc};
 
-
 const SHOW_STDOUT: bool = false;
 const INPUT_FILE: &str = "/home/ceesvk/Downloads/372e70a4e259978e.json";
 
-fn show_start_times(jt: &JaegerTrace)  {
-    jt.data
-        .iter()
-        .for_each(|ji| {
-            ji.spans
-                .iter()
-                .for_each(|span| {
-                    let dt_u64 = span.startTime;
+fn show_start_times(jt: &JaegerTrace) {
+    jt.data.iter().for_each(|ji| {
+        ji.spans.iter().for_each(|span| {
+            let dt_u64 = span.startTime;
 
-                    let dt = micros_to_datetime(dt_u64);
+            let dt = micros_to_datetime(dt_u64);
 
-                    let dt_millis = datetime_millis_str(dt);
-                    let dt_micros = datetime_micros_str(dt);
+            let dt_millis = datetime_millis_str(dt);
+            let dt_micros = datetime_micros_str(dt);
 
-                    // Print the newly formatted date and time
-                    println!("{} (millis)\t\t{} (micros)", dt_millis, dt_micros);
-                })
-        });
+            // Print the newly formatted date and time
+            println!("{} (millis)\t\t{} (micros)", dt_millis, dt_micros);
+        })
+    });
 }
-
-
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("Reading a Jaeger-trace from '{INPUT_FILE}'");

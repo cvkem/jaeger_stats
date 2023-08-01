@@ -1,19 +1,20 @@
 use crate::{
     aux::write_string_to_file,
     cchain_cache::CChainEndPointCache,
-    report::{Chapter, report},
+    cchain_stats::CChainStats,
+    cchain_stats::CChainStatsValue,
+    report::{report, Chapter},
+    trace::Trace,
     StatsRec,
-    trace::Trace, cchain_stats::CChainStatsValue, cchain_stats::CChainStats};
+};
 use std::{
     // error::Error,
     // fs::File,
-    // io::Write, 
+    // io::Write,
     collections::HashMap,
     mem,
-    path::PathBuf};
-
-
-
+    path::PathBuf,
+};
 
 /// Collect statistics as a string and write it to a textfile in CSV format
 pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec) {
@@ -21,7 +22,7 @@ pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec) {
     let stats_csv_str = stats.to_csv_string(stats.num_files);
     if let Err(err) = write_string_to_file(&csv_file, stats_csv_str) {
         panic!("Writing to file '{csv_file}' failed with error: {err:?}");
-    };    
+    };
 }
 
 pub struct TraceExt {
@@ -31,31 +32,48 @@ pub struct TraceExt {
 }
 
 impl TraceExt {
-
-    pub fn new(trace: Trace, folder: &PathBuf, caching_processes: &Vec<String>, num_files: i32) -> Self {
+    pub fn new(
+        trace: Trace,
+        folder: &PathBuf,
+        caching_processes: &Vec<String>,
+        num_files: i32,
+    ) -> Self {
         let base_name = trace.base_name(&folder);
 
         let mut stats = StatsRec::new(caching_processes, num_files);
         stats.extend_statistics(&trace, false);
-    
-        Self{base_name: base_name.into_string().unwrap(), trace, stats_rec: stats}
+
+        Self {
+            base_name: base_name.into_string().unwrap(),
+            trace,
+            stats_rec: stats,
+        }
     }
 
     /// Translate the root_call of this trace in an endpoint-key that can be used as base for the file-name to store the call-chains for this endpoint
     pub fn get_endpoint_key(&self) -> String {
-        self.trace.root_call.replace(&['/','\\',';',':'][..], "_")
+        self.trace
+            .root_call
+            .replace(&['/', '\\', ';', ':'][..], "_")
     }
 
     pub fn write_trace(&self) {
         let trace_str = format!("{:#?}", self.trace);
-        let output_file = format!("{}.txt", self.base_name); 
+        let output_file = format!("{}.txt", self.base_name);
         //println!("Now writing the read Jaeger_trace to {output_file}");
-        write_string_to_file(&output_file, trace_str).expect("Failed to write trace (.txt) to file");
+        write_string_to_file(&output_file, trace_str)
+            .expect("Failed to write trace (.txt) to file");
     }
 
-
     pub fn fix_cchains(&mut self, cchain_cache: &mut CChainEndPointCache) {
-        report(Chapter::Details, format!("Trace: {} does have {}", self.base_name, self.trace.missing_span_ids.len()));
+        report(
+            Chapter::Details,
+            format!(
+                "Trace: {} does have {}",
+                self.base_name,
+                self.trace.missing_span_ids.len()
+            ),
+        );
         if let Some(expect_cc) = cchain_cache.get_cchain_key(&self.get_endpoint_key()) {
             let new_stats: HashMap<_, _> = mem::take(&mut self.stats_rec.stats)
             .into_iter()
@@ -95,7 +113,7 @@ impl TraceExt {
                         cc
                     });
                 stats.call_chain = new_call_chain;
-                (key, stats) 
+                (key, stats)
             })
             .collect();
             self.stats_rec.stats = new_stats;
@@ -103,7 +121,6 @@ impl TraceExt {
             println!("Could not find a call-chain for {}", self.trace.root_call);
         }
     }
-
 
     // /// Fix the call_chain paths of a trace based on the expected call-chains.
     // pub fn fix_trace_call_chain(&mut self, expected_cc: &HashSet<String>) -> bool {
@@ -141,8 +158,8 @@ impl TraceExt {
     //                         n => {
     //                             println!("Found '{n}'  matches as Non-leaf and 0 as leaf for '{cc}'");
     //                             None
-    //                         } 
-    //                     } 
+    //                         }
+    //                     }
     //                 } else {
     //                     println!("NO-MATCH for: '{cc}'");
     //                     None
@@ -165,5 +182,4 @@ impl TraceExt {
     //         false
     //     }
     // }
-
 }

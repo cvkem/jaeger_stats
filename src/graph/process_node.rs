@@ -25,7 +25,10 @@ pub struct ProcessNode {
 
 impl ProcessNode {
     pub fn new(name: String) -> Self {
-        Self{name, ..Default::default()}
+        Self {
+            name,
+            ..Default::default()
+        }
     }
 
     /// for the operation 'oper_name' add count calls.
@@ -33,11 +36,8 @@ impl ProcessNode {
         self.operations
             .entry(oper_name)
             .and_modify(|cnt| *cnt += count)
-            .or_insert_with(|| {
-                count
-            });
+            .or_insert_with(|| count);
     }
 }
 
 pub type ProcessNodes = HashMap<String, ProcessNode>;
-

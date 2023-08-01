@@ -1,9 +1,9 @@
 // use crate::report::Chapter;
 use std::{
     fs::File,
-    io::{Write, BufWriter},
-    sync::Mutex};
-
+    io::{BufWriter, Write},
+    sync::Mutex,
+};
 
 #[derive(Copy, Clone)]
 #[repr(u8)]
@@ -11,10 +11,10 @@ pub enum Chapter {
     Summary = 0,
     Ingest,
     Analysis,
-    Details
+    Details,
 }
 
-static CHAPTER_NAMES: [&str;4] = ["Summary", "Ingest", "Analysis", "Details"];
+static CHAPTER_NAMES: [&str; 4] = ["Summary", "Ingest", "Analysis", "Details"];
 
 impl Chapter {
     fn discriminant(&self) -> usize {
@@ -24,7 +24,6 @@ impl Chapter {
 }
 
 static STORE: Mutex<Vec<Vec<String>>> = Mutex::new(Vec::new());
-
 
 pub fn report(chapter: Chapter, msg: String) {
     let idx = chapter.discriminant();
@@ -38,24 +37,19 @@ pub fn report(chapter: Chapter, msg: String) {
             guard.push(Vec::new());
         }
         guard[idx].push(msg);
-    
     }
-
 }
-
 
 pub fn write_report(path: &str) {
     let mut guard = STORE.lock().unwrap();
-    let contents = (0..guard.len()).
-        map(|idx| {
-            format!("{}\n{}\n\n", CHAPTER_NAMES[idx], guard[idx].join("\n"))
-        })
+    let contents = (0..guard.len())
+        .map(|idx| format!("{}\n{}\n\n", CHAPTER_NAMES[idx], guard[idx].join("\n")))
         .collect::<Vec<_>>()
         .join("\n");
     let mut f = File::create(path).expect("Failed to create report-file");
-    f.write_all(contents.as_bytes()).expect("Failed to write to report.");
+    f.write_all(contents.as_bytes())
+        .expect("Failed to write to report.");
 
     // wipe the contents
     *guard = Vec::new();
 }
-

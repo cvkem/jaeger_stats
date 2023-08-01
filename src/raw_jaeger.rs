@@ -4,21 +4,17 @@
 use serde::{Deserialize, Serialize};
 //use serde_json::Value;
 
-
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerProcess {
     serviceName: String,
     tags: Vec<JaegerTag>,
 }
-    
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerLog {
     timestamp: u64,
     fields: Vec<JaegerTag>,
 }
-    
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerReference {
@@ -26,17 +22,16 @@ pub struct JaegerReference {
     pub traceID: String,
     pub spanID: String,
 }
-    
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerTag {
     pub key: String,
     #[serde(rename(serialize = "type", deserialize = "type"))]
     pub type_id: String,
-    pub value: serde_json::Value
+    pub value: serde_json::Value,
 }
 
 impl JaegerTag {
-
     /// Extract the string-value or fail.
     pub fn get_string(&self) -> String {
         let serde_json::Value::String(val) = &self.value else {
@@ -59,14 +54,16 @@ impl JaegerTag {
         };
         match val.as_i64() {
             Some(val) => val as i32,
-            None =>  panic!("The key '{}' does not contain a number (i32). Value = {:?}", self.key, self.value)
+            None => panic!(
+                "The key '{}' does not contain a number (i32). Value = {:?}",
+                self.key, self.value
+            ),
         }
     }
-
 }
 
 pub type JaegerTags = Vec<JaegerTag>;
-    
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerSpan {
     pub traceID: String,
@@ -79,9 +76,9 @@ pub struct JaegerSpan {
     pub tags: JaegerTags,
     pub logs: Vec<JaegerLog>,
     pub processID: String,
-    pub warnings: Option<Vec<String >>,
+    pub warnings: Option<Vec<String>>,
 }
-    
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerItem {
     pub traceID: String,
@@ -93,9 +90,7 @@ pub struct JaegerItem {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct JaegerError {
-
-}
+pub struct JaegerError {}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerTrace {
@@ -105,6 +100,3 @@ pub struct JaegerTrace {
     pub offset: i32,
     pub errors: Option<Vec<JaegerError>>,
 }
-
-
-

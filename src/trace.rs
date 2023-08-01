@@ -1,16 +1,11 @@
-use std::{
-    ffi::OsString,
-    iter,
-    path::PathBuf};
 use crate::{
+    micros_to_datetime,
+    raw_jaeger::JaegerItem,
     span::{build_spans, Spans},
     JaegerTrace,
-    raw_jaeger::JaegerItem,
-    micros_to_datetime};
-use chrono::{
-    DateTime,
-    Utc};
-
+};
+use chrono::{DateTime, Utc};
+use std::{ffi::OsString, iter, path::PathBuf};
 
 #[derive(Debug)]
 pub struct Trace {
@@ -25,27 +20,35 @@ pub struct Trace {
 }
 
 impl Trace {
-
     /// build a Trace based upon a JaegerTrace
     pub fn new(jt: &JaegerTrace, idx: usize) -> Self {
         let item = &jt.data[idx];
-        let trace_id = item.traceID.to_owned(); 
+        let trace_id = item.traceID.to_owned();
         //println!(" Found trace: {}", item.traceID);
-    
+
         let (spans, missing_span_ids) = build_spans(item);
-    
+
         let root_call = get_root_call(&spans);
-    
-    //    let proc_map = build_process_map(item);
-    
+
+        //    let proc_map = build_process_map(item);
+
         let (start_dt, end_dt) = find_full_duration(item);
         let duration_micros = end_dt - start_dt;
         let start_dt = micros_to_datetime(start_dt);
         let end_dt = micros_to_datetime(end_dt);
-    
+
         let time_to_respond_micros = get_response_duration(&spans, item);
-    
-        Self{trace_id, root_call, start_dt, end_dt,duration_micros, time_to_respond_micros, missing_span_ids, spans}
+
+        Self {
+            trace_id,
+            root_call,
+            start_dt,
+            end_dt,
+            duration_micros,
+            time_to_respond_micros,
+            missing_span_ids,
+            spans,
+        }
     }
 
     /// get the nane of this trace as a CSV-file
@@ -54,16 +57,12 @@ impl Trace {
         folder.push(self.trace_id.clone());
         folder.into_os_string()
     }
-
 }
 
 pub fn extract_traces(jt: &JaegerTrace) -> Vec<Trace> {
     let num_traces = jt.data.len();
-    (0..num_traces)
-        .map(|idx| Trace::new(&jt, idx))
-        .collect()
+    (0..num_traces).map(|idx| Trace::new(&jt, idx)).collect()
 }
-
 
 fn find_full_duration(ji: &JaegerItem) -> (u64, u64) {
     // compute start-time based on start_time of earliest span
@@ -95,15 +94,14 @@ fn get_response_duration(spans: &Spans, ji: &JaegerItem) -> u64 {
             match span.parent {
                 None => Some(jspan.duration),
                 Some(_) => None
-            } 
+            }
         })
     else {
             panic!("Could not find the response duration");
         };
-    
+
     time_to_respond_micros
 }
-
 
 /// get_root_call finds the process and method that is the root-method of the trace.
 fn get_root_call(spans: &Spans) -> String {
@@ -125,5 +123,3 @@ fn get_root_call(spans: &Spans) -> String {
 
     root_call
 }
-
-

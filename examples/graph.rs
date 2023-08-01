@@ -1,10 +1,7 @@
-use jaeger_stats::{set_comma_float, StatsRecJson, build_graph};
-use std::{
-    ffi::OsString,
-    path::Path};
 use clap;
 use clap::Parser;
-
+use jaeger_stats::{build_graph, set_comma_float, StatsRecJson};
+use std::{ffi::OsString, path::Path};
 
 /// Stitching results of different runs of trace_analysis into a single CSV for visualization in Excel
 #[derive(Parser, Debug)]
@@ -16,26 +13,20 @@ struct Args {
 
     #[arg(short, long, default_value_t = String::from("stitched.csv"))]
     output: String,
-
     // #[arg(short, long, default_value_t = true)]
     // comma_float: bool,
 }
 
-
-
-
-fn main()  {
- 
+fn main() {
     let args = Args::parse();
 
     let stats_rec_path = OsString::from(&args.input);
 
-//    set_comma_float(args.comma_float);
+    //    set_comma_float(args.comma_float);
 
     let data = StatsRecJson::read_file(&stats_rec_path).expect("Failed to read JSON-file");
     // add the processing
     let graph = build_graph(&data);
-    
-    println!("{graph:#?}");
 
+    println!("{graph:#?}");
 }
