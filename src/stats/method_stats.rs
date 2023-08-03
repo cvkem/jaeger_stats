@@ -1,4 +1,4 @@
-use crate::{
+use super::{
     rate::calc_rate,
     stats::{format_float, format_float_opt},
 };

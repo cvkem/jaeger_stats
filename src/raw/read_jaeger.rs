@@ -6,16 +6,14 @@ use std::{
     path::Path,
 };
 
-use crate::{
-    raw_jaeger::JaegerTrace,
-    report::{report, Chapter},
-};
+use super::jaeger::JaegerTrace;
+use crate::aux::{report, Chapter};
+
 use encoding_rs::Encoding;
 
 /// check the Byte Order Mark (= BOM) of the file to find the current encoding.
 fn check_bom<P: AsRef<Path>>(path: P) -> Result<&'static Encoding, Box<dyn Error>> {
     let mut f = File::open(path)?;
-    //    let mut reader = BufReader::new(f);
     let mut buffer = [0_u8; 5];
 
     match f.read(&mut buffer) {

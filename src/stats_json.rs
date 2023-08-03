@@ -1,15 +1,14 @@
-use crate::{
-    cchain_stats::{CChainStatsKey, CChainStatsValue},
-    method_stats::MethodStats,
-    stats::{Stats, StatsRec},
-};
+use crate::stats::{
+        call_chain::{CChainStatsKey, CChainStatsValue},
+        method_stats::MethodStats,
+        stats::{Stats, StatsRec}};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     error::Error,
     ffi::OsString,
     fs::File,
-    io::{self, BufReader},
+    io
 };
 
 #[derive(Debug, Default, Serialize, Deserialize)]

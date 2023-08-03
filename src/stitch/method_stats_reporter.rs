@@ -1,6 +1,6 @@
 use crate::{
     //rate::set_show_rate_output,
-    method_stats::MethodStatsValue,
+    stats::method_stats::MethodStatsValue,
     stats_json::StatsRecJson,
 };
 use std::collections::HashSet;

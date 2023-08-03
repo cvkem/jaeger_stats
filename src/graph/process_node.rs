@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::call_chain::{CallChain, CallDirection};
+use crate::stats::call_chain::{CallChain, CallDirection};
 
 
 #[derive(Default, Debug)]

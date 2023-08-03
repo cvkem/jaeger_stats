@@ -1,7 +1,7 @@
 // use crate::report::Chapter;
 use std::{
     fs::File,
-    io::{BufWriter, Write},
+    io::Write,
     sync::Mutex,
 };
 

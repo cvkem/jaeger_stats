@@ -1,10 +1,8 @@
 use crate::{
     aux::write_string_to_file,
-    cchain_cache::CChainEndPointCache,
-    cchain_stats::CChainStats,
-    cchain_stats::CChainStatsValue,
-    report::{report, Chapter},
-    trace::Trace,
+    stats::call_chain::{CChainEndPointCache, CChainStatsValue},
+    aux::{report, Chapter},
+    processed::Trace,
     StatsRec,
 };
 use std::{

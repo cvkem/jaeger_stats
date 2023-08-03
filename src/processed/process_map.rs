@@ -1,4 +1,4 @@
-use crate::JaegerItem;
+use crate::raw::JaegerItem;
 use serde_json::Value;
 use std::collections::HashMap;
 

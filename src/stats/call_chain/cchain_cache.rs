@@ -1,7 +1,6 @@
-use crate::{
-    call_chain::{cchain_filename, read_cchain_file},
-    cchain_stats::CChainStatsKey,
-};
+use super::{
+    file::{cchain_filename, read_cchain_file},
+    cchain_stats::CChainStatsKey};
 use std::{collections::HashMap, path::PathBuf};
 
 /// An end-point has a set of call-chains that originate from this endpoint (each represented by a CChainStatsKey)

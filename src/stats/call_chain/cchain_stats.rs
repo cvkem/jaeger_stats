@@ -1,10 +1,12 @@
 use crate::{
-    call_chain::{call_chain_key, Call, CallChain, CallDirection, LEAF_LABEL},
-    rate::calc_rate,
-    report::{report, Chapter},
+    aux::{report, Chapter},
+    string_hash};
+use super::{
+    call::{Call, CallChain, CallDirection}, 
+    file::{call_chain_key, LEAF_LABEL}};
+use super::super::{
     stats::{format_float, format_float_opt},
-    string_hash,
-};
+    rate::calc_rate};
 use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, collections::HashMap, error::Error};
 

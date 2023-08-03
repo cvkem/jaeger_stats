@@ -1,12 +1,10 @@
 use crate::{
-    aux::write_string_to_file,
-    call_chain::cchain_filename,
-    cchain_cache::CChainEndPointCache,
-    read_jaeger_trace_file,
-    report::{report, Chapter},
+    aux::{write_string_to_file, report, Chapter},
+    stats::call_chain::{cchain_filename, CChainEndPointCache},
+    raw::read_jaeger_trace_file,
     stats_json::StatsRecJson,
-    trace::{extract_traces, Trace},
-    traceext::{write_stats_to_csv_file, TraceExt},
+    processed::{extract_traces, Trace},
+    stats::traceext::{write_stats_to_csv_file, TraceExt},
     StatsRec,
 };
 use std::{
