@@ -163,7 +163,7 @@ fn add_parents(spans: &mut Spans, jspans: &Vec<JaegerSpan>) -> Vec<String> {
 
     let mut missing_span_ids = Vec::new();
 
-    iter.for_each(|(mut span, jspan)| {
+    iter.for_each(|(span, jspan)| {
         match jspan.references.len() {
             0 => (), // this is the root
             1 => {

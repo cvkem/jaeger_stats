@@ -24,10 +24,10 @@ impl From<&str> for CallDirection {
 impl From<Option<&String>> for CallDirection {
     fn from(s: Option<&String>) -> Self {
         match s {
-            Some(s) if &s[..] == "Server" => CallDirection::Inbound,
-            Some(s) if &s[..] == "Client" => CallDirection::Outbound,
+            Some(s) if &s[..] == "server" => CallDirection::Inbound,
+            Some(s) if &s[..] == "client" => CallDirection::Outbound,
             None => CallDirection::Unknown,
-            _ => panic!("Invalid value for CallDirection"),
+            _ => panic!("Invalid value for CallDirection: Observed '{s:?}'"),
         }
     }
 }

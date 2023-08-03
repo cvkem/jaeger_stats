@@ -362,7 +362,9 @@ pub fn format_float_opt(val: Option<f64>) -> String {
     }
 }
 
-/// parent_call_chain returns the full call_chain from top to bottom showing process and called method
+/// get_call_chain returns the full call_chain from top to bottom showing process and called method
+/// this function does a recursive trace back to identify all parent-links:
+/// TODO: move to  module that is related to CallChain. It now is difficult to find.in the code-base
 fn get_call_chain(idx: usize, spans: &Spans) -> CallChain {
     let span = &spans[idx];
     // find the root and allocate vector
@@ -373,11 +375,7 @@ fn get_call_chain(idx: usize, spans: &Spans) -> CallChain {
     // and push all proces names starting from the root
     let process = span.get_process_str().to_owned();
     let method = span.operation_name.to_owned();
-    let call_direction = if let Some(call_dir) = &span.span_kind {
-        Some(call_dir).into()
-    } else {
-        CallDirection::Unknown
-    };
+    let call_direction = span.span_kind.as_ref().into();
     call_chain.push(Call {
         process,
         method,
