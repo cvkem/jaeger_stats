@@ -17,3 +17,12 @@ lazy_static = "1.4.0"
 regex = "1.9.1"
 serde = { version="1.0", features=["derive"] }
 serde_json = { version="1.0"}
+
+
+[[bin]]
+name = "trace_analysis"
+path = "src/main/trace_analysis.rs"
+
+[[bin]]
+name = "stitch"
+path = "src/main/stitch.rs"
