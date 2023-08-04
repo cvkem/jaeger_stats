@@ -7,7 +7,7 @@ mod report;
 
 
 pub use self::{
-    datetime::{datetime_micros_str, datetime_millis_str, micros_to_datetime, set_tz_offset_minutes},
+    datetime::{datetime_micros_str, datetime_millis_str, micros_to_datetime, set_tz_offset_minutes, datetime_to_micros},
     file::{extend_create_folder, write_string_to_file, read_lines},
     hash::{hash, string_hash},
     report::{Chapter, report, write_report}

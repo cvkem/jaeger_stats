@@ -3,10 +3,6 @@ use jaeger_stats::{
     JaegerTrace,
 };
 use std::error::Error;
-// use chrono::{
-//     DateTime,
-//     NaiveDateTime,
-//     Utc};
 
 const SHOW_STDOUT: bool = false;
 const INPUT_FILE: &str = "/home/ceesvk/Downloads/372e70a4e259978e.json";

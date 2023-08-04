@@ -24,7 +24,7 @@ pub struct Span {
     pub operation_name: String,
     pub full_operation_name: Option<String>,
     pub start_dt: DateTime<Utc>,
-    pub duration_micros: u64,
+    pub duration_micros: i64,
     //    pub process: &'a Process,
     pub process: Option<Process>,
     // optional parameters from tags

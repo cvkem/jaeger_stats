@@ -39,8 +39,8 @@ pub struct StatsRec {
     pub num_files: i32, // the number of files is needed when computing the rate of requests.
     pub start_dt: Vec<DateTime<Utc>>,
     pub end_dt: Vec<DateTime<Utc>>,
-    pub duration_micros: Vec<u64>,
-    pub time_to_respond_micros: Vec<u64>,
+    pub duration_micros: Vec<i64>,
+    pub time_to_respond_micros: Vec<i64>,
     pub caching_process: Vec<String>,
     pub stats: HashMap<String, Stats>, // hashmap base on the leaf process (as that is the initial level of reporting)
 }
@@ -168,7 +168,7 @@ impl StatsRec {
 
     pub fn to_csv_string(&self, num_files: i32) -> String {
         let mut s = Vec::new();
-        let num_traces = self.trace_id.len() as u64;
+        let num_traces: i64 = self.trace_id.len().try_into().unwrap();
 
         match num_traces {
             0 => panic!("No data in Stats"),
@@ -193,7 +193,7 @@ impl StatsRec {
                 ));
                 s.push(format!(
                     "AVG(num_spans):; {:?}",
-                    self.num_spans.iter().sum::<usize>() as u64 / n
+                    self.num_spans.iter().sum::<usize>() as i64 / n
                 ));
                 s.push(format!(
                     "MAX(num_spans):; {:?}",
@@ -215,7 +215,7 @@ impl StatsRec {
                 ));
                 s.push(format!(
                     "AVG(duration_micros):; {:?}",
-                    self.duration_micros.iter().sum::<u64>() / n
+                    self.duration_micros.iter().sum::<i64>() / n
                 ));
                 s.push(format!(
                     "MAX(duration_micros):; {:?}",
@@ -228,7 +228,7 @@ impl StatsRec {
                 ));
                 s.push(format!(
                     "AVG(time_to_respond):; {:?}",
-                    self.time_to_respond_micros.iter().sum::<u64>() / n
+                    self.time_to_respond_micros.iter().sum::<i64>() / n
                 ));
                 s.push(format!(
                     "MAX(time_to_respond_micros):; {:?}",

@@ -12,7 +12,7 @@ pub struct JaegerProcess {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerLog {
-    timestamp: u64,
+    timestamp: i64,
     fields: Vec<JaegerTag>,
 }
 
@@ -71,8 +71,8 @@ pub struct JaegerSpan {
     pub flags: i32,
     pub operationName: String,
     pub references: Vec<JaegerReference>,
-    pub startTime: u64,
-    pub duration: u64,
+    pub startTime: i64,
+    pub duration: i64,
     pub tags: JaegerTags,
     pub logs: Vec<JaegerLog>,
     pub processID: String,

@@ -142,10 +142,10 @@ fn append_basic_stats(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>
         srj.trace_id.len().to_string()
     }));
     report_items.push(SRJReportItem::new("avg_duration_micros", |srj| {
-        (srj.duration_micros.iter().sum::<u64>() as usize / srj.duration_micros.len()).to_string()
+        (srj.duration_micros.iter().sum::<i64>() / srj.duration_micros.len() as i64).to_string()
     }));
     report_items.push(SRJReportItem::new("avg_duration_micros", |srj| {
-        (srj.time_to_respond_micros.iter().sum::<u64>() as usize / srj.time_to_respond_micros.len())
+        (srj.time_to_respond_micros.iter().sum::<i64>() / srj.time_to_respond_micros.len() as i64)
             .to_string()
     }));
 

@@ -18,7 +18,7 @@ struct Args {
     call_chain_folder: String,
 
     #[arg(short, long, default_value_t = 2*60)]
-    timezone_minutes: u64,
+    timezone_minutes: i64,
 
     #[arg(short = 'f', long, default_value_t = true)]
     comma_float: bool,

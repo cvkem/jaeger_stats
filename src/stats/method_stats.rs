@@ -8,12 +8,12 @@ use std::collections::HashMap;
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct MethodStatsValue {
     pub count: usize,
-    pub duration_micros: Vec<u64>,
+    pub duration_micros: Vec<i64>,
     pub start_dt_micros: Vec<i64>, // represented via start_dt.timestamp_micros()
 }
 
 impl MethodStatsValue {
-    pub fn new(duration: u64, start_dt_micros: i64) -> Self {
+    pub fn new(duration: i64, start_dt_micros: i64) -> Self {
         let duration_micros = [duration].to_vec();
         let start_dt_micros = [start_dt_micros].to_vec();
         Self {
@@ -30,7 +30,7 @@ impl MethodStatsValue {
     }
 
     pub fn get_avg_millis(&self) -> f64 {
-        self.duration_micros.iter().sum::<u64>() as f64
+        self.duration_micros.iter().sum::<i64>() as f64
             / (1000 as f64 * self.duration_micros.len() as f64)
     }
 

@@ -12,8 +12,8 @@ pub struct Trace {
     pub root_call: String,
     pub start_dt: DateTime<Utc>,
     pub end_dt: DateTime<Utc>,
-    pub duration_micros: u64,
-    pub time_to_respond_micros: u64,
+    pub duration_micros: i64,
+    pub time_to_respond_micros: i64,
     pub missing_span_ids: Vec<String>,
     pub spans: Spans,
 }
@@ -63,7 +63,7 @@ pub fn extract_traces(jt: &JaegerTrace) -> Vec<Trace> {
     (0..num_traces).map(|idx| Trace::new(&jt, idx)).collect()
 }
 
-fn find_full_duration(ji: &JaegerItem) -> (u64, u64) {
+fn find_full_duration(ji: &JaegerItem) -> (i64, i64) {
     // compute start-time based on start_time of earliest span
     let Some(start_dt) = ji.spans
         .iter()
@@ -86,7 +86,7 @@ fn find_full_duration(ji: &JaegerItem) -> (u64, u64) {
 
 /// get_response_duration finds the duration it takes for the root-span to return a response.
 /// We iterate over the spans as these have a clear parent-span, while taking the value from the corresponding JaegerItem.
-fn get_response_duration(spans: &Spans, ji: &JaegerItem) -> u64 {
+fn get_response_duration(spans: &Spans, ji: &JaegerItem) -> i64 {
     // compute start-time based on start_time of earliest span
     let Some(time_to_respond_micros) = iter::zip(spans, &ji.spans)
         .find_map(|(span, jspan)| {

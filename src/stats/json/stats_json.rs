@@ -42,8 +42,8 @@ pub struct StatsRecJson {
     pub num_files: Option<i32>, //Optional for backward compatibility
     pub start_dt: Vec<String>,
     pub end_dt: Vec<String>,
-    pub duration_micros: Vec<u64>,
-    pub time_to_respond_micros: Vec<u64>,
+    pub duration_micros: Vec<i64>,
+    pub time_to_respond_micros: Vec<i64>,
     pub caching_process: Vec<String>,
     pub stats: HashMap<String, StatsJson>, // hashmap base on the leaf process (as that is the initial level of reporting)
 }

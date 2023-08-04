@@ -17,7 +17,7 @@ mod stitch;
 pub use stats::{chained_stats, set_comma_float, StatsRec};
 
 pub use crate::aux::{
-    datetime_micros_str, datetime_millis_str, micros_to_datetime, set_tz_offset_minutes,
+    datetime_micros_str, datetime_millis_str, micros_to_datetime, set_tz_offset_minutes, datetime_to_micros,
     hash, string_hash,
     report, write_report,
     };

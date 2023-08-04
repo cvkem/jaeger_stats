@@ -14,7 +14,7 @@ use std::{cmp::Ordering, collections::HashMap, error::Error};
 pub struct CChainStatsValue {
     pub count: usize,
     pub depth: usize,
-    pub duration_micros: Vec<u64>,
+    pub duration_micros: Vec<i64>,
     pub start_dt_micros: Vec<i64>, // represented via start_dt.timestamp_micros()
     pub looped: Vec<String>,
     pub rooted: bool, //does this call-chain originate from the root of this trace.
@@ -171,7 +171,7 @@ impl CChainStatsValue {
         );
         let min_millis =
             *self.duration_micros.iter().min().expect("Not an integer") as f64 / 1000 as f64;
-        let avg_millis = self.duration_micros.iter().sum::<u64>() as f64
+        let avg_millis = self.duration_micros.iter().sum::<i64>() as f64
             / (1000 as f64 * self.duration_micros.len() as f64);
         let max_millis =
             *self.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
