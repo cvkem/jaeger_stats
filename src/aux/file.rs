@@ -1,8 +1,8 @@
 use std::{
     error::Error,
-    fs::File,
+    fs::{self, File},
     io::{self, BufRead, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 // The output is wrapped in a Result to allow matching on errors
@@ -28,4 +28,15 @@ pub fn write_string_to_file(filename: &str, data: String) -> Result<(), Box<dyn 
     let mut file = File::create(filename)?;
     file.write_all(data.as_bytes())?;
     Ok(())
+}
+
+
+/// create a sub-folder if it does not exist yet and return the path to this sub-folder
+pub fn extend_create_folder(folder: &PathBuf, subfolder: &str) -> PathBuf {
+    let mut ext_folder = folder.clone();
+    ext_folder.push(subfolder);
+    if !ext_folder.is_dir() {
+        fs::create_dir(ext_folder.clone()).expect("failed to create folder");
+    }
+    ext_folder
 }

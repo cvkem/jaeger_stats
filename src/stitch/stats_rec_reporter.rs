@@ -1,4 +1,4 @@
-use crate::stats_json::StatsRecJson;
+use crate::stats::json::StatsRecJson;
 
 type SRJProcessor = fn(&StatsRecJson) -> String;
 

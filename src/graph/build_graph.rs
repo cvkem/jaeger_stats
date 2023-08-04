@@ -1,5 +1,5 @@
 use super::process_node::ProcessNodes;
-use crate::stats_json::StatsRecJson;
+use crate::stats::json::StatsRecJson;
 
 
 pub fn build_graph(srj: &StatsRecJson) -> ProcessNodes {

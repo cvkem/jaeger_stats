@@ -1,6 +1,6 @@
 use clap;
 use clap::Parser;
-use jaeger_stats::{process_file_or_folder, set_comma_float, set_tz_offset_minutes, write_report};
+use jaeger_stats::{analyze_file_or_folder, set_comma_float, set_tz_offset_minutes, write_report};
 use std::path::Path;
 
 /// Parsing and analyzing Jaeger traces
@@ -37,7 +37,7 @@ fn main() {
 
     set_comma_float(args.comma_float);
 
-    let mut path = process_file_or_folder(
+    let mut path = analyze_file_or_folder(
         &Path::new(&args.input),
         caching_processes,
         &Path::new(&args.call_chain_folder),

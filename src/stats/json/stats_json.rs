@@ -1,7 +1,8 @@
+// TODO move to Stats
 use crate::stats::{
         call_chain::{CChainStatsKey, CChainStatsValue},
-        method_stats::MethodStats,
-        stats::{Stats, StatsRec}};
+        MethodStats,
+        Stats, StatsRec};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,

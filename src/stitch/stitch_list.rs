@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
     aux::{read_lines, write_string_to_file},
-    stats_json::StatsRecJson,
+    stats::json::StatsRecJson,
 };
 use std::{
     error::Error,

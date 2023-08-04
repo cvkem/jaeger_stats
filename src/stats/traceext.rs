@@ -1,9 +1,9 @@
 use crate::{
     aux::write_string_to_file,
-    stats::call_chain::{CChainEndPointCache, CChainStatsValue},
-    aux::{report, Chapter},
+    stats::{call_chain::{CChainEndPointCache, CChainStatsValue},
+        stats::StatsRec},
+    aux::{extend_create_folder, report, Chapter},
     processed::Trace,
-    StatsRec,
 };
 use std::{
     // error::Error,
@@ -120,64 +120,15 @@ impl TraceExt {
         }
     }
 
-    // /// Fix the call_chain paths of a trace based on the expected call-chains.
-    // pub fn fix_trace_call_chain(&mut self, expected_cc: &HashSet<String>) -> bool {
-    //     let exp_cc: Vec<&String> = expected_cc.iter().collect();
-    //     let cc_set = self.stats_rec.call_chain_set();
-    //     let unexpected = cc_set.difference(&expected_cc);
+}
 
-    //     println!("\nShowing expected:");
-    //     exp_cc.iter()
-    //         .enumerate()
-    //         .for_each(|(idx, cc)|  println!("{idx}: '{cc}'"));
 
-    //     println!("\nNow trying to find matches:");
-    //     //for cc in unexpected {
-    //     let matched_cc: Vec<_> = unexpected.map(|cc| {
-
-    //         let matched: Vec<_> = exp_cc
-    //             .iter()
-    //             .filter(|&&x| x.ends_with(cc))
-    //             .collect();
-    //         match matched.len() {
-    //             0 => {
-    //                 if cc.ends_with("*L") {
-    //                     let cc2 = cc.replace("*L", "");
-    //                     let matched: Vec<_> = exp_cc.iter().filter(|&&x| x.ends_with(&cc2)).collect();
-    //                     match matched.len() {
-    //                         0 => {
-    //                             println!("NO-MATCH for '{cc}' as is and as Non-Leaf");
-    //                             None
-    //                         },
-    //                         1 => {
-    //                             println!("MATCHED as NON-leaf");
-    //                             Some(matched[0])
-    //                         },
-    //                         n => {
-    //                             println!("Found '{n}'  matches as Non-leaf and 0 as leaf for '{cc}'");
-    //                             None
-    //                         }
-    //                     }
-    //                 } else {
-    //                     println!("NO-MATCH for: '{cc}'");
-    //                     None
-    //                 }
-    //             },
-    //             1 => Some(matched[0]),
-    //             n => {
-    //                 println!("Found {n} matches!! cc= {cc}");
-    //                 None
-    //             }
-    //         }
-    //     })
-    //     .collect();
-
-    //     if matched_cc.iter().all(|m| m.is_some()) {
-    //         // do the remapping
-    //         println!("!! remapping to be implemented!!");
-    //         true
-    //     } else {
-    //         false
-    //     }
-    // }
+pub fn build_trace_ext(traces: Vec<Trace>, folder: &PathBuf, num_files: i32, caching_processes: &Vec<String>) -> Vec<TraceExt> {
+    // create a traces folder
+    let trace_folder = extend_create_folder(&folder, "Traces");
+    
+    traces
+        .into_iter()
+        .map(|trace| TraceExt::new(trace, &trace_folder, caching_processes, num_files))
+        .collect::<Vec<_>>()
 }
