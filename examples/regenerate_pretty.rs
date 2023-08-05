@@ -1,8 +1,8 @@
+use clap;
+use clap::Parser;
 /// Read a file and generate JSON again to see if all information was captured completely and correctly in the internal rust-format.
 use jaeger_stats::read_jaeger_trace_file;
 use std::{error::Error, fs::File, io::Write};
-use clap;
-use clap::Parser;
 
 /// Read a jaeger json and write it out as pretty-printed json again. A diff of the files should show no differnces.
 /// However, this requires that you start with a UTF-8 pretty-printed input-file.(Bulk download on Windows results in UTF-16-LE formatted file in dense/compact format).
@@ -32,7 +32,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("{:#?}", jt);
     }
 
-    println!("this method reads the trace from '{input_file}' and writes the read data to '{output}'");
+    println!(
+        "this method reads the trace from '{input_file}' and writes the read data to '{output}'"
+    );
     println!("\nTo compare input and output files you need to remove trailing spaces from both input and output via for example:\n\t cat {input_file} | sed -e 's/^[ \t]*//' >input.json ");
     println!("Removing of trailing whitespace discards difference in indentation-levels and use of tabs (\\t).");
     println!("\nOn linux/uniz the comparison is made via:\n\t diff {input_file} {output}\nwe need the next replacements on the input:\n\t\\u003e  -->  '>'\n\t\\u003c --. '<'\n\t\\u0025 --> '&'");

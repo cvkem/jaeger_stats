@@ -1,9 +1,11 @@
 use crate::{
     aux::write_string_to_file,
-    stats::{call_chain::{CChainEndPointCache, CChainStatsValue},
-        stats::StatsRec},
     aux::{extend_create_folder, report, Chapter},
     processed::Trace,
+    stats::{
+        call_chain::{CChainEndPointCache, CChainStatsValue},
+        stats::StatsRec,
+    },
 };
 use std::{
     // error::Error,
@@ -119,14 +121,17 @@ impl TraceExt {
             println!("Could not find a call-chain for {}", self.trace.root_call);
         }
     }
-
 }
 
-
-pub fn build_trace_ext(traces: Vec<Trace>, folder: &PathBuf, num_files: i32, caching_processes: &Vec<String>) -> Vec<TraceExt> {
+pub fn build_trace_ext(
+    traces: Vec<Trace>,
+    folder: &PathBuf,
+    num_files: i32,
+    caching_processes: &Vec<String>,
+) -> Vec<TraceExt> {
     // create a traces folder
     let trace_folder = extend_create_folder(&folder, "Traces");
-    
+
     traces
         .into_iter()
         .map(|trace| TraceExt::new(trace, &trace_folder, caching_processes, num_files))

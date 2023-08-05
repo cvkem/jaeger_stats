@@ -1,8 +1,8 @@
+use super::span::{build_spans, Spans};
 use crate::{
     micros_to_datetime,
     raw::{JaegerItem, JaegerTrace},
 };
-use super::span::{build_spans, Spans};
 use chrono::{DateTime, Utc};
 use std::{ffi::OsString, iter, path::PathBuf};
 

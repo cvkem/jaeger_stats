@@ -1,9 +1,10 @@
 //! Deduplication of traces based on the GUID (Identifier of the traces)
-use std::collections::HashSet;
 use crate::{
-    aux::{Chapter, report},
+    aux::{report, Chapter},
     processed::Trace,
-    stats::TraceExt};
+    stats::TraceExt,
+};
+use std::collections::HashSet;
 
 /// deduplicate all the traces based on traceId and report effect,
 pub fn deduplicate(traces: Vec<Trace>) -> Vec<Trace> {
@@ -40,7 +41,6 @@ pub fn deduplicate(traces: Vec<Trace>) -> Vec<Trace> {
 
     traces
 }
-
 
 // /// deduplicate all the traces based on traceId and report effect,
 // pub fn deduplicate_trace_ext(traces: Vec<TraceExt>) -> Vec<TraceExt> {

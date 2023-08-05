@@ -1,7 +1,7 @@
-use jaeger_stats::{read_jaeger_trace_file, JaegerTrace};
-use std::{collections::HashMap, error::Error, path::Path};
 use clap;
 use clap::Parser;
+use jaeger_stats::{read_jaeger_trace_file, JaegerTrace};
+use std::{collections::HashMap, error::Error, path::Path};
 
 /// Collecting all span tags from a file and show frequency of occurance.
 /// The actual trace-analysis currently only includes a subset of these tags.
@@ -68,7 +68,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let (num_spans, span_tag_cnt) = collect_span_tags(&jt);
-    println!("For input_file '{}' observed {num_spans} spans in total", input_file);
+    println!(
+        "For input_file '{}' observed {num_spans} spans in total",
+        input_file
+    );
     println!("span-tag-counts are: {span_tag_cnt:#?}");
 
     show_span_percentage(num_spans, &span_tag_cnt);

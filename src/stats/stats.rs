@@ -1,11 +1,11 @@
-use crate::{
-    stats::call_chain::{
-        caching_process_label, call_chain_key, 
-        Call, CallChain,
-        CChainStats, CChainStatsKey, CChainStatsValue},
-    processed::{Spans, Trace},
-};
 use super::method_stats::{MethodStats, MethodStatsValue};
+use crate::{
+    processed::{Spans, Trace},
+    stats::call_chain::{
+        caching_process_label, call_chain_key, CChainStats, CChainStatsKey, CChainStatsValue, Call,
+        CallChain,
+    },
+};
 
 use chrono::{DateTime, Utc};
 use std::{

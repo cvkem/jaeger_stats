@@ -4,11 +4,9 @@ mod cchain_cache;
 mod cchain_stats;
 mod file;
 
-
 pub use self::{
     call::{Call, CallChain, CallDirection},
+    cchain_cache::CChainEndPointCache,
     cchain_stats::{CChainStats, CChainStatsKey, CChainStatsValue},
-    cchain_cache::CChainEndPointCache, 
-    file::{caching_process_label, call_chain_key, cchain_filename}
+    file::{caching_process_label, call_chain_key, cchain_filename},
 };
-

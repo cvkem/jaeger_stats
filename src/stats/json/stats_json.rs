@@ -1,16 +1,10 @@
 // TODO move to Stats
 use crate::stats::{
-        call_chain::{CChainStatsKey, CChainStatsValue},
-        MethodStats,
-        Stats, StatsRec};
-use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    error::Error,
-    ffi::OsString,
-    fs::File,
-    io
+    call_chain::{CChainStatsKey, CChainStatsValue},
+    MethodStats, Stats, StatsRec,
 };
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, error::Error, ffi::OsString, fs::File, io};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct StatsJson {

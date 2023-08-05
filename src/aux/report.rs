@@ -1,9 +1,5 @@
 // use crate::report::Chapter;
-use std::{
-    fs::File,
-    io::Write,
-    sync::Mutex,
-};
+use std::{fs::File, io::Write, sync::Mutex};
 
 #[derive(Copy, Clone)]
 #[repr(u8)]

@@ -1,9 +1,10 @@
-use jaeger_stats::{
-    datetime_micros_str, datetime_millis_str, micros_to_datetime, read_jaeger_trace_file,
-    JaegerTrace,};
-use std::error::Error;
 use clap;
 use clap::Parser;
+use jaeger_stats::{
+    datetime_micros_str, datetime_millis_str, micros_to_datetime, read_jaeger_trace_file,
+    JaegerTrace,
+};
+use std::error::Error;
 
 /// Check on references between spans..
 #[derive(Parser, Debug)]
@@ -12,7 +13,6 @@ struct Args {
     /// A single json input-file that should be analysed to collect all tags
     input: String,
 }
-
 
 const SHOW_STDOUT: bool = false;
 
@@ -30,7 +30,10 @@ fn check_num_references(jt: &JaegerTrace) {
             }
         });
         if num_span_wo_ref != 1 {
-            println!("] Expected exactly ONE root-span. Found {} spans without reference", num_span_wo_ref);
+            println!(
+                "] Expected exactly ONE root-span. Found {} spans without reference",
+                num_span_wo_ref
+            );
         } else {
             println!("]");
         }

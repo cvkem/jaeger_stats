@@ -1,15 +1,10 @@
 //! Reading raw json-formatted Jaeger-traces from file
 use crate::{
-    aux::{Chapter, report},
+    aux::{report, Chapter},
+    processed::{extract_traces, Trace},
     raw::read_jaeger_trace_file,
-    processed::{extract_traces, Trace}
 };
-use std::{
-    error::Error,
-    ffi::OsStr,
-    fs,
-    path::Path
-};
+use std::{error::Error, ffi::OsStr, fs, path::Path};
 
 /// read a single file and process it to get clean Tcaecs. Returns a set of traces, or an error
 fn read_trace_file(input_file: &Path) -> Result<Vec<Trace>, Box<dyn Error>> {
@@ -80,6 +75,6 @@ pub fn read_process_file_or_folder<'a>(path: &'a Path) -> (Vec<Trace>, i32, &'a 
             num_files
         ),
     );
-    
+
     (traces, num_files, folder)
 }

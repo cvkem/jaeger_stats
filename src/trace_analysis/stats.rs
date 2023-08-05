@@ -1,17 +1,16 @@
 //! Creating the statistics
 use crate::{
-    aux::{extend_create_folder, write_string_to_file, report, Chapter},
+    aux::{extend_create_folder, report, write_string_to_file, Chapter},
     stats::{
-        json::dump_as_json,
-        write_stats_to_csv_file, TraceExt,
         call_chain::{cchain_filename, CChainEndPointCache},
-        StatsRec}};
+        json::dump_as_json,
+        write_stats_to_csv_file, StatsRec, TraceExt,
+    },
+};
 use std::{
     collections::HashMap,
-    path::{Path, PathBuf}
+    path::{Path, PathBuf},
 };
-
-
 
 /// create the statistics over all traces using the caching_processes
 fn create_trace_statistics(
@@ -25,7 +24,6 @@ fn create_trace_statistics(
         .for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false));
     cumm_stats
 }
-
 
 /// process a vector of traces
 pub fn process_and_fix_traces(
@@ -104,4 +102,3 @@ pub fn process_and_fix_traces(
         ),
     );
 }
-

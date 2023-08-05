@@ -5,5 +5,5 @@ mod read_jaeger;
 
 pub use self::{
     jaeger::{JaegerItem, JaegerSpan, JaegerTags, JaegerTrace},
-    read_jaeger::read_jaeger_trace_file
+    read_jaeger::read_jaeger_trace_file,
 };

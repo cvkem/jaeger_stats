@@ -1,8 +1,4 @@
-use chrono::{
-    DateTime,
-    NaiveDateTime,
-    Utc,
-};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use std::sync::Mutex;
 
 // UTC + 2 hours
@@ -44,5 +40,3 @@ pub fn datetime_millis_str(dt: DateTime<Utc>) -> String {
     let newdate = dt.format("%Y-%m-%d %H:%M:%S.%.3f");
     format!("{}", newdate)
 }
-
-

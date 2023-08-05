@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
+use super::process_map::{build_process_map, Process, ProcessMap};
 use crate::{
     micros_to_datetime,
     raw::{JaegerItem, JaegerSpan, JaegerTags},
 };
-use super::process_map::{build_process_map, Process, ProcessMap};
 
 use chrono::{DateTime, Utc};
 use lazy_static::lazy_static;
