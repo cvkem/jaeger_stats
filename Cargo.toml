@@ -18,6 +18,8 @@ regex = "1.9.1"
 serde = { version="1.0", features=["derive"] }
 serde_json = { version="1.0"}
 
+[lib]
+path = "src/lib.rs"
 
 [[bin]]
 name = "trace_analysis"
@@ -26,3 +28,7 @@ path = "src/main/trace_analysis.rs"
 [[bin]]
 name = "stitch"
 path = "src/main/stitch.rs"
+
+[[bin]]
+name = "dotgraph"
+path = "src/main/dotgraph.rs"

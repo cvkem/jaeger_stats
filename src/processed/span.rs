@@ -17,6 +17,8 @@ pub struct Span {
     //    - how to build a Vec (no copy)
     //    - passing lifetimes
     //pub struct Span<'a> {
+    //    pub process: &'a Process,
+    pub process: Option<Process>,
     pub parent: Option<usize>,
     pub is_leaf: bool,
     pub rooted: bool, // does this span trace back to the real root? (default = false)
@@ -25,11 +27,11 @@ pub struct Span {
     pub full_operation_name: Option<String>,
     pub start_dt: DateTime<Utc>,
     pub duration_micros: i64,
-    //    pub process: &'a Process,
-    pub process: Option<Process>,
     // optional parameters from tags
     // to see statistics on all tags run:
     //      cargo run --example collect_span_tags
+    //
+    // TODO: add a hashmap to coillect all tags.
     pub span_kind: Option<String>,
     pub http_status_code: Option<i32>,
     pub http_method: Option<String>,

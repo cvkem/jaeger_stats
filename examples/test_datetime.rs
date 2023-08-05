@@ -3,12 +3,12 @@ use jaeger_stats::{
 };
 
 
-const DT1: u64 = 1689678502462000;
+const DT1: i64 = 1689678502462000;
 const DT1_STR: &str = "20230717-1122";
-const TZ_OFFS_MIN: i
+const TZ_OFFS_MIN: i64 = 60*2;
 
 pub fn main() {
-    set_tz_offset_minutes(2*60);
+    set_tz_offset_minutes(TZ_OFFS_MIN);
     let dt1 = micros_to_datetime(DT1);
     let dt1_str = datetime_micros_str(dt1);
     println!(" integer {DT1} translates to:\n\t{dt1}\n\tor as string {dt1_str}\n\texpected {DT1_STR}", );

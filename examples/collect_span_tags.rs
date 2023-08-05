@@ -1,8 +1,18 @@
 use jaeger_stats::{read_jaeger_trace_file, JaegerTrace};
-use std::{collections::HashMap, error::Error};
+use std::{collections::HashMap, error::Error, path::Path};
+use clap;
+use clap::Parser;
+
+/// Collecting all span tags from a file and show frequency of occurance.
+/// The actual trace-analysis currently only includes a subset of these tags.
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// A single json input-file that should be analysed to collect all tags
+    input: String,
+}
 
 const SHOW_STDOUT: bool = false;
-const INPUT_FILE: &str = "/home/ceesvk/jaeger/loadt-prodinz-prodGroep/28adb54b8868eef9.json";
 
 fn collect_span_tags(jt: &JaegerTrace) -> (u32, HashMap<String, u32>) {
     let mut span_tags = HashMap::new();
@@ -46,15 +56,19 @@ fn show_span_percentage(num_spans: u32, span_tag_cnt: &HashMap<String, u32>) {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("Reading a Jaeger-trace from '{INPUT_FILE}'");
-    let jt = read_jaeger_trace_file(INPUT_FILE).unwrap();
+    let args = Args::parse();
+
+    let input_file = &args.input;
+
+    println!("Reading a Jaeger-trace from '{}'", input_file);
+    let jt = read_jaeger_trace_file(input_file).expect("Failed to analyze file");
 
     if SHOW_STDOUT {
         println!("{:#?}", jt);
     }
 
     let (num_spans, span_tag_cnt) = collect_span_tags(&jt);
-    println!("For input_file {INPUT_FILE} observed {num_spans} spans in total");
+    println!("For input_file '{}' observed {num_spans} spans in total", input_file);
     println!("span-tag-counts are: {span_tag_cnt:#?}");
 
     show_span_percentage(num_spans, &span_tag_cnt);
