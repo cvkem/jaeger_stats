@@ -8,7 +8,7 @@ use std::{ffi::OsString, path::Path};
 #[command(author, version, about, long_about = None)]
 struct Args {
     // List of files to be stitched
-    #[arg(short, long, default_value_t = String::from("input.json"))]
+    #[arg(default_value_t = String::from("input.json"))]
     input: String,
 
     #[arg(short, long, default_value_t = String::from("stitched.csv"))]
@@ -28,5 +28,5 @@ fn main() {
     // add the processing
     let graph = build_graph(&data);
 
-    //    println!("{graph:#?}");
+    println!("{graph:#?}");
 }

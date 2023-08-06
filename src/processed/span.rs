@@ -31,7 +31,7 @@ pub struct Span {
     // to see statistics on all tags run:
     //      cargo run --example collect_span_tags
     //
-    // TODO: add a hashmap to coillect all tags.
+    // TODO: add a hashmap to collect all tags.
     pub span_kind: Option<String>,
     pub http_status_code: Option<i32>,
     pub http_method: Option<String>,
