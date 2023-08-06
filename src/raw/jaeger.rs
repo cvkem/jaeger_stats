@@ -13,7 +13,7 @@ pub struct JaegerProcess {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerLog {
     timestamp: i64,
-    fields: Vec<JaegerTag>,
+    pub fields: Vec<JaegerTag>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

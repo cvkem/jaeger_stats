@@ -9,30 +9,35 @@ pub fn fix_call_chain(call_chain: &CallChain) -> CallChain {
         .iter()
         .cloned()
         .enumerate()
-        .scan("".to_owned(), |mut last_proc, (idx, mut call)| if call.process == *last_proc{
-            if call.call_direction == CallDirection::Inbound {
-                issues.push(idx);
-            };
-//            call.call_direction = CallDirection::Outbound;
-            Some(call)
-        } else {
-            last_proc.clear();
-            last_proc.push_str(&call.process[..]);
-            if call.call_direction == CallDirection::Outbound {
-                issues.push(idx);
+        .scan("".to_owned(), |mut last_proc, (idx, mut call)| {
+            if call.process == *last_proc {
+                if call.call_direction == CallDirection::Inbound {
+                    issues.push(idx);
+                };
+                //            call.call_direction = CallDirection::Outbound;
+                Some(call)
             } else {
-                call.call_direction = CallDirection::Inbound;  
-            };
-//            call.call_direction = CallDirection::Inbound;
-            Some(call)
+                last_proc.clear();
+                last_proc.push_str(&call.process[..]);
+                if call.call_direction == CallDirection::Outbound {
+                    issues.push(idx);
+                } else {
+                    call.call_direction = CallDirection::Inbound;
+                };
+                //            call.call_direction = CallDirection::Inbound;
+                Some(call)
+            }
         })
         .collect();
-        if issues.len() > 0 {
-            println!("\nFailed on idx = {issues:?}:");
-            for idx in 0..call_chain.len() {
-                println!("{idx}: {:?}  ->  {:?}", call_chain[idx], fixed_call_chain[idx]);
-            }
+    if issues.len() > 0 {
+        println!("\nFailed on idx = {issues:?}:");
+        for idx in 0..call_chain.len() {
+            println!(
+                "{idx}: {:?}  ->  {:?}",
+                call_chain[idx], fixed_call_chain[idx]
+            );
         }
+    }
 
     fixed_call_chain
 }

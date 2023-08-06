@@ -1,7 +1,5 @@
 use crate::stats::call_chain::{Call, CallChain, CallDirection};
-use std::{
-    iter,
-    collections::HashMap};
+use std::{collections::HashMap, iter};
 
 #[derive(Default, Debug)]
 pub enum ProcessNodeType {
@@ -100,21 +98,25 @@ impl ProcessNodes {
     }
 
     pub fn add_call_chain(&mut self, call_chain: &CallChain, count: i32) {
-        let initial_call = Call{process: "User".to_owned(), method: "method".to_owned(), call_direction: CallDirection::Outbound};
+        let initial_call = Call {
+            process: "User".to_owned(),
+            method: "method".to_owned(),
+            call_direction: CallDirection::Outbound,
+        };
         iter::once(&initial_call)
             .chain(call_chain.iter())
             .zip(call_chain.iter())
-        // call_chain.iter()
-        //     .scan(initial_call, |prev, call| {
-        //         let pair = (prev.clone(), call);
-        //         prev = &mut &call;
-        //         Some(pair)
-        //     })
+            // call_chain.iter()
+            //     .scan(initial_call, |prev, call| {
+            //         let pair = (prev.clone(), call);
+            //         prev = &mut &call;
+            //         Some(pair)
+            //     })
             .for_each(|(pred, call)| {
                 let amend = |pn: &mut ProcessNode| match call.call_direction {
                     CallDirection::Outbound => pn.add_method(call.method.clone(), count),
                     CallDirection::Inbound => pn.add_operation(call.method.clone(), count),
-                    CallDirection::Unknown => pn.add_direction_unknown(call.method.clone(), count)  // panic!("Unknown call-direction, this should have been fixed earlier!")
+                    CallDirection::Unknown => pn.add_direction_unknown(call.method.clone(), count), // panic!("Unknown call-direction, this should have been fixed earlier!")
                 };
                 self.0
                     .entry(call.process.clone())
