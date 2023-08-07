@@ -40,6 +40,15 @@ impl JaegerTag {
         val.to_owned()
     }
 
+    /// Extract the string-value or convert the value to a string.
+    pub fn get_as_string(&self) -> String {
+        if let serde_json::Value::String(val) = &self.value {
+            val.to_owned()
+        } else {
+            self.value.to_string()
+        }
+    }
+
     /// Extract the string-value and transform to u32 or fail.
     pub fn to_u32(&self) -> u32 {
         let Ok(val) = self.get_string().trim().parse() else {

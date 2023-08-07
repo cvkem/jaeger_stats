@@ -8,7 +8,7 @@ use crate::{
 use chrono::{DateTime, Utc};
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::iter;
+use std::{collections::HashMap, iter};
 
 #[derive(Debug, Default)]
 pub struct Span {
@@ -31,17 +31,17 @@ pub struct Span {
     // to see statistics on all tags run:
     //      cargo run --example collect_span_tags
     //
-    // TODO: add a hashmap to collect all tags.
     pub span_kind: Option<String>,
     pub http_status_code: Option<i32>,
-    pub http_method: Option<String>,
-    pub http_url: Option<String>,
-    pub component: Option<String>,
-    pub db_instance: Option<String>,
-    pub db_type: Option<String>,
-    pub db_statement: Option<String>,
-    pub warnings: Option<Vec<String>>,
-    pub eb_contract: Option<String>, // either tag 'identity.eb_contract_id'  or 'eb_contract'
+    pub attributes: HashMap<String, String>,
+    // some attributes
+    // pub http_method: Option<String>,
+    // pub http_url: Option<String>,
+    // pub component: Option<String>,
+    // pub db_instance: Option<String>,
+    // pub db_type: Option<String>,
+    // pub db_statement: Option<String>,
+    // pub warnings: Option<Vec<String>>,
 }
 
 pub type Spans = Vec<Span>;
@@ -69,19 +69,25 @@ impl Span {
         span
     }
 
+    /// two attributes are extracted as these are used frequently, the others are stored in a hashmap
     fn add_tags(&mut self, tags: &JaegerTags) {
         tags.iter().for_each(|tag| match &tag.key[..] {
-            "span.kind" => self.span_kind = Some(tag.get_string()),
             "http.status_code" => self.http_status_code = Some(tag.get_i32()),
-            "http.method" => self.http_method = Some(tag.get_string()),
-            "http.url" => self.http_url = Some(tag.get_string()),
-            "component" => self.component = Some(tag.get_string()),
-            "db.instance" => self.db_instance = Some(tag.get_string()),
-            "db.type" => self.db_instance = Some(tag.get_string()),
-            "db.statement" => self.db_statement = Some(tag.get_string()),
-            "identity.eb_contract_id " | "eb_contract" => self.eb_contract = Some(tag.get_string()),
-            _ => (),
-        })
+            "span.kind" => self.span_kind = Some(tag.get_string()),
+            key => _ = self.attributes.insert(key.to_owned(), tag.get_as_string()),
+        });
+        // tags.iter().for_each(|tag| match &tag.key[..] {
+        //     "span.kind" => self.span_kind = Some(tag.get_string()),
+        //     "http.status_code" => self.http_status_code = Some(tag.get_i32()),
+        //     "http.method" => self.http_method = Some(tag.get_string()),
+        //     "http.url" => self.http_url = Some(tag.get_string()),
+        //     "component" => self.component = Some(tag.get_string()),
+        //     "db.instance" => self.db_instance = Some(tag.get_string()),
+        //     "db.type" => self.db_instance = Some(tag.get_string()),
+        //     "db.statement" => self.db_statement = Some(tag.get_string()),
+        //     "identity.eb_contract_id " | "eb_contract" => self.eb_contract = Some(tag.get_string()),
+        //     _ => (),
+        // })
     }
 
     //. get_process_name returns the string-slice of the process of this span (without the operation (method) that is called)
