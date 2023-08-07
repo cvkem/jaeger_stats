@@ -10,6 +10,6 @@ mod traceext; // already defines its public interface
 pub use {
     call_chain::CChainEndPointCache,
     method_stats::{MethodStats, MethodStatsValue},
-    stats::{chained_stats, set_comma_float, Stats, StatsRec},
+    stats::{chained_stats, set_comma_float, Stats, StatsRec, Version},
     traceext::{build_trace_ext, write_stats_to_csv_file, TraceExt},
 };

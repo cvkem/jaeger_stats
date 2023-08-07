@@ -16,7 +16,7 @@ impl From<&str> for CallDirection {
             "Inbound" => CallDirection::Inbound, // would be nice if "Inbound" could be taken from 'CallDirection::Inbound.as_str()'
             "Outbound" => CallDirection::Outbound,
             "Unknown" => CallDirection::Unknown,
-            _ => panic!("Invalid value for CallDirection"),
+            _ => panic!("Invalid value for CallDirection. Observed: {s}"),
         }
     }
 }
@@ -56,13 +56,24 @@ impl Call {
         let method = &self.method;
         format!("{process}/{method}")
     }
+
+    pub fn get_process(&self) -> String {
+        self.process.to_owned()
+    }
 }
 
 impl ToString for Call {
     fn to_string(&self) -> String {
         match self.call_direction {
             CallDirection::Unknown => self.process.to_owned() + "/" + &self.method,
-            _ => self.process.to_owned() + "/" + &self.method + " [" + self.call_direction.as_str(),
+            _ => {
+                self.process.to_owned()
+                    + "/"
+                    + &self.method
+                    + " ["
+                    + self.call_direction.as_str()
+                    + "]"
+            }
         }
     }
 }

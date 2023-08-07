@@ -14,8 +14,7 @@ Cargo.lock
 # ignore json in the root
 *.csv
 *.json
-out.txt
-report.txt
+*.txt
 ble*
 *.stitch
 

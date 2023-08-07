@@ -1,7 +1,7 @@
 use crate::{
-    stats::json::StatsRecJson,
     //rate::set_show_rate_output,
     stats::MethodStatsValue,
+    stats::StatsRec,
 };
 use std::collections::HashSet;
 
@@ -22,18 +22,16 @@ impl MSReportItem {
 
 pub struct MethodStatsReporter<'a> {
     buffer: &'a mut Vec<String>,
-    data: &'a Vec<Option<StatsRecJson>>,
+    data: &'a Vec<Option<StatsRec>>,
     report_items: Vec<MSReportItem>,
 }
 
 impl<'a> MethodStatsReporter<'a> {
     pub fn new(
         buffer: &'a mut Vec<String>,
-        data: &'a Vec<Option<StatsRecJson>>,
+        data: &'a Vec<Option<StatsRec>>,
         report_items: Vec<MSReportItem>,
     ) -> Self {
-        // find a deduplicated set of all keys and sort them
-
         Self {
             buffer,
             data,
@@ -41,11 +39,12 @@ impl<'a> MethodStatsReporter<'a> {
         }
     }
 
+    // find a deduplicated set of all keys and sort them
     pub fn get_keys(&self) -> Vec<Key> {
-        let mut keys = HashSet::new();
-        self.data.iter().for_each(|str| {
-            if let Some(str) = str {
-                str.stats.iter().for_each(|(proc_key, st)| {
+        let mut keys = HashSet::new(); // Can we have duplicates? Is this HashSet needed to deduplicate? However, it does no harm, so leaving it in.
+        self.data.iter().for_each(|stats_rec_json| {
+            if let Some(stats_rec_json) = stats_rec_json {
+                stats_rec_json.stats.iter().for_each(|(proc_key, st)| {
                     st.method.0.iter().for_each(|(oper_key, _)| {
                         _ = keys.insert(Key {
                             process: proc_key.to_owned(),
@@ -64,10 +63,14 @@ impl<'a> MethodStatsReporter<'a> {
         let meth_stats: Vec<_> = self
             .data
             .iter()
-            .map(|str| match str {
-                Some(str) => match str.stats.get(&process) {
+            .map(|stats_rec_json| match stats_rec_json {
+                Some(stats_rec_json) => match stats_rec_json.stats.get(&process) {
                     Some(st) => match st.method.0.get(&operation) {
-                        Some(oper) => Some((oper, str.num_files.unwrap_or(0), str.trace_id.len())),
+                        Some(oper) => Some((
+                            oper,
+                            stats_rec_json.num_files,
+                            stats_rec_json.trace_id.len(),
+                        )),
                         None => None,
                     },
                     None => None,

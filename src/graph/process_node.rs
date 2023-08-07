@@ -73,7 +73,6 @@ impl ProcessNodes {
             .iter()
             .enumerate()
             .filter_map(|(idx, call)| {
-                ///
                 if idx == 0 && call.call_direction != CallDirection::Inbound {
                     Some((idx, &call.call_direction))
                 } else if call.call_direction == CallDirection::Unknown {

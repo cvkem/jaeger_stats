@@ -1,15 +1,22 @@
-use super::method_stats::{MethodStats, MethodStatsValue};
-use crate::{
-    processed::{Spans, Trace},
-    stats::call_chain::{
+use super::{
+    call_chain::{
         caching_process_label, call_chain_key, CChainStats, CChainStatsKey, CChainStatsValue, Call,
         CallChain,
     },
+    json::{StatsJson, StatsRecJson},
+    method_stats::{MethodStats, MethodStatsValue},
 };
+use crate::{
+    aux::micros_to_datetime,
+    processed::{Spans, Trace},
+};
+use serde::{Deserialize, Serialize};
 
 use chrono::{DateTime, Utc};
 use std::{
     collections::{HashMap, HashSet},
+    error::Error,
+    ffi::OsString,
     sync::Mutex,
 };
 
@@ -31,8 +38,33 @@ impl Stats {
     }
 }
 
+impl From<StatsJson> for Stats {
+    fn from(stj: StatsJson) -> Self {
+        Self {
+            num_received_calls: stj.num_received_calls,
+            num_outbound_calls: stj.num_outbound_calls,
+            num_unknown_calls: stj.num_unknown_calls,
+            method: stj.method,
+            call_chain: stj.call_chain.into_iter().collect(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+pub struct Version {
+    pub major: u16,
+    pub minor: u16,
+}
+
+impl Default for Version {
+    fn default() -> Self {
+        Version { major: 0, minor: 1 }
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct StatsRec {
+    pub version: Version,
     pub trace_id: Vec<String>,
     pub root_call: Vec<String>,
     pub num_spans: Vec<usize>,
@@ -45,6 +77,34 @@ pub struct StatsRec {
     pub stats: HashMap<String, Stats>, // hashmap base on the leaf process (as that is the initial level of reporting)
 }
 
+impl From<StatsRecJson> for StatsRec {
+    fn from(srj: StatsRecJson) -> Self {
+        let stats: HashMap<String, Stats> =
+            srj.stats.into_iter().map(|(k, v)| (k, v.into())).collect();
+        Self {
+            version: srj.version,
+            trace_id: srj.trace_id,
+            root_call: srj.root_call,
+            num_spans: srj.num_spans,
+            num_files: srj.num_files, // Was optional for backward compatibiliy
+            start_dt: srj
+                .start_dt
+                .into_iter()
+                .map(|dt| micros_to_datetime(dt))
+                .collect(),
+            end_dt: srj
+                .end_dt
+                .into_iter()
+                .map(|dt| micros_to_datetime(dt))
+                .collect(),
+            duration_micros: srj.duration_micros,
+            time_to_respond_micros: srj.time_to_respond_micros,
+            caching_process: srj.caching_process,
+            stats: stats,
+        }
+    }
+}
+
 impl StatsRec {
     pub fn new(caching_process: &Vec<String>, num_files: i32) -> Self {
         let caching_process = caching_process.clone();
@@ -53,6 +113,12 @@ impl StatsRec {
             num_files,
             ..Default::default()
         }
+    }
+
+    /// Read a StatsRecJson file and turn it into a StatsRec
+    pub fn read_file(path: &OsString) -> Result<Self, Box<dyn Error>> {
+        let srj = StatsRecJson::read_file(path)?;
+        Ok(srj.into())
     }
 
     /// Calculate the contents of the call-chain-file
@@ -339,6 +405,8 @@ pub fn basic_stats(trace: &Trace) -> HashMap<String, u32> {
     stats
 }
 
+///TODO move comma_float to Aux module
+///
 static COMMA_FLOAT: Mutex<bool> = Mutex::new(false);
 
 pub fn set_comma_float(val: bool) {

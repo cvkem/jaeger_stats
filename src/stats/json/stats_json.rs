@@ -1,7 +1,13 @@
-// TODO move to Stats
-use crate::stats::{
-    call_chain::{CChainStatsKey, CChainStatsValue},
-    MethodStats, Stats, StatsRec,
+//! Variant on StatsRec that can be stored in JSON format.
+//! The StatsRec can not be stored in JSON as:
+//!    1. It contains a HashMap (call-chain) with non-string keys
+//!    2. It contains date-times which can not represented in JSON (we will store them as a i64, just like we had in the Jaeger-JSON file)
+use crate::{
+    aux::datetime_to_micros,
+    stats::{
+        call_chain::{CChainStatsKey, CChainStatsValue},
+        MethodStats, Stats, StatsRec, Version,
+    },
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error, ffi::OsString, fs::File, io};
@@ -18,7 +24,7 @@ pub struct StatsJson {
 
 impl From<Stats> for StatsJson {
     fn from(st: Stats) -> Self {
-        StatsJson {
+        Self {
             num_received_calls: st.num_received_calls,
             num_outbound_calls: st.num_outbound_calls,
             num_unknown_calls: st.num_unknown_calls,
@@ -30,12 +36,13 @@ impl From<Stats> for StatsJson {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct StatsRecJson {
+    pub version: Version,
     pub trace_id: Vec<String>,
     pub root_call: Vec<String>,
     pub num_spans: Vec<usize>,
-    pub num_files: Option<i32>, //Optional for backward compatibility
-    pub start_dt: Vec<String>,
-    pub end_dt: Vec<String>,
+    pub num_files: i32, // Not compatible with version 0.1 which did not have this field. Skipped backward compatbility
+    pub start_dt: Vec<i64>,
+    pub end_dt: Vec<i64>,
     pub duration_micros: Vec<i64>,
     pub time_to_respond_micros: Vec<i64>,
     pub caching_process: Vec<String>,
@@ -46,13 +53,22 @@ impl From<StatsRec> for StatsRecJson {
     fn from(sr: StatsRec) -> Self {
         let stats: HashMap<String, StatsJson> =
             sr.stats.into_iter().map(|(k, v)| (k, v.into())).collect();
-        StatsRecJson {
+        Self {
+            version: sr.version,
             trace_id: sr.trace_id,
             root_call: sr.root_call,
             num_spans: sr.num_spans,
-            num_files: Some(sr.num_files), // Made optional for backward compatibility
-            start_dt: sr.start_dt.into_iter().map(|dt| dt.to_string()).collect(),
-            end_dt: sr.end_dt.into_iter().map(|dt| dt.to_string()).collect(),
+            num_files: sr.num_files,
+            start_dt: sr
+                .start_dt
+                .into_iter()
+                .map(|dt| datetime_to_micros(dt))
+                .collect(),
+            end_dt: sr
+                .end_dt
+                .into_iter()
+                .map(|dt| datetime_to_micros(dt))
+                .collect(),
             duration_micros: sr.duration_micros,
             time_to_respond_micros: sr.time_to_respond_micros,
             caching_process: sr.caching_process,

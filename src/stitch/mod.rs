@@ -1,3 +1,4 @@
+mod call_chain_reporter;
 mod key;
 mod method_stats_reporter;
 mod stats_rec_reporter;

@@ -26,7 +26,5 @@ fn main() {
     set_comma_float(args.comma_float);
 
     let stitch_list = read_stitch_list(stitch_list_path).expect("Failed to read stitchlist-file");
-    // add the processing
     stitch_list.write_stitched_csv(Path::new(&args.output));
-    //println!("{stitch_list:#?}");
 }

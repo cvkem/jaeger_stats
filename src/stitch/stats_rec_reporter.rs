@@ -1,6 +1,6 @@
-use crate::stats::json::StatsRecJson;
+use crate::stats::StatsRec;
 
-type SRJProcessor = fn(&StatsRecJson) -> String;
+type SRJProcessor = fn(&StatsRec) -> String;
 
 pub struct SRJReportItem {
     label: &'static str,
@@ -15,14 +15,14 @@ impl SRJReportItem {
 
 pub struct StatsRecReporter<'a> {
     buffer: &'a mut Vec<String>,
-    data: &'a Vec<Option<StatsRecJson>>,
+    data: &'a Vec<Option<StatsRec>>,
     report_items: Vec<SRJReportItem>,
 }
 
 impl<'a> StatsRecReporter<'a> {
     pub fn new(
         buffer: &'a mut Vec<String>,
-        data: &'a Vec<Option<StatsRecJson>>,
+        data: &'a Vec<Option<StatsRec>>,
         report_items: Vec<SRJReportItem>,
     ) -> Self {
         // find a deduplicated set of all keys and sort them

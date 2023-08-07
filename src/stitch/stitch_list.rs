@@ -1,11 +1,12 @@
 use super::{
+    call_chain_reporter::{CCReportItem, CallChainReporter},
     key::Key,
     method_stats_reporter::{MSReportItem, MethodStatsReporter},
     stats_rec_reporter::{SRJReportItem, StatsRecReporter},
 };
 use crate::{
     aux::{read_lines, write_string_to_file},
-    stats::json::StatsRecJson,
+    stats::StatsRec,
 };
 use std::{
     error::Error,
@@ -77,7 +78,7 @@ impl StitchList {
             .map(|(idx, p)| {
                 if let Some(p) = p {
                     println!("{}: Reading {p:?}", idx + 1);
-                    Some(StatsRecJson::read_file(p).expect("Failed to read JSON-file"))
+                    Some(StatsRec::read_file(p).expect("Failed to read JSON-file"))
                 } else {
                     println!("{}: No Data", idx + 1);
                     None
@@ -132,11 +133,11 @@ pub fn read_stitch_list(path: &Path) -> Result<StitchList, Box<dyn Error>> {
 }
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
-fn append_basic_stats(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>) {
+fn append_basic_stats(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>>) {
     buffer.push("\n\n# Basic statistics over alle stitched files".to_owned());
     let mut report_items = Vec::new();
     report_items.push(SRJReportItem::new("num_files", |srj| {
-        srj.num_files.unwrap_or(0).to_string()
+        srj.num_files.to_string()
     }));
     report_items.push(SRJReportItem::new("num_traces", |srj| {
         srj.trace_id.len().to_string()
@@ -154,7 +155,7 @@ fn append_basic_stats(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>
 }
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
-fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>) {
+fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>>) {
     buffer.push("\n\n# Method table".to_owned());
 
     // build the stack of reports that need to be calculated
@@ -180,16 +181,45 @@ fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>
         msv.get_max_millis_str()
     }));
 
+    // Build a reporter that handles shows the items defined in the report_items. Each item is a data-column.
     let mut reporter = MethodStatsReporter::new(buffer, data, report_items);
 
+    // Find all keys and generate an output line for each of these keys.
     let keys = reporter.get_keys();
     keys.into_iter()
         .for_each(|Key { process, operation }| reporter.append_report(process, operation));
 }
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
-fn append_callchain_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRecJson>>) {
+fn append_callchain_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>>) {
     buffer.push("\n\n# Call-chain table".to_owned());
+    // build the stack of reports that need to be calculated
+    let mut report_items = Vec::new();
+    report_items.push(CCReportItem::new("count", |msv, _, _| {
+        msv.count.to_string()
+    }));
+    report_items.push(CCReportItem::new(
+        "Occurance percentage",
+        |msv, _, num_traces| (msv.count as f64 / num_traces as f64).to_string(),
+    ));
+    report_items.push(CCReportItem::new("rate (avg)", |msv, num_files, _| {
+        msv.get_avg_rate_str(num_files)
+    }));
+    //    report_items.push(CCReportItem::new("rate (median)", |msv, num_files, _| msv.get_median_rate_str(num_files)));
+    report_items.push(CCReportItem::new("min_millis", |msv, _, _| {
+        msv.get_min_millis_str()
+    }));
+    report_items.push(CCReportItem::new("avg_millis", |msv, _, _| {
+        msv.get_avg_millis_str()
+    }));
+    report_items.push(CCReportItem::new("max_millis", |msv, _, _| {
+        msv.get_max_millis_str()
+    }));
 
-    buffer.push("<< TO BE ADDED>>".to_owned());
+    // Build a reporter that handles shows the items defined in the report_items. Each item is a data-column.
+    let mut reporter = CallChainReporter::new(buffer, data, report_items);
+
+    // Find all keys and generate an output line for each of these keys.
+    let keys = reporter.get_keys();
+    keys.into_iter().for_each(|k| reporter.append_report(k));
 }
