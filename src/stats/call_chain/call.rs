@@ -1,6 +1,6 @@
-//use crate::{aux::read_lines, cchain_cache::EndPointCChain, cchain_stats::CChainStatsKey};
+
+use crate::aux::{report, Chapter};
 use serde::{Deserialize, Serialize};
-//use std::{error::Error, path::Path};
 
 #[derive(Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Clone)]
 pub enum CallDirection {
@@ -16,7 +16,13 @@ impl From<&str> for CallDirection {
             "Inbound" => CallDirection::Inbound, // would be nice if "Inbound" could be taken from 'CallDirection::Inbound.as_str()'
             "Outbound" => CallDirection::Outbound,
             "Unknown" => CallDirection::Unknown,
-            _ => panic!("Invalid value for CallDirection. Observed: {s}"),
+            _ => {
+                let msg = format!("Invalid value for CallDirection. Observed: {s}");
+                let ingest_msg = "Issue might be ingest issue: ".to_string() + &msg;
+                report(Chapter::Issues, msg);
+                report(crate::aux::Chapter::Ingest, ingest_msg);
+                CallDirection::Unknown
+            }
         }
     }
 }
@@ -27,7 +33,9 @@ impl From<Option<&String>> for CallDirection {
             Some(s) if &s[..] == "server" => CallDirection::Inbound,
             Some(s) if &s[..] == "client" => CallDirection::Outbound,
             None => CallDirection::Unknown,
-            _ => panic!("Invalid value for CallDirection: Observed '{s:?}'"),
+            _ => {
+                panic!("Invalid value for CallDirection: Observed '{s:?}'")
+            },
         }
     }
 }

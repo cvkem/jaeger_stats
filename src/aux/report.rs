@@ -5,12 +5,13 @@ use std::{fs::File, io::Write, sync::Mutex};
 #[repr(u8)]
 pub enum Chapter {
     Summary = 0,
+    Issues,
     Ingest,
     Analysis,
     Details,
 }
 
-static CHAPTER_NAMES: [&str; 4] = ["Summary", "Ingest", "Analysis", "Details"];
+static CHAPTER_NAMES: [&str; 5] = ["Summary", "Issues", "Ingest", "Analysis", "Details"];
 
 impl Chapter {
     fn discriminant(&self) -> usize {
