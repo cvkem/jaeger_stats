@@ -2,12 +2,13 @@
 use super::process_map::{build_process_map, Process, ProcessMap};
 use crate::{
     micros_to_datetime,
-    raw::{JaegerItem, JaegerSpan, JaegerTags},
+    raw::{JaegerItem, JaegerLog, JaegerSpan, JaegerTags},
 };
 
 use chrono::{DateTime, Utc};
 use lazy_static::lazy_static;
 use regex::Regex;
+use serde_json::Value;
 use std::{collections::HashMap, iter};
 
 #[derive(Debug, Default)]
@@ -32,7 +33,7 @@ pub struct Span {
     //      cargo run --example collect_span_tags
     //
     pub span_kind: Option<String>,
-    pub http_status_code: Option<i32>,
+    pub http_status_code: Option<i16>,
     pub attributes: HashMap<String, String>,
     // some attributes
     // pub http_method: Option<String>,
@@ -42,6 +43,7 @@ pub struct Span {
     // pub db_type: Option<String>,
     // pub db_statement: Option<String>,
     // pub warnings: Option<Vec<String>>,
+    pub logs: Vec<Log>,
 }
 
 pub type Spans = Vec<Span>;
@@ -72,7 +74,7 @@ impl Span {
     /// two attributes are extracted as these are used frequently, the others are stored in a hashmap
     fn add_tags(&mut self, tags: &JaegerTags) {
         tags.iter().for_each(|tag| match &tag.key[..] {
-            "http.status_code" => self.http_status_code = Some(tag.get_i32()),
+            "http.status_code" => self.http_status_code = Some(tag.get_i16()),
             "span.kind" => self.span_kind = Some(tag.get_string()),
             key => _ = self.attributes.insert(key.to_owned(), tag.get_as_string()),
         });
@@ -90,6 +92,32 @@ impl Span {
         // })
     }
 
+    fn add_logs(&mut self, logs: &Vec<JaegerLog>) {
+        let unpack_serde_str = |v: &Value| match v {
+            Value::String(s) => s.to_owned(),
+            _ => panic!("Invalid type of string-field {:?}", v),
+        };
+
+        self.logs = logs
+            .iter()
+            .map(|log| {
+                let timestamp = log.timestamp;
+                let mut level = String::new();
+                let mut msg = String::new();
+                log.fields.iter().for_each(|jt| match &jt.key[..] {
+                    "level" => level = unpack_serde_str(&jt.value),
+                    "message" => msg = unpack_serde_str(&jt.value),
+                    _ => (),
+                });
+                Log {
+                    timestamp,
+                    level,
+                    msg,
+                }
+            })
+            .collect();
+    }
+
     //. get_process_name returns the string-slice of the process of this span (without the operation (method) that is called)
     pub fn get_process_str(&self) -> &str {
         match &self.process {
@@ -102,6 +130,13 @@ impl Span {
     // pub fn get_process_name(&self) -> String {
     //     self.get_process_str().to_owned()
     // }
+}
+
+#[derive(Debug)]
+pub struct Log {
+    pub timestamp: i64,
+    pub level: String,
+    pub msg: String,
 }
 
 fn replace_regex(s: String, re: &Regex, replacement: &str) -> (String, bool) {

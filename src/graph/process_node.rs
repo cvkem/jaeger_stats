@@ -39,7 +39,7 @@ impl ProcessNode {
         self.operations
             .entry(oper_name)
             .and_modify(|cnt| *cnt += count)
-            .or_insert_with(|| count);
+            .or_insert(count);
     }
 
     /// for the operation 'oper_name' add count calls.
@@ -47,7 +47,7 @@ impl ProcessNode {
         self.methods
             .entry(method_name)
             .and_modify(|cnt| *cnt += count)
-            .or_insert_with(|| count);
+            .or_insert(count);
     }
 
     /// for the operation 'oper_name' add count calls.
@@ -55,7 +55,7 @@ impl ProcessNode {
         self.direction_unknown
             .entry(method_name)
             .and_modify(|cnt| *cnt += count)
-            .or_insert_with(|| count);
+            .or_insert(count);
     }
 }
 

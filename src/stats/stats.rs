@@ -7,7 +7,7 @@ use super::{
     method_stats::{MethodStats, MethodStatsValue},
 };
 use crate::{
-    aux::micros_to_datetime,
+    aux::{micros_to_datetime, Counted},
     processed::{Spans, Trace},
 };
 use serde::{Deserialize, Serialize};
@@ -161,6 +161,9 @@ impl StatsRec {
             .for_each(|(idx, span)| {
                 let proc = span.get_process_str().to_owned();
                 let method = &span.operation_name;
+
+                // The update_stat closure is the actual update operation
+                // This clojure is later applied to the newly inserted record for this process, or is used to update an existing record.
                 let update_stat = |stat: &mut Stats| {
                     match &span.span_kind {
                         Some(kind) => match &kind[..] {
@@ -186,6 +189,7 @@ impl StatsRec {
 
                     // // add a count per method_including-cached
                     let call_chain = get_call_chain(idx, &spans);
+                    let (http_not_ok_vec, error_logs_vec) = get_error_information(idx, &spans);
                     let caching_process = caching_process_label(&self.caching_process, &call_chain);
 
                     // add call-chain stats
@@ -193,34 +197,64 @@ impl StatsRec {
                     let looped = get_duplicates(&call_chain);
                     let is_leaf = span.is_leaf;
                     let rooted = span.rooted;
+                    let cc_not_http_ok = if http_not_ok_vec.len() > 0 { 1 } else { 0 };
+                    let cc_with_error_log = if error_logs_vec.len() > 0 { 1 } else { 0 };
 
                     let ps_key = CChainStatsKey {
                         call_chain,
                         caching_process,
                         is_leaf,
                     };
+
+                    let update_ps_val = |ps: &mut CChainStatsValue| {
+                        ps.count += 1;
+                        ps.start_dt_micros.push(start_dt_micros);
+                        ps.duration_micros.push(duration_micros);
+                        ps.cc_not_http_ok += cc_not_http_ok;
+                        ps.cc_with_error_log += cc_with_error_log;
+                        ps.http_not_ok.add_items(http_not_ok_vec.clone()); // clone needed as otherwise this will be an FnOnce while rust thinks it is used twicecargo
+                        ps.error_logs.add_items(error_logs_vec.clone());
+                    };
                     stat.call_chain
                         .entry(ps_key)
-                        .and_modify(|ps| {
-                            ps.count += 1;
-                            ps.start_dt_micros.push(start_dt_micros);
-                            ps.duration_micros.push(duration_micros);
-                        })
+                        // next part could be made more dry via an update-closure
+                        .and_modify(|ps| update_ps_val(ps))
+                        //     ps.count += 1;
+                        //     ps.start_dt_micros.push(start_dt_micros);
+                        //     ps.duration_micros.push(duration_micros);
+                        //     ps.cc_not_http_ok += cc_not_http_ok;
+                        //     ps.cc_with_error_log += cc_with_error_log;
+                        //     ps.http_not_ok.add_items(http_not_ok_vec);
+                        //     ps.error_logs.add_items(error_logs_vec);
+                        // })
                         .or_insert_with(|| {
-                            let dms: Box<[_]> = Box::new([duration_micros]);
-                            let duration_micros = dms.into_vec();
-                            let start_dt_micros = [start_dt_micros].to_vec();
-                            CChainStatsValue {
-                                count: 1,
-                                depth,
-                                duration_micros,
-                                start_dt_micros,
-                                looped,
-                                rooted,
-                            }
+                            let mut ps = CChainStatsValue::default();
+                            update_ps_val(&mut ps);
+                            ps
                         });
+                    //     let dms: Box<[_]> = Box::new([duration_micros]);
+                    //     let duration_micros = dms.into_vec();
+                    //     let start_dt_micros = [start_dt_micros].to_vec();
+                    //     let mut http_not_ok = Counted::new();
+                    //     http_not_ok.add_items(http_not_ok_vec);
+                    //     let mut error_logs = Counted::new();
+                    //     error_logs.add_items(error_logs_vec);
+                    //     CChainStatsValue {
+                    //         count: 1,
+                    //         depth,
+                    //         duration_micros,
+                    //         start_dt_micros,
+                    //         looped,
+                    //         rooted,
+                    //         cc_not_http_ok,
+                    //         cc_with_error_log,
+                    //         http_not_ok,
+                    //         error_logs
+                    //     }
+                    // });
                 };
 
+                // This is the actual insert or update baed on the 'update_stats'.
                 self.stats
                     .entry(proc)
                     .and_modify(update_stat)
@@ -452,6 +486,36 @@ fn get_call_chain(idx: usize, spans: &Spans) -> CallChain {
         call_direction,
     });
     call_chain
+}
+
+///  returns a tuple with the number of none-http-ok and the number of spans with error-lines
+fn get_error_information(idx: usize, spans: &Spans) -> (Vec<i16>, Vec<String>) {
+    let mut non_http_ok = Vec::new();
+    let mut error_logs = Vec::new();
+    let mut span = &spans[idx];
+
+    loop {
+        match span.http_status_code {
+            Some(http_code) => {
+                if http_code != 200 {
+                    non_http_ok.push(http_code)
+                }
+            }
+            None => (),
+        }
+
+        span.logs
+            .iter()
+            .filter(|l| l.level == "ERROR")
+            .for_each(|log| error_logs.push(log.msg.to_owned()));
+
+        // move one step up in the chain
+        match span.parent {
+            None => break,
+            Some(idx) => span = &spans[idx],
+        };
+    }
+    (non_http_ok, error_logs)
 }
 
 /// get all values that appear more than once in the list of strings, while being none-adjacent.

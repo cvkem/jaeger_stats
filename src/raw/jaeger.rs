@@ -12,7 +12,7 @@ pub struct JaegerProcess {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct JaegerLog {
-    timestamp: i64,
+    pub timestamp: i64,
     pub fields: Vec<JaegerTag>,
 }
 
@@ -57,9 +57,22 @@ impl JaegerTag {
         val
     }
 
+    pub fn get_i16(&self) -> i16 {
+        let serde_json::Value::Number(val) = &self.value else {
+            panic!("The key '{}' does not contain a number. Value = {:?}", self.key, self.value);
+        };
+        match val.as_i64() {
+            Some(val) => val as i16,
+            None => panic!(
+                "The key '{}' does not contain a number (i16). Value = {:?}",
+                self.key, self.value
+            ),
+        }
+    }
+
     pub fn get_i32(&self) -> i32 {
         let serde_json::Value::Number(val) = &self.value else {
-            panic!("The key '{}' does not contain a number (i32). Value = {:?}", self.key, self.value);
+            panic!("The key '{}' does not contain a number. Value = {:?}", self.key, self.value);
         };
         match val.as_i64() {
             Some(val) => val as i32,

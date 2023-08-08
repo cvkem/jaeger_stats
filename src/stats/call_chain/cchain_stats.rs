@@ -7,7 +7,7 @@ use super::{
     file::{call_chain_key, LEAF_LABEL},
 };
 use crate::{
-    aux::{report, Chapter},
+    aux::{report, Chapter, Counted},
     string_hash,
 };
 use serde::{Deserialize, Serialize};
@@ -21,6 +21,10 @@ pub struct CChainStatsValue {
     pub start_dt_micros: Vec<i64>, // represented via start_dt.timestamp_micros()
     pub looped: Vec<String>,
     pub rooted: bool, //does this call-chain originate from the root of this trace.
+    pub cc_not_http_ok: i32, // count of the number of call chanis that has one of more HTTP-error(s) somewhere along the chain
+    pub cc_with_error_log: i32, // count of the number of call chanis that has one of more ERROR log-lines somewhere along the chain
+    pub http_not_ok: Counted<i16>,
+    pub error_logs: Counted<String>,
 }
 
 /// Key for the CChain containing part of the CChain-values
