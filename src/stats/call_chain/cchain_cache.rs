@@ -14,7 +14,7 @@ pub struct CChainEndPointCache {
 
 impl CChainEndPointCache {
     pub fn new(path: PathBuf) -> Self {
-        let path = path.canonicalize().unwrap();
+        let path = path.canonicalize().expect(&format!("Failed to build a Call-Chain cache from folder '{}'. Did you set the -c flag correctly?", path.display()));
         Self {
             path,
             cache: HashMap::new(),

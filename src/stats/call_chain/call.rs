@@ -18,7 +18,7 @@ impl From<&str> for CallDirection {
             _ => {
                 let msg = format!("Invalid value for CallDirection. Observed: {s}");
                 let ingest_msg = "Issue might be ingest issue: ".to_string() + &msg;
-                report(Chapter::Issues, msg);
+                report(Chapter::Details, msg);
                 report(crate::aux::Chapter::Ingest, ingest_msg);
                 CallDirection::Unknown
             }
@@ -29,16 +29,18 @@ impl From<&str> for CallDirection {
 impl From<Option<&String>> for CallDirection {
     fn from(s: Option<&String>) -> Self {
         match s {
-            Some(s) if &s[..] == "server" => CallDirection::Inbound,
-            Some(s) if &s[..] == "client" => CallDirection::Outbound,
+            Some(s) => match &s[..] {
+                "server" | "consumer" => CallDirection::Inbound,
+                "client" | "producer" => CallDirection::Outbound,
+                _ => {
+                    let msg = format!("Invalid value for CallDirection. Observed: {s:?}");
+                    let ingest_msg = "Issue might be ingest issue: ".to_string() + &msg;
+                    report(Chapter::Issues, msg);
+                    report(crate::aux::Chapter::Ingest, ingest_msg);
+                    CallDirection::Unknown
+                }
+            },
             None => CallDirection::Unknown,
-            s => {
-                let msg = format!("Invalid value for CallDirection. Observed: {s:?}");
-                let ingest_msg = "Issue might be ingest issue: ".to_string() + &msg;
-                report(Chapter::Issues, msg);
-                report(crate::aux::Chapter::Ingest, ingest_msg);
-                CallDirection::Unknown
-            }
         }
     }
 }
@@ -88,5 +90,3 @@ impl ToString for Call {
         }
     }
 }
-
-pub type CallChain = Vec<Call>;

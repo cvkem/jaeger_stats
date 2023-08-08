@@ -1,13 +1,11 @@
-use super::super::{
-    rate::calc_rate,
-    stats::{format_float, format_float_opt},
-};
+use super::super::rate::calc_rate;
 use super::{
-    call::{Call, CallChain, CallDirection},
+    call::{Call, CallDirection},
+    call_chain::CallChain,
     file::{call_chain_key, LEAF_LABEL},
 };
 use crate::{
-    aux::{report, Chapter, Counted},
+    aux::{format_float, format_float_opt, report, Chapter, Counted},
     string_hash,
 };
 use serde::{Deserialize, Serialize};

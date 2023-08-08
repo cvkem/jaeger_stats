@@ -9,7 +9,14 @@ use chrono::{DateTime, Utc};
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde_json::Value;
-use std::{collections::HashMap, iter};
+use std::{collections::HashMap, iter, sync::Mutex};
+
+static MAX_LOG_MSG_LENGTH: Mutex<usize> = Mutex::new(100);
+
+pub fn set_max_log_msg_length(val: usize) {
+    let mut guard = MAX_LOG_MSG_LENGTH.lock().unwrap();
+    *guard = val
+}
 
 #[derive(Debug, Default)]
 pub struct Span {
@@ -46,8 +53,6 @@ pub struct Span {
     pub logs: Vec<Log>,
 }
 
-pub type Spans = Vec<Span>;
-
 impl Span {
     fn new(js: &JaegerSpan, proc_map: &ProcessMap) -> Self {
         let parent = None;
@@ -68,6 +73,7 @@ impl Span {
             ..Default::default()
         };
         span.add_tags(&js.tags);
+        span.add_logs(&js.logs);
         span
     }
 
@@ -98,6 +104,8 @@ impl Span {
             _ => panic!("Invalid type of string-field {:?}", v),
         };
 
+        let max_msg_len = *MAX_LOG_MSG_LENGTH.lock().unwrap();
+
         self.logs = logs
             .iter()
             .map(|log| {
@@ -106,7 +114,15 @@ impl Span {
                 let mut msg = String::new();
                 log.fields.iter().for_each(|jt| match &jt.key[..] {
                     "level" => level = unpack_serde_str(&jt.value),
-                    "message" => msg = unpack_serde_str(&jt.value),
+                    "message" => {
+                        let full = unpack_serde_str(&jt.value);
+                        msg = if full.len() > max_msg_len {
+                            let base: String = full.chars().take(max_msg_len).collect();
+                            base + "...TRUNCATED"
+                        } else {
+                            full
+                        }
+                    }
                     _ => (),
                 });
                 Log {
@@ -130,6 +146,26 @@ impl Span {
     // pub fn get_process_name(&self) -> String {
     //     self.get_process_str().to_owned()
     // }
+}
+
+pub type Spans = Vec<Span>;
+
+pub struct SpansExt<'a>(pub &'a Spans);
+
+impl<'a> SpansExt<'a> {
+    pub fn chain_apply_forward<T>(&self, idx: usize, process: &dyn Fn(&Span) -> T) -> Vec<T> {
+        //        let chain_apply_forward_aux = |
+        let span = &self.0[idx];
+        // find the root and allocate vector
+        let mut result = match span.parent {
+            None => Vec::new(),
+            Some(idx) => self.chain_apply_forward(idx, process),
+        };
+        let ret = process(span);
+        result.push(ret);
+        //        result.push(process(span));
+        result
+    }
 }
 
 #[derive(Debug)]

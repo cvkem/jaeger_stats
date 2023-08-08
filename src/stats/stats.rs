@@ -1,14 +1,15 @@
 use super::{
     call_chain::{
-        caching_process_label, call_chain_key, CChainStats, CChainStatsKey, CChainStatsValue, Call,
-        CallChain,
+        caching_process_label, call_chain_key, get_call_chain, CChainStats, CChainStatsKey,
+        CChainStatsValue, Call, CallChain,
     },
+    error_stats::{get_cchain_error_information, get_span_error_information},
     json::{StatsJson, StatsRecJson},
     method_stats::{MethodStats, MethodStatsValue},
 };
 use crate::{
-    aux::{micros_to_datetime, Counted},
-    processed::{Span, Spans, Trace},
+    aux::{format_float, micros_to_datetime},
+    processed::Trace,
 };
 use serde::{Deserialize, Serialize};
 
@@ -17,7 +18,6 @@ use std::{
     collections::{HashMap, HashSet},
     error::Error,
     ffi::OsString,
-    sync::Mutex,
 };
 
 //type ProcessKey = String;    // does not deliver any additional type-safety
@@ -201,7 +201,8 @@ impl StatsRec {
 
                     // // add a count per method_including-cached
                     let call_chain = get_call_chain(idx, &spans);
-                    let (http_not_ok_vec, error_logs_vec) = get_error_information(idx, &spans);
+                    let (http_not_ok_vec, error_logs_vec) =
+                        get_cchain_error_information(idx, &spans);
                     let caching_process = caching_process_label(&self.caching_process, &call_chain);
 
                     // add call-chain stats
@@ -451,101 +452,8 @@ pub fn basic_stats(trace: &Trace) -> HashMap<String, u32> {
     stats
 }
 
-///TODO move comma_float to Aux module
-///
-static COMMA_FLOAT: Mutex<bool> = Mutex::new(false);
-
-pub fn set_comma_float(val: bool) {
-    let mut guard = COMMA_FLOAT.lock().unwrap();
-    *guard = val
-}
-
-/// format_float will format will replace the floating point '.' with a comma ',' such that the excel is readable in the Dutch Excel :-(
-pub fn format_float(val: f64) -> String {
-    let s = format!("{}", val);
-    if *COMMA_FLOAT.lock().unwrap() {
-        s.replace('.', ",")
-    } else {
-        s
-    }
-}
-
-/// format_float will format will replace the floating point '.' with a comma ',' such that the excel is readable in the Dutch Excel :-(
-pub fn format_float_opt(val: Option<f64>) -> String {
-    match val {
-        Some(v) => format_float(v),
-        None => "--".to_owned(),
-    }
-}
-
-/// get_call_chain returns the full call_chain from top to bottom showing process and called method
-/// this function does a recursive trace back to identify all parent-links:
-/// TODO: move to  module that is related to CallChain. It now is difficult to find.in the code-base
-fn get_call_chain(idx: usize, spans: &Spans) -> CallChain {
-    let span = &spans[idx];
-    // find the root and allocate vector
-    let mut call_chain = match span.parent {
-        None => Vec::new(),
-        Some(idx) => get_call_chain(idx, spans),
-    };
-    // and push all proces names starting from the root
-    let process = span.get_process_str().to_owned();
-    let method = span.operation_name.to_owned();
-    let call_direction = span.span_kind.as_ref().into();
-    call_chain.push(Call {
-        process,
-        method,
-        call_direction,
-    });
-    call_chain
-}
-
-// TODO: build struct for error-info and refactor next three calls
-fn get_span_err_info_aux(span: &Span, non_http_ok: &mut Vec<i16>, error_logs: &mut Vec<String>) {
-    match span.http_status_code {
-        Some(http_code) => {
-            if http_code != 200 {
-                non_http_ok.push(http_code)
-            }
-        }
-        None => (),
-    }
-
-    span.logs
-        .iter()
-        .filter(|l| l.level == "ERROR")
-        .for_each(|log| error_logs.push(log.msg.to_owned()));
-}
-
-///  returns a tuple with the number of none-http-ok and the number of spans with error-lines
-fn get_span_error_information(span: &Span) -> (Vec<i16>, Vec<String>) {
-    let mut non_http_ok = Vec::new();
-    let mut error_logs = Vec::new();
-
-    get_span_err_info_aux(span, &mut non_http_ok, &mut error_logs);
-
-    (non_http_ok, error_logs)
-}
-
-///  returns a tuple with the number of none-http-ok and the number of spans with error-lines
-fn get_error_information(idx: usize, spans: &Spans) -> (Vec<i16>, Vec<String>) {
-    let mut non_http_ok = Vec::new();
-    let mut error_logs = Vec::new();
-    let mut span = &spans[idx];
-
-    loop {
-        get_span_err_info_aux(span, &mut non_http_ok, &mut error_logs);
-
-        // move one step up in the chain
-        match span.parent {
-            None => break,
-            Some(idx) => span = &spans[idx],
-        };
-    }
-    (non_http_ok, error_logs)
-}
-
 /// get all values that appear more than once in the list of strings, while being none-adjacent.
+/// TODO: this is part of a procedure to detect loops, which is not completely correct I guess (in case spans are missing)
 fn get_duplicates(names: &CallChain) -> Vec<String> {
     let mut duplicates = Vec::new();
     for idx in 0..names.len() {

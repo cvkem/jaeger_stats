@@ -22,10 +22,16 @@ pub fn analyze_file_or_folder(
     // Read raw jaeger-traces and process them to clean traces.
     let (traces, num_files, folder) = read::read_process_file_or_folder(path);
 
+    let folder = if folder == Path::new("") {
+        Path::new(".")
+    } else {
+        folder
+    };
     let folder = folder
         .to_path_buf()
         .canonicalize()
         .expect("Failed to make canonical path. Path probably does not exist!");
+    println!("The folder is '{}'", folder.as_path().display());
 
     // When joining traces from multiple files we can have duplicates. These should be removed to prevent incorrect statistics
     let traces = dedup::deduplicate(traces);

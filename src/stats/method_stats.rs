@@ -1,8 +1,5 @@
-use super::{
-    rate::calc_rate,
-    stats::{format_float, format_float_opt},
-};
-use crate::aux::Counted;
+use super::rate::calc_rate;
+use crate::aux::{format_float, format_float_opt, Counted};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

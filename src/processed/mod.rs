@@ -4,6 +4,6 @@ mod span;
 mod trace;
 
 pub use self::{
-    span::{Span, Spans},
+    span::{set_max_log_msg_length, Span, Spans, SpansExt},
     trace::{extract_traces, Trace},
 };
