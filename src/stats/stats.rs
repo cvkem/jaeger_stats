@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
     aux::{micros_to_datetime, Counted},
-    processed::{Spans, Trace},
+    processed::{Span, Spans, Trace},
 };
 use serde::{Deserialize, Serialize};
 
@@ -176,16 +176,28 @@ impl StatsRec {
 
                     let duration_micros = span.duration_micros;
                     let start_dt_micros = span.start_dt.timestamp_micros();
+                    let (http_not_ok_vec, error_logs_vec) = get_span_error_information(span);
+
+                    let update_ms = |meth_stat: &mut MethodStatsValue| {
+                        meth_stat.count += 1;
+                        meth_stat.start_dt_micros.push(start_dt_micros);
+                        meth_stat.duration_micros.push(duration_micros);
+                        meth_stat.num_not_http_ok += if http_not_ok_vec.len() > 0 { 1 } else { 0 };
+                        meth_stat.num_with_error_logs +=
+                            if error_logs_vec.len() > 0 { 1 } else { 0 };
+                        meth_stat.http_not_ok.add_items(http_not_ok_vec.clone());
+                        meth_stat.error_logs.add_items(error_logs_vec.clone());
+                    };
                     // add a count per method
                     stat.method
                         .0
                         .entry(method.to_owned())
-                        .and_modify(|meth_stat| {
-                            meth_stat.count += 1;
-                            meth_stat.start_dt_micros.push(start_dt_micros);
-                            meth_stat.duration_micros.push(duration_micros);
-                        })
-                        .or_insert(MethodStatsValue::new(duration_micros, start_dt_micros));
+                        .and_modify(|meth_stat| update_ms(meth_stat))
+                        .or_insert_with(|| {
+                            let mut meth_stat = MethodStatsValue::default();
+                            update_ms(&mut meth_stat);
+                            meth_stat
+                        });
 
                     // // add a count per method_including-cached
                     let call_chain = get_call_chain(idx, &spans);
@@ -364,7 +376,7 @@ impl StatsRec {
         s.push("\n".to_owned());
 
         let num_traces = num_traces as f64;
-        s.push("Process; Count; Min_millis; Avg_millis; Max_millis; Percentage; Rate; Expect_duration;".to_owned());
+        s.push("Process; Count; Min_millis; Avg_millis; Max_millis; Percentage; Rate; Expect_duration; frac_not_http_ok; frac_error_logs".to_owned());
         data.iter().for_each(|(k, stat)| {
             stat.method.0.iter().for_each(|(method, meth_stat)| {
                 let line = meth_stat.report_stats_line(k, method, num_traces, num_files);
@@ -375,7 +387,7 @@ impl StatsRec {
 
         s.push("#The unique key of the next table is 'Call_Chain' (which includes full path and the leaf-marker). So the Process column contains duplicates".to_owned());
 
-        s.push("Call_chain; cc_hash; End_point; Process/operation; Is_leaf; Depth; Count; Looped; Revisit; Caching_proces; Min_millis; Avg_millis; Max_millis; Percentage; Rate; expect_duration; expect_contribution;".to_owned());
+        s.push("Call_chain; cc_hash; End_point; Process/operation; Is_leaf; Depth; Count; Looped; Revisit; Caching_proces; Min_millis; Avg_millis; Max_millis; Percentage; Rate; expect_duration; expect_contribution; frac_http_not_ok; frac_error_logs".to_owned());
 
         // reorder data based on the full call-chain
         //  key is the ProcessKey and ps_key is the PathStatsKey (a.o. call-chain)
@@ -488,6 +500,33 @@ fn get_call_chain(idx: usize, spans: &Spans) -> CallChain {
     call_chain
 }
 
+// TODO: build struct for error-info and refactor next three calls
+fn get_span_err_info_aux(span: &Span, non_http_ok: &mut Vec<i16>, error_logs: &mut Vec<String>) {
+    match span.http_status_code {
+        Some(http_code) => {
+            if http_code != 200 {
+                non_http_ok.push(http_code)
+            }
+        }
+        None => (),
+    }
+
+    span.logs
+        .iter()
+        .filter(|l| l.level == "ERROR")
+        .for_each(|log| error_logs.push(log.msg.to_owned()));
+}
+
+///  returns a tuple with the number of none-http-ok and the number of spans with error-lines
+fn get_span_error_information(span: &Span) -> (Vec<i16>, Vec<String>) {
+    let mut non_http_ok = Vec::new();
+    let mut error_logs = Vec::new();
+
+    get_span_err_info_aux(span, &mut non_http_ok, &mut error_logs);
+
+    (non_http_ok, error_logs)
+}
+
 ///  returns a tuple with the number of none-http-ok and the number of spans with error-lines
 fn get_error_information(idx: usize, spans: &Spans) -> (Vec<i16>, Vec<String>) {
     let mut non_http_ok = Vec::new();
@@ -495,19 +534,7 @@ fn get_error_information(idx: usize, spans: &Spans) -> (Vec<i16>, Vec<String>) {
     let mut span = &spans[idx];
 
     loop {
-        match span.http_status_code {
-            Some(http_code) => {
-                if http_code != 200 {
-                    non_http_ok.push(http_code)
-                }
-            }
-            None => (),
-        }
-
-        span.logs
-            .iter()
-            .filter(|l| l.level == "ERROR")
-            .for_each(|log| error_logs.push(log.msg.to_owned()));
+        get_span_err_info_aux(span, &mut non_http_ok, &mut error_logs);
 
         // move one step up in the chain
         match span.parent {

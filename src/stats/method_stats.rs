@@ -2,6 +2,7 @@ use super::{
     rate::calc_rate,
     stats::{format_float, format_float_opt},
 };
+use crate::aux::Counted;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -10,18 +11,23 @@ pub struct MethodStatsValue {
     pub count: usize,
     pub duration_micros: Vec<i64>,
     pub start_dt_micros: Vec<i64>, // represented via start_dt.timestamp_micros()
+    pub num_not_http_ok: i32, // count of the number of call chanis that has one of more HTTP-error(s) somewhere along the chain
+    pub num_with_error_logs: i32, // count of the number of call chanis that has one of more ERROR log-lines somewhere along the chain
+    pub http_not_ok: Counted<i16>,
+    pub error_logs: Counted<String>,
 }
 
 impl MethodStatsValue {
-    pub fn new(duration: i64, start_dt_micros: i64) -> Self {
-        let duration_micros = [duration].to_vec();
-        let start_dt_micros = [start_dt_micros].to_vec();
-        Self {
-            count: 1,
-            duration_micros,
-            start_dt_micros,
-        }
-    }
+    // pub fn new(duration: i64, start_dt_micros: i64) -> Self {
+    //     let duration_micros = [duration].to_vec();
+    //     let start_dt_micros = [start_dt_micros].to_vec();
+    //     Self {
+    //         count: 1,
+    //         duration_micros,
+    //         start_dt_micros,
+
+    //     }
+    // }
 
     pub fn get_min_millis_str(&self) -> String {
         let min_millis =
@@ -62,6 +68,14 @@ impl MethodStatsValue {
         format_float_opt(rate)
     }
 
+    pub fn get_frac_not_http_ok_str(&self) -> String {
+        format_float(self.num_not_http_ok as f64 / self.count as f64)
+    }
+
+    pub fn get_frac_error_log_str(&self) -> String {
+        format_float(self.num_with_error_logs as f64 / self.count as f64)
+    }
+
     /// reports the statistics for a single line
     pub fn report_stats_line(
         &self,
@@ -74,14 +88,16 @@ impl MethodStatsValue {
         let expect_duration = percentage * self.get_avg_millis();
         // let expect_contribution = if ps_key.is_leaf { expect_duration } else { 0.0 };
         let line = format!(
-            "{process_key}/{method}; {}; {}; {}; {}; {}; {}; {};",
+            "{process_key}/{method}; {}; {}; {}; {}; {}; {}; {}; {}; {}",
             self.count,
             self.get_min_millis_str(),
             self.get_avg_millis_str(),
             self.get_max_millis_str(),
             format_float(percentage),
             self.get_avg_rate_str(num_files),
-            format_float(expect_duration)
+            format_float(expect_duration),
+            self.get_frac_not_http_ok_str(),
+            self.get_frac_error_log_str()
         );
         line
     }

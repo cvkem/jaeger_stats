@@ -200,6 +200,14 @@ impl CChainStatsValue {
         format_float_opt(rate)
     }
 
+    pub fn get_frac_not_http_ok_str(&self) -> String {
+        format_float(self.cc_not_http_ok as f64 / self.count as f64)
+    }
+
+    pub fn get_frac_error_log_str(&self) -> String {
+        format_float(self.cc_with_error_log as f64 / self.count as f64)
+    }
+
     /// reports the statistics for a single line
     pub fn report_stats_line(
         &self,
@@ -227,10 +235,12 @@ impl CChainStatsValue {
 
         // Call_chain; cc_hash; End_point; Process/operation; Is_leaf; Depth; Count; Looped; Revisit; Caching_proces; min_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;
 
-        let line = format!("{call_chain};{cc_hash}; {end_point}; {leaf}; {}; {}; {}; {}; {:?}; {caching_process}; {}; {}; {}; {}; {}; {}; {};", 
+        let line = format!("{call_chain};{cc_hash}; {end_point}; {leaf}; {}; {}; {}; {}; {:?}; {caching_process}; {}; {}; {}; {}; {}; {}; {}; {}; {}", 
             ps_key.is_leaf, self.depth, self.count, self.looped.len()> 0, self.looped,
             self.get_min_millis_str(), self.get_avg_millis_str(), self.get_max_millis_str(),
-            format_float(percentage), self.get_avg_rate_str(num_files), format_float(expect_duration), format_float(expect_contribution));
+            format_float(percentage), self.get_avg_rate_str(num_files), format_float(expect_duration), format_float(expect_contribution),
+            self.get_frac_not_http_ok_str(), self.get_frac_error_log_str()
+        );
         line
     }
 }

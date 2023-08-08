@@ -4,6 +4,6 @@ mod span;
 mod trace;
 
 pub use self::{
-    span::Spans,
+    span::{Span, Spans},
     trace::{extract_traces, Trace},
 };

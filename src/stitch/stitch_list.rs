@@ -180,6 +180,12 @@ fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>>) {
     report_items.push(MSReportItem::new("max_millis", |msv, _, _| {
         msv.get_max_millis_str()
     }));
+    report_items.push(MSReportItem::new("frac_not_http_ok", |msv, _, _| {
+        msv.get_frac_not_http_ok_str()
+    }));
+    report_items.push(MSReportItem::new("frac_error_logs", |msv, _, _| {
+        msv.get_frac_error_log_str()
+    }));
 
     // Build a reporter that handles shows the items defined in the report_items. Each item is a data-column.
     let mut reporter = MethodStatsReporter::new(buffer, data, report_items);
@@ -214,6 +220,13 @@ fn append_callchain_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>>
     }));
     report_items.push(CCReportItem::new("max_millis", |msv, _, _| {
         msv.get_max_millis_str()
+    }));
+
+    report_items.push(CCReportItem::new("http_not_ok_count", |msv, _, _| {
+        msv.get_frac_not_http_ok_str()
+    }));
+    report_items.push(CCReportItem::new("num_error_logs", |msv, _, _| {
+        msv.get_frac_error_log_str()
     }));
 
     // Build a reporter that handles shows the items defined in the report_items. Each item is a data-column.

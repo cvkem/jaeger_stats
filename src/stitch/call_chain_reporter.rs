@@ -76,7 +76,7 @@ impl<'a> CallChainReporter<'a> {
                     Some(st) => match st.call_chain.get(&cc_key) {
                         Some(oper) => Some((oper, stats_rec.num_files, stats_rec.trace_id.len())),
                         None => {
-                            println!("No value found for key '{}'.", cc_key.call_chain_key());
+                            //                            println!("No value found for key '{}'.", cc_key.call_chain_key());
                             None
                         }
                     },
