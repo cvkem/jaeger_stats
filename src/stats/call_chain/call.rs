@@ -1,4 +1,3 @@
-
 use crate::aux::{report, Chapter};
 use serde::{Deserialize, Serialize};
 
@@ -33,9 +32,13 @@ impl From<Option<&String>> for CallDirection {
             Some(s) if &s[..] == "server" => CallDirection::Inbound,
             Some(s) if &s[..] == "client" => CallDirection::Outbound,
             None => CallDirection::Unknown,
-            _ => {
-                panic!("Invalid value for CallDirection: Observed '{s:?}'")
-            },
+            s => {
+                let msg = format!("Invalid value for CallDirection. Observed: {s:?}");
+                let ingest_msg = "Issue might be ingest issue: ".to_string() + &msg;
+                report(Chapter::Issues, msg);
+                report(crate::aux::Chapter::Ingest, ingest_msg);
+                CallDirection::Unknown
+            }
         }
     }
 }
