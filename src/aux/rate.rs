@@ -14,7 +14,7 @@ pub fn calc_rate(data: &Vec<i64>, num_outliers: i32) -> Option<(f64, f64)> {
         return None;
     }
     let mut data = data.clone();
-    data.sort();
+    data.sort_unstable();
     // comppute the gaps (moving from N to N-1 datapoints)
     for i in 0..(data.len() - 1) {
         data[i] = data[i + 1] - data[i];
@@ -22,7 +22,7 @@ pub fn calc_rate(data: &Vec<i64>, num_outliers: i32) -> Option<(f64, f64)> {
     data.pop(); // drop last element
 
     // drop the expected a number of outliers
-    data.sort();
+    data.sort_unstable();
 
     if *SHOW_OUTPUT.lock().unwrap() {
         println!("Show the sorted data before skipping the outliers!!");

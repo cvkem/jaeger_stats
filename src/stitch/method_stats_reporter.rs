@@ -1,5 +1,6 @@
 use crate::{
     //rate::set_show_rate_output,
+    aux::floats_to_string,
     stats::MethodStatsValue,
     stats::StatsRec,
 };
@@ -7,7 +8,7 @@ use std::collections::HashSet;
 
 use super::key::Key;
 
-type Processor = fn(&MethodStatsValue, i32, usize) -> String;
+type Processor = fn(&MethodStatsValue, i32, usize) -> Option<f64>;
 
 pub struct MSReportItem {
     label: &'static str,
@@ -55,7 +56,7 @@ impl<'a> MethodStatsReporter<'a> {
             }
         });
         let mut keys: Vec<_> = keys.into_iter().collect();
-        keys.sort();
+        keys.sort_unstable();
         keys
     }
 
@@ -94,12 +95,13 @@ impl<'a> MethodStatsReporter<'a> {
                 let values = meth_stats
                     .iter()
                     .map(|ms| {
-                        ms.map_or("".to_owned(), |msv_nf| {
+                        ms.map_or(None, |msv_nf| {
                             processor(msv_nf.0, msv_nf.1, msv_nf.2)
                         })
                     })
-                    .collect::<Vec<_>>()
-                    .join("; ");
+                    .collect::<Vec<_>>();
+
+                let values = floats_to_string(values, "; ");
                 self.buffer
                     .push(format!("{process_operation}; {label}; {values}"));
             });

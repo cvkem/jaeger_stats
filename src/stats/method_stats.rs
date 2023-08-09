@@ -14,6 +14,10 @@ pub struct MethodStatsValue {
 }
 
 impl MethodStatsValue {
+    pub fn get_min_millis(&self) -> f64 {
+        TimeStats(&self.duration_micros).get_min_millis()
+    }
+
     pub fn get_min_millis_str(&self) -> String {
         TimeStats(&self.duration_micros).get_min_millis_str()
     }
@@ -26,24 +30,43 @@ impl MethodStatsValue {
         TimeStats(&self.duration_micros).get_avg_millis_str()
     }
 
+    pub fn get_median_millis(&self) -> f64 {
+        TimeStats(&self.duration_micros).get_median_millis()
+    }
+
+    pub fn get_median_millis_str(&self) -> String {
+        TimeStats(&self.duration_micros).get_median_millis_str()
+    }
+
+    pub fn get_max_millis(&self) -> f64 {
+        TimeStats(&self.duration_micros).get_max_millis()
+    }
+
     pub fn get_max_millis_str(&self) -> String {
         TimeStats(&self.duration_micros).get_max_millis_str()
+    }
+
+    pub fn get_avg_rate(&self, num_files: i32) -> Option<f64> {
+        TimeStats(&self.start_dt_micros).get_avg_rate(num_files)
     }
 
     pub fn get_avg_rate_str(&self, num_files: i32) -> String {
         TimeStats(&self.start_dt_micros).get_avg_rate_str(num_files)
     }
 
-    pub fn get_median_rate_str(&self, num_files: i32) -> String {
-        TimeStats(&self.start_dt_micros).get_median_rate_str(num_files)
+    pub fn get_frac_not_http_ok(&self) -> f64 {
+        self.num_not_http_ok as f64 / self.count as f64
+    }
+    pub fn get_frac_not_http_ok_str(&self) -> String {
+        format_float( self.get_frac_not_http_ok() )
     }
 
-    pub fn get_frac_not_http_ok_str(&self) -> String {
-        format_float(self.num_not_http_ok as f64 / self.count as f64)
+    pub fn get_frac_error_log(&self) -> f64 {
+        self.num_with_error_logs as f64 / self.count as f64
     }
 
     pub fn get_frac_error_log_str(&self) -> String {
-        format_float(self.num_with_error_logs as f64 / self.count as f64)
+        format_float(self.get_frac_error_log() )
     }
 
     /// reports the statistics for a single line
@@ -58,9 +81,10 @@ impl MethodStatsValue {
         let expect_duration = percentage * self.get_avg_millis();
         // let expect_contribution = if ps_key.is_leaf { expect_duration } else { 0.0 };
         let line = format!(
-            "{process_key}/{method}; {}; {}; {}; {}; {}; {}; {}; {}; {}",
+            "{process_key}/{method}; {}; {}; {}; {}; {}; {}; {}; {}; {}; {}",
             self.count,
             self.get_min_millis_str(),
+            self.get_median_millis_str(),
             self.get_avg_millis_str(),
             self.get_max_millis_str(),
             format_float(percentage),

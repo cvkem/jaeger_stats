@@ -61,7 +61,7 @@ impl<'a> CallChainReporter<'a> {
             }
         });
         let mut keys: Vec<_> = keys.into_iter().collect();
-        keys.sort();
+        keys.sort_unstable();
         keys
     }
 

@@ -431,7 +431,7 @@ impl StatsRec {
     /// returns a hashset containing all call-chains (string-keys)
     pub fn call_chain_sorted(&self) -> Vec<String> {
         let mut cc_keys = self.call_chain_list();
-        cc_keys.sort();
+        cc_keys.sort_unstable();
         cc_keys
     }
 }

@@ -14,6 +14,22 @@ impl<'a> TimeStats<'a> {
         format_float(self.get_min_millis())
     }
 
+    pub fn get_median_millis(&self) -> f64 {
+        let mut data = self.0.clone();
+        data.sort_unstable();
+        let len = data.len();
+        if len % 2 == 1 {
+            data[ len/2 ] as f64 / 1000.0
+        } else {
+            (data [ len/2 - 1] + data [ len/2 ]) as f64 / 1000.0 / 2.0
+        }
+
+    }
+
+    pub fn get_median_millis_str(&self) -> String {
+        format_float(self.get_median_millis())
+    }
+
     pub fn get_avg_millis(&self) -> f64 {
         self.0.iter().sum::<i64>() as f64 / (1000 as f64 * self.0.len() as f64)
     }

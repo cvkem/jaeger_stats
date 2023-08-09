@@ -182,6 +182,14 @@ impl CChainStatsValue {
         TimeStats(&self.duration_micros).get_avg_millis_str()
     }
 
+    pub fn get_median_millis(&self) -> f64 {
+        TimeStats(&self.duration_micros).get_median_millis()
+    }
+
+    pub fn get_median_millis_str(&self) -> String {
+        TimeStats(&self.duration_micros).get_median_millis_str()
+    }
+
     pub fn get_max_millis_str(&self) -> String {
         TimeStats(&self.duration_micros).get_max_millis_str()
     }
@@ -227,11 +235,11 @@ impl CChainStatsValue {
         let end_point = ps_key.get_endpoint();
         let leaf = ps_key.get_leaf();
 
-        // Call_chain; cc_hash; End_point; Process/operation; Is_leaf; Depth; Count; Looped; Revisit; Caching_proces; min_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;
+        // Call_chain; cc_hash; End_point; Process/operation; Is_leaf; Depth; Count; Looped; Revisit; Caching_proces; min_millis; median_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;
 
-        let line = format!("{call_chain};{cc_hash}; {end_point}; {leaf}; {}; {}; {}; {}; {:?}; {caching_process}; {}; {}; {}; {}; {}; {}; {}; {}; {}", 
+        let line = format!("{call_chain};{cc_hash}; {end_point}; {leaf}; {}; {}; {}; {}; {:?}; {caching_process}; {}; {}; {}; {}; {}; {}; {}; {}; {}; {}", 
             ps_key.is_leaf, self.depth, self.count, self.looped.len()> 0, self.looped,
-            self.get_min_millis_str(), self.get_avg_millis_str(), self.get_max_millis_str(),
+            self.get_min_millis_str(), self.get_median_millis_str(), self.get_avg_millis_str(), self.get_max_millis_str(),
             format_float(percentage), self.get_avg_rate_str(num_files), format_float(expect_duration), format_float(expect_contribution),
             self.get_frac_not_http_ok_str(), self.get_frac_error_log_str()
         );
