@@ -4,7 +4,7 @@ use super::{
     file::{call_chain_key, LEAF_LABEL},
 };
 use crate::{
-    aux::{calc_rate, format_float, format_float_opt, report, Chapter, Counted, TimeStats},
+    aux::{format_float, report, Chapter, Counted, TimeStats},
     string_hash,
 };
 use serde::{Deserialize, Serialize};
@@ -19,7 +19,7 @@ pub struct CChainStatsValue {
     pub looped: Vec<String>,
     pub rooted: bool, //does this call-chain originate from the root of this trace.
     pub cc_not_http_ok: i32, // count of the number of call chanis that has one of more HTTP-error(s) somewhere along the chain
-    pub cc_with_error_log: i32, // count of the number of call chanis that has one of more ERROR log-lines somewhere along the chain
+    pub cc_with_error_logs: i32, // count of the number of call chanis that has one of more ERROR log-lines somewhere along the chain
     pub http_not_ok: Counted<i16>,
     pub error_logs: Counted<String>,
 }
@@ -170,6 +170,10 @@ impl CChainStatsValue {
         }
     }
 
+    pub fn get_min_millis(&self) -> f64 {
+        TimeStats(&self.duration_micros).get_min_millis()
+    }
+
     pub fn get_min_millis_str(&self) -> String {
         TimeStats(&self.duration_micros).get_min_millis_str()
     }
@@ -190,24 +194,35 @@ impl CChainStatsValue {
         TimeStats(&self.duration_micros).get_median_millis_str()
     }
 
+    pub fn get_max_millis(&self) -> f64 {
+        TimeStats(&self.duration_micros).get_max_millis()
+    }
+
     pub fn get_max_millis_str(&self) -> String {
         TimeStats(&self.duration_micros).get_max_millis_str()
+    }
+
+    pub fn get_avg_rate(&self, num_files: i32) -> Option<f64> {
+        TimeStats(&self.start_dt_micros).get_avg_rate(num_files)
     }
 
     pub fn get_avg_rate_str(&self, num_files: i32) -> String {
         TimeStats(&self.start_dt_micros).get_avg_rate_str(num_files)
     }
 
-    pub fn get_median_rate_str(&self, num_files: i32) -> String {
-        TimeStats(&self.start_dt_micros).get_median_rate_str(num_files)
+    pub fn get_frac_not_http_ok(&self) -> f64 {
+        self.cc_not_http_ok as f64 / self.count as f64
+    }
+    pub fn get_frac_not_http_ok_str(&self) -> String {
+        format_float(self.get_frac_not_http_ok())
     }
 
-    pub fn get_frac_not_http_ok_str(&self) -> String {
-        format_float(self.cc_not_http_ok as f64 / self.count as f64)
+    pub fn get_frac_error_log(&self) -> f64 {
+        self.cc_with_error_logs as f64 / self.count as f64
     }
 
     pub fn get_frac_error_log_str(&self) -> String {
-        format_float(self.cc_with_error_log as f64 / self.count as f64)
+        format_float(self.get_frac_error_log())
     }
 
     /// reports the statistics for a single line
@@ -238,10 +253,21 @@ impl CChainStatsValue {
         // Call_chain; cc_hash; End_point; Process/operation; Is_leaf; Depth; Count; Looped; Revisit; Caching_proces; min_millis; median_millis; avg_millis; max_millis; freq.; expect_duration; expect_contribution;
 
         let line = format!("{call_chain};{cc_hash}; {end_point}; {leaf}; {}; {}; {}; {}; {:?}; {caching_process}; {}; {}; {}; {}; {}; {}; {}; {}; {}; {}", 
-            ps_key.is_leaf, self.depth, self.count, self.looped.len()> 0, self.looped,
-            self.get_min_millis_str(), self.get_median_millis_str(), self.get_avg_millis_str(), self.get_max_millis_str(),
-            format_float(percentage), self.get_avg_rate_str(num_files), format_float(expect_duration), format_float(expect_contribution),
-            self.get_frac_not_http_ok_str(), self.get_frac_error_log_str()
+            ps_key.is_leaf,
+            self.depth,
+            self.count,
+            self.looped.len()> 0,
+            self.looped,
+            self.get_min_millis_str(),
+            self.get_median_millis_str(),
+            self.get_avg_millis_str(),
+            self.get_max_millis_str(),
+            format_float(percentage),
+            self.get_avg_rate_str(num_files),
+            format_float(expect_duration),
+            format_float(expect_contribution),
+            self.get_frac_not_http_ok_str(),
+            self.get_frac_error_log_str()
         );
         line
     }

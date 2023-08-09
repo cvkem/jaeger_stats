@@ -1,4 +1,4 @@
-use crate::aux::{calc_rate, format_float, format_float_opt, Counted, TimeStats};
+use crate::aux::{format_float, Counted, TimeStats};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -58,7 +58,7 @@ impl MethodStatsValue {
         self.num_not_http_ok as f64 / self.count as f64
     }
     pub fn get_frac_not_http_ok_str(&self) -> String {
-        format_float( self.get_frac_not_http_ok() )
+        format_float(self.get_frac_not_http_ok())
     }
 
     pub fn get_frac_error_log(&self) -> f64 {
@@ -66,7 +66,7 @@ impl MethodStatsValue {
     }
 
     pub fn get_frac_error_log_str(&self) -> String {
-        format_float(self.get_frac_error_log() )
+        format_float(self.get_frac_error_log())
     }
 
     /// reports the statistics for a single line

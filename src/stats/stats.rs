@@ -224,7 +224,7 @@ impl StatsRec {
                         ps.start_dt_micros.push(start_dt_micros);
                         ps.duration_micros.push(duration_micros);
                         ps.cc_not_http_ok += cc_not_http_ok;
-                        ps.cc_with_error_log += cc_with_error_log;
+                        ps.cc_with_error_logs += cc_with_error_log;
                         ps.http_not_ok.add_items(http_not_ok_vec.clone()); // clone needed as otherwise this will be an FnOnce while rust thinks it is used twicecargo
                         ps.error_logs.add_items(error_logs_vec.clone());
                     };

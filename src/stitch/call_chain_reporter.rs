@@ -1,10 +1,11 @@
 use crate::{
+    aux::{floats_to_string, LinearRegression, format_float_opt},
     stats::call_chain::CChainStatsKey,
     stats::{call_chain::CChainStatsValue, StatsRec},
 };
 use std::collections::HashSet;
 
-type Processor = fn(&CChainStatsValue, i32, usize) -> String;
+type Processor = fn(&CChainStatsValue, i32, usize) -> Option<f64>;
 
 pub struct CCReportItem {
     label: &'static str,
@@ -79,10 +80,7 @@ impl<'a> CallChainReporter<'a> {
                 Some(stats_rec) => match stats_rec.stats.get(&process) {
                     Some(st) => match st.call_chain.get(&cc_key) {
                         Some(oper) => Some((oper, stats_rec.num_files, stats_rec.trace_id.len())),
-                        None => {
-                            //                            println!("No value found for key '{}'.", cc_key.call_chain_key());
-                            None
-                        }
+                        None => None,
                     },
                     None => {
                         println!("no process found for '{process}'.");
@@ -103,14 +101,17 @@ impl<'a> CallChainReporter<'a> {
             .for_each(|CCReportItem { label, processor }| {
                 let values = cc_stats
                     .iter()
-                    .map(|ms| {
-                        ms.map_or("".to_owned(), |msv_nf| {
-                            processor(msv_nf.0, msv_nf.1, msv_nf.2)
-                        })
-                    })
-                    .collect::<Vec<_>>()
-                    .join("; ");
-                self.buffer.push(format!("{cc_key_str}; {label}; {values}"));
+                    .map(|ms| ms.map_or(None, |msv_nf| processor(msv_nf.0, msv_nf.1, msv_nf.2)))
+                    .collect::<Vec<_>>();
+
+                let lr = LinearRegression::new(&values);
+
+                let values = floats_to_string(values, "; ");
+                self.buffer.push(format!("{cc_key_str}; {label}; {values}; ; ; {}; {}; {}",
+                    format_float_opt(lr.slope),
+                    format_float_opt(lr.intersect_y),
+                    format_float_opt(lr.R_squared)
+                ));
             });
     }
 }

@@ -19,11 +19,10 @@ impl<'a> TimeStats<'a> {
         data.sort_unstable();
         let len = data.len();
         if len % 2 == 1 {
-            data[ len/2 ] as f64 / 1000.0
+            data[len / 2] as f64 / 1000.0
         } else {
-            (data [ len/2 - 1] + data [ len/2 ]) as f64 / 1000.0 / 2.0
+            (data[len / 2 - 1] + data[len / 2]) as f64 / 1000.0 / 2.0
         }
-
     }
 
     pub fn get_median_millis_str(&self) -> String {

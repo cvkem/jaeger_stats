@@ -5,6 +5,7 @@ mod counted;
 mod datetime;
 mod file;
 mod hash;
+mod linear_reg;
 mod rate;
 mod report;
 mod time_stats;
@@ -18,6 +19,7 @@ pub use self::{
     },
     file::{extend_create_folder, read_lines, write_string_to_file},
     hash::{hash, string_hash},
+    linear_reg::LinearRegression,
     rate::{calc_rate, set_show_rate_output},
     report::{report, write_report, Chapter},
     time_stats::TimeStats,

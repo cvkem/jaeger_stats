@@ -1,14 +1,16 @@
-use crate::stats::StatsRec;
+use crate::{
+    aux::{floats_to_string, LinearRegression, format_float_opt},
+    stats::StatsRec};
 
-type SRJProcessor = fn(&StatsRec) -> String;
+type SRProcessor = fn(&StatsRec) -> Option<f64>;
 
 pub struct SRReportItem {
     label: &'static str,
-    processor: SRJProcessor,
+    processor: SRProcessor,
 }
 
 impl SRReportItem {
-    pub fn new(label: &'static str, processor: SRJProcessor) -> Self {
+    pub fn new(label: &'static str, processor: SRProcessor) -> Self {
         Self { label, processor }
     }
 }
@@ -40,10 +42,18 @@ impl<'a> StatsRecReporter<'a> {
                 let values = self
                     .data
                     .iter()
-                    .map(|ms| ms.as_ref().map_or("".to_owned(), |srj| processor(srj)))
-                    .collect::<Vec<_>>()
-                    .join("; ");
-                self.buffer.push(format!("{}; {label}; {values}", idx + 1));
+                    .map(|ms| ms.as_ref().map_or(None, |stats_rec| processor(stats_rec)))
+                    .collect::<Vec<_>>();
+
+                let lr = LinearRegression::new(&values);
+
+                let values = floats_to_string(values, "; ");
+                self.buffer.push(format!("{}; {label}; {values}; ; ; {}; {}; {}",
+                    idx + 1,
+                    format_float_opt(lr.slope),
+                    format_float_opt(lr.intersect_y),
+                    format_float_opt(lr.R_squared)
+                ));
             },
         );
     }

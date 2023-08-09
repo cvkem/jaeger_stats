@@ -1,6 +1,6 @@
 use crate::{
     //rate::set_show_rate_output,
-    aux::floats_to_string,
+    aux::{floats_to_string, LinearRegression, format_float_opt},
     stats::MethodStatsValue,
     stats::StatsRec,
 };
@@ -94,16 +94,17 @@ impl<'a> MethodStatsReporter<'a> {
             .for_each(|MSReportItem { label, processor }| {
                 let values = meth_stats
                     .iter()
-                    .map(|ms| {
-                        ms.map_or(None, |msv_nf| {
-                            processor(msv_nf.0, msv_nf.1, msv_nf.2)
-                        })
-                    })
+                    .map(|ms| ms.map_or(None, |msv_nf| processor(msv_nf.0, msv_nf.1, msv_nf.2)))
                     .collect::<Vec<_>>();
 
+                let lr = LinearRegression::new(&values);
+
                 let values = floats_to_string(values, "; ");
-                self.buffer
-                    .push(format!("{process_operation}; {label}; {values}"));
+                self.buffer.push(format!("{process_operation}; {label}; {values}; ; ; {}; {}; {}",
+                    format_float_opt(lr.slope),
+                    format_float_opt(lr.intersect_y),
+                    format_float_opt(lr.R_squared)
+                ));
             });
     }
 }

@@ -25,13 +25,12 @@ pub fn format_float_opt(val: Option<f64>) -> String {
     }
 }
 
-
 pub fn floats_to_string(values: Vec<Option<f64>>, sep: &str) -> String {
     values
         .into_iter()
         .map(|v| match v {
             Some(v) => format_float(v),
-            None => "".to_string()
+            None => "".to_string(),
         })
         .collect::<Vec<_>>()
         .join(sep)
