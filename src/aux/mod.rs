@@ -5,7 +5,9 @@ mod counted;
 mod datetime;
 mod file;
 mod hash;
+mod rate;
 mod report;
+mod time_stats;
 
 pub use self::{
     comma_float::{format_float, format_float_opt, set_comma_float},
@@ -16,5 +18,7 @@ pub use self::{
     },
     file::{extend_create_folder, read_lines, write_string_to_file},
     hash::{hash, string_hash},
+    rate::{calc_rate, set_show_rate_output},
     report::{report, write_report, Chapter},
+    time_stats::TimeStats,
 };

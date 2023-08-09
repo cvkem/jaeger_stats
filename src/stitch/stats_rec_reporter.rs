@@ -2,12 +2,12 @@ use crate::stats::StatsRec;
 
 type SRJProcessor = fn(&StatsRec) -> String;
 
-pub struct SRJReportItem {
+pub struct SRReportItem {
     label: &'static str,
     processor: SRJProcessor,
 }
 
-impl SRJReportItem {
+impl SRReportItem {
     pub fn new(label: &'static str, processor: SRJProcessor) -> Self {
         Self { label, processor }
     }
@@ -16,14 +16,14 @@ impl SRJReportItem {
 pub struct StatsRecReporter<'a> {
     buffer: &'a mut Vec<String>,
     data: &'a Vec<Option<StatsRec>>,
-    report_items: Vec<SRJReportItem>,
+    report_items: Vec<SRReportItem>,
 }
 
 impl<'a> StatsRecReporter<'a> {
     pub fn new(
         buffer: &'a mut Vec<String>,
         data: &'a Vec<Option<StatsRec>>,
-        report_items: Vec<SRJReportItem>,
+        report_items: Vec<SRReportItem>,
     ) -> Self {
         // find a deduplicated set of all keys and sort them
 
@@ -36,7 +36,7 @@ impl<'a> StatsRecReporter<'a> {
 
     pub fn append_report(&mut self) {
         self.report_items.iter().enumerate().for_each(
-            |(idx, SRJReportItem { label, processor })| {
+            |(idx, SRReportItem { label, processor })| {
                 let values = self
                     .data
                     .iter()

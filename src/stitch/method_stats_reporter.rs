@@ -60,6 +60,10 @@ impl<'a> MethodStatsReporter<'a> {
     }
 
     pub fn append_report(&mut self, process: String, operation: String) {
+        // extract the three values that are needed for the analysis being:
+        //    1. the complete MethodStatsValue record
+        //    2. the number of files in the analysis
+        //    3. the number of traces included in this analysis
         let meth_stats: Vec<_> = self
             .data
             .iter()
@@ -79,11 +83,10 @@ impl<'a> MethodStatsReporter<'a> {
             })
             .collect();
 
+        // do the actual reporting for all files over the selected three values per Method.
         let process_operation = format!("{process}/{operation}");
         self.buffer
             .push(format!("# statistics for {process_operation}"));
-
-        // set_show_rate_output(&process_operation[..] == "bspc-productinzicht/GET");
 
         self.report_items
             .iter()

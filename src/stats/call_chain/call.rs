@@ -35,7 +35,7 @@ impl From<Option<&String>> for CallDirection {
                 _ => {
                     let msg = format!("Invalid value for CallDirection. Observed: {s:?}");
                     let ingest_msg = "Issue might be ingest issue: ".to_string() + &msg;
-                    report(Chapter::Issues, msg);
+                    report(Chapter::Details, msg);
                     report(crate::aux::Chapter::Ingest, ingest_msg);
                     CallDirection::Unknown
                 }

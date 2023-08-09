@@ -2,7 +2,6 @@
 use crate::{
     aux::{report, Chapter},
     processed::Trace,
-    stats::TraceExt,
 };
 use std::collections::HashSet;
 

@@ -1,6 +1,6 @@
 use clap;
 use clap::Parser;
-use jaeger_stats::{read_stitch_list, set_comma_float, StitchList};
+use jaeger_stats::{read_stitch_list, set_comma_float};
 use std::path::Path;
 
 /// Stitching results of different runs of trace_analysis into a single CSV for visualization in Excel

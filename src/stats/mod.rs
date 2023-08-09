@@ -4,7 +4,6 @@ pub mod call_chain; // already defines its public interface
 mod error_stats;
 pub mod json;
 mod method_stats;
-mod rate;
 mod stats;
 mod traceext; // already defines its public interface
 

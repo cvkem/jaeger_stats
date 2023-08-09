@@ -1,11 +1,10 @@
-use super::super::rate::calc_rate;
 use super::{
     call::{Call, CallDirection},
     call_chain::CallChain,
     file::{call_chain_key, LEAF_LABEL},
 };
 use crate::{
-    aux::{format_float, format_float_opt, report, Chapter, Counted},
+    aux::{calc_rate, format_float, format_float_opt, report, Chapter, Counted, TimeStats},
     string_hash,
 };
 use serde::{Deserialize, Serialize};
@@ -162,40 +161,37 @@ impl CChainStatsKey {
 }
 
 impl CChainStatsValue {
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new(depth: usize, looped: Vec<String>, rooted: bool) -> Self {
+        Self {
+            depth,
+            looped,
+            rooted,
+            ..Default::default()
+        }
     }
 
-    // TODO: similar getters exist in MethodStats. Could we make this more DRY via a trait?
-
     pub fn get_min_millis_str(&self) -> String {
-        let min_millis =
-            *self.duration_micros.iter().min().expect("Not an integer") as f64 / 1000 as f64;
-        format_float(min_millis)
+        TimeStats(&self.duration_micros).get_min_millis_str()
     }
 
     pub fn get_avg_millis(&self) -> f64 {
-        self.duration_micros.iter().sum::<i64>() as f64
-            / (1000 as f64 * self.duration_micros.len() as f64)
+        TimeStats(&self.duration_micros).get_avg_millis()
     }
 
     pub fn get_avg_millis_str(&self) -> String {
-        format_float(self.get_avg_millis())
+        TimeStats(&self.duration_micros).get_avg_millis_str()
     }
 
     pub fn get_max_millis_str(&self) -> String {
-        let max_millis =
-            *self.duration_micros.iter().max().expect("Not an integer") as f64 / 1000 as f64;
-        format_float(max_millis)
+        TimeStats(&self.duration_micros).get_max_millis_str()
     }
 
     pub fn get_avg_rate_str(&self, num_files: i32) -> String {
-        let rate = if let Some((avg_rate, _)) = calc_rate(&self.start_dt_micros, num_files) {
-            Some(avg_rate)
-        } else {
-            None
-        };
-        format_float_opt(rate)
+        TimeStats(&self.start_dt_micros).get_avg_rate_str(num_files)
+    }
+
+    pub fn get_median_rate_str(&self, num_files: i32) -> String {
+        TimeStats(&self.start_dt_micros).get_median_rate_str(num_files)
     }
 
     pub fn get_frac_not_http_ok_str(&self) -> String {

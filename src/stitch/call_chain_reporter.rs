@@ -68,6 +68,10 @@ impl<'a> CallChainReporter<'a> {
     pub fn append_report(&mut self, cc_key: CChainStatsKey) {
         let process = cc_key.get_leaf_process();
 
+        // extract the three values that are needed for the analysis being:
+        //    1. the complete MethodStatsValue record
+        //    2. the number of files in the analysis
+        //    3. the number of traces included in this analysis
         let cc_stats: Vec<_> = self
             .data
             .iter()

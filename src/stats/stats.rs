@@ -1,7 +1,7 @@
 use super::{
     call_chain::{
         caching_process_label, call_chain_key, get_call_chain, CChainStats, CChainStatsKey,
-        CChainStatsValue, Call, CallChain,
+        CChainStatsValue, CallChain,
     },
     error_stats::{get_cchain_error_information, get_span_error_information},
     json::{StatsJson, StatsRecJson},
@@ -241,7 +241,7 @@ impl StatsRec {
                         //     ps.error_logs.add_items(error_logs_vec);
                         // })
                         .or_insert_with(|| {
-                            let mut ps = CChainStatsValue::default();
+                            let mut ps = CChainStatsValue::new(depth, looped, rooted);
                             update_ps_val(&mut ps);
                             ps
                         });
