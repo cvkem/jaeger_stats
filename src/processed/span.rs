@@ -232,7 +232,7 @@ fn mark_leafs(spans: &mut Spans) {
         Some(par) => is_leaf[par] = false,
     });
 
-    iter::zip(spans, is_leaf).for_each(|(mut span, is_leaf)| span.is_leaf = is_leaf);
+    iter::zip(spans, is_leaf).for_each(|(span, is_leaf)| span.is_leaf = is_leaf);
 }
 
 /// add_parents adds parent-links to spans based on the information in Vec<JaegerSpan>

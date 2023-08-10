@@ -1,6 +1,7 @@
 use crate::{
-    aux::{floats_to_string, LinearRegression, format_float_opt},
-    stats::StatsRec};
+    aux::{floats_to_string, format_float_opt, LinearRegression},
+    stats::StatsRec,
+};
 
 type SRProcessor = fn(&StatsRec) -> Option<f64>;
 
@@ -48,10 +49,11 @@ impl<'a> StatsRecReporter<'a> {
                 let lr = LinearRegression::new(&values);
 
                 let values = floats_to_string(values, "; ");
-                self.buffer.push(format!("{}; {label}; {values}; ; ; {}; {}; {}",
+                self.buffer.push(format!(
+                    "{}; {label}; {values}; ; ; {}; {}; {}",
                     idx + 1,
                     format_float_opt(lr.slope),
-                    format_float_opt(lr.intersect_y),
+                    format_float_opt(lr.y_intercept),
                     format_float_opt(lr.R_squared)
                 ));
             },

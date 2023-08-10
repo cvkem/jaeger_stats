@@ -1,6 +1,6 @@
 use crate::{
     //rate::set_show_rate_output,
-    aux::{floats_to_string, LinearRegression, format_float_opt},
+    aux::{floats_to_string, format_float_opt, LinearRegression},
     stats::MethodStatsValue,
     stats::StatsRec,
 };
@@ -100,9 +100,10 @@ impl<'a> MethodStatsReporter<'a> {
                 let lr = LinearRegression::new(&values);
 
                 let values = floats_to_string(values, "; ");
-                self.buffer.push(format!("{process_operation}; {label}; {values}; ; ; {}; {}; {}",
+                self.buffer.push(format!(
+                    "{process_operation}; {label}; {values}; ; ; {}; {}; {}",
                     format_float_opt(lr.slope),
-                    format_float_opt(lr.intersect_y),
+                    format_float_opt(lr.y_intercept),
                     format_float_opt(lr.R_squared)
                 ));
             });

@@ -1,5 +1,5 @@
 use crate::{
-    aux::{floats_to_string, LinearRegression, format_float_opt},
+    aux::{floats_to_string, format_float_opt, LinearRegression},
     stats::call_chain::CChainStatsKey,
     stats::{call_chain::CChainStatsValue, StatsRec},
 };
@@ -107,9 +107,10 @@ impl<'a> CallChainReporter<'a> {
                 let lr = LinearRegression::new(&values);
 
                 let values = floats_to_string(values, "; ");
-                self.buffer.push(format!("{cc_key_str}; {label}; {values}; ; ; {}; {}; {}",
+                self.buffer.push(format!(
+                    "{cc_key_str}; {label}; {values}; ; ; {}; {}; {}",
                     format_float_opt(lr.slope),
-                    format_float_opt(lr.intersect_y),
+                    format_float_opt(lr.y_intercept),
                     format_float_opt(lr.R_squared)
                 ));
             });
