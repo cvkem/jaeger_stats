@@ -9,9 +9,13 @@ use crate::{
     stats::StatsRec,
 };
 
+fn add_table_tail_separator(buffer: &mut Vec<String>) {
+    (0..3).for_each(|_| buffer.push(String::new()))  // empty lines translate to newlines
+}
+
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
 pub fn append_basic_stats(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>>) {
-    buffer.push("\n\n# Basic statistics over alle stitched files".to_owned());
+    buffer.push("# Basic statistics over alle stitched files".to_owned());
     let mut report_items = Vec::new();
     report_items.push(SRReportItem::new("num_files", |stats_rec| {
         Some(stats_rec.num_files as f64)
@@ -36,12 +40,14 @@ pub fn append_basic_stats(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>>
     }));
 
     let mut reporter = StatsRecReporter::new(buffer, data, report_items);
-    reporter.append_report()
+    reporter.append_report();
+
+    add_table_tail_separator(buffer);
 }
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
 pub fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>>) {
-    buffer.push("\n\n# Method table".to_owned());
+    buffer.push("# Method table".to_owned());
 
     // build the stack of reports that need to be calculated
     let mut report_items = Vec::new();
@@ -82,11 +88,13 @@ pub fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>
     let keys = reporter.get_keys();
     keys.into_iter()
         .for_each(|Key { process, operation }| reporter.append_report(process, operation));
+
+    add_table_tail_separator(buffer);
 }
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
 pub fn append_callchain_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>>) {
-    buffer.push("\n\n# Call-chain table".to_owned());
+    buffer.push("# Call-chain table".to_owned());
     // build the stack of reports that need to be calculated
     let mut report_items = Vec::new();
     report_items.push(CCReportItem::new("count", |msv, _, _| {
@@ -126,4 +134,6 @@ pub fn append_callchain_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsR
     // Find all keys and generate an output line for each of these keys.
     let keys = reporter.get_keys();
     keys.into_iter().for_each(|k| reporter.append_report(k));
+
+    add_table_tail_separator(buffer);
 }

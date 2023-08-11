@@ -81,10 +81,18 @@ impl StitchList {
             })
             .collect();
 
-        let mut csv_string = self.lines;
+        let mut csv_string = Vec::new();
+        csv_string.push("Contents:".to_owned());
+        (0..6).for_each(|_|  csv_string.push(String::new()));
 
+        csv_string[1] = format!("\trow {}: Column_numbering (based on the input-files", csv_string.len());
+        csv_string.extend(self.lines);
+
+        csv_string[2] = format!("\trow {}: Basic statistics", csv_string.len());
         append_basic_stats(&mut csv_string, &data);
+        csv_string[3] = format!("\trow {}: Statistics per BSP/operation combination", csv_string.len());
         append_method_table(&mut csv_string, &data);
+        csv_string[4] = format!("\trow {}: Statistics per call-chain (path from the external end-point to the actual BSP/operation (detailled information)", csv_string.len());
         append_callchain_table(&mut csv_string, &data);
 
         match write_string_to_file(path.to_str().unwrap(), csv_string.join("\n")) {
