@@ -195,6 +195,9 @@ fn get_operation_unified(js_operation: &str) -> (String, Option<String>) {
         static ref RE_TIME: Regex = Regex::new(r"(?x)
             /T\d{4}-\d{2}-\d{2}_
             \d{5,10}").unwrap();
+        static ref RE_TIME2: Regex = Regex::new(r"(?x)
+            /\d{4}-\d{2}-\d{2}_
+            \d{5,10}").unwrap();
         static ref RE_SPAAR: Regex = Regex::new(r"(?x)
             /[0-9a-f]{8}-
             [0-9a-f]{4}-
@@ -208,15 +211,20 @@ fn get_operation_unified(js_operation: &str) -> (String, Option<String>) {
         static ref RE_JAARREK: Regex = Regex::new(r"\-\d{5,9}\-20\d{2}").unwrap();
     }
 
+    // TODO: Opername is chained through the operations, while repl are individual variables.
+    //  we should also chain the booleans to get a generic solution ()
     let oper_name = js_operation.to_owned();
+
+    // two variant of time are in use
     let (oper_name, repl_time) = replace_regex(oper_name, &RE_TIME, "/{TIME}");
+    let (oper_name, repl_time2) = replace_regex(oper_name, &RE_TIME2, "/{TIME2}");
     let (oper_name, repl_spaarpot) = replace_regex(oper_name, &RE_SPAAR, "/{SPAAR}");
     let (oper_name, repl_base) = replace_regex(oper_name, &RE_BASE, "/{BASE}/");
     let (oper_name, repl_jaarrek) = replace_regex(oper_name, &RE_JAARREK, "-{JAARREK}");
     // do next one last, as it might conflict with others.
     let (oper_name, repl_rek) = replace_regex(oper_name, &RE_REK, "/{ACCOUNT}");
 
-    if repl_rek || repl_time || repl_spaarpot || repl_base || repl_jaarrek {
+    if repl_rek || repl_time || repl_time2 || repl_spaarpot || repl_base || repl_jaarrek {
         (oper_name, Some(js_operation.to_owned()))
     } else {
         (oper_name, None)
