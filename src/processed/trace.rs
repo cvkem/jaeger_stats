@@ -4,7 +4,7 @@ use crate::{
     raw::{JaegerItem, JaegerTrace},
 };
 use chrono::{DateTime, Utc};
-use std::{ffi::OsString, iter, path::PathBuf};
+use std::{ffi::OsString, iter, path::Path};
 
 #[derive(Debug)]
 pub struct Trace {
@@ -51,8 +51,8 @@ impl Trace {
     }
 
     /// get the nane of this trace as a CSV-file
-    pub fn base_name(&self, folder: &PathBuf) -> OsString {
-        let mut folder = folder.clone();
+    pub fn base_name(&self, folder: &Path) -> OsString {
+        let mut folder = folder.to_path_buf();
         folder.push(self.trace_id.clone());
         folder.into_os_string()
     }
@@ -60,7 +60,7 @@ impl Trace {
 
 pub fn extract_traces(jt: &JaegerTrace) -> Vec<Trace> {
     let num_traces = jt.data.len();
-    (0..num_traces).map(|idx| Trace::new(&jt, idx)).collect()
+    (0..num_traces).map(|idx| Trace::new(jt, idx)).collect()
 }
 
 fn find_full_duration(ji: &JaegerItem) -> (i64, i64) {

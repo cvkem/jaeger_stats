@@ -4,13 +4,10 @@ use super::{
     method_stats_reporter::{MSReportItem, MethodStatsReporter},
     stats_rec_reporter::{SRReportItem, StatsRecReporter},
 };
-use crate::{
-    aux::{format_float, TimeStats},
-    stats::StatsRec,
-};
+use crate::{aux::TimeStats, stats::StatsRec};
 
 fn add_table_tail_separator(buffer: &mut Vec<String>) {
-    (0..3).for_each(|_| buffer.push(String::new()))  // empty lines translate to newlines
+    (0..3).for_each(|_| buffer.push(String::new())) // empty lines translate to newlines
 }
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric

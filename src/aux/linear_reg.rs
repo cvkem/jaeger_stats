@@ -16,7 +16,7 @@ pub struct LinearRegression {
 }
 
 impl LinearRegression {
-    pub fn new(data: &Vec<Option<f64>>) -> Self {
+    pub fn new(data: &[Option<f64>]) -> Self {
         let data = get_dataset(data);
         if data.len() < 2 {
             // insufficient data to compute a value
@@ -40,15 +40,15 @@ impl LinearRegression {
 }
 
 /// Get the averages over x and y for all filled values, where x = counting from 1 to N
-fn get_dataset(data: &Vec<Option<f64>>) -> DataSet {
+fn get_dataset(data: &[Option<f64>]) -> DataSet {
     data.iter()
         .enumerate()
-        .filter_map(|(idx, val)| match val {
-            Some(val) => Some(DataPoint {
+        // TODO: is  the .as_ref() on next line needed as f64 is copy?
+        .filter_map(|(idx, val)| {
+            val.as_ref().map(|val| DataPoint {
                 x: idx as f64 + 1.0,
                 y: *val,
-            }),
-            None => None,
+            })
         })
         .collect()
 }
@@ -81,13 +81,10 @@ fn get_R_squared(data: &DataSet, avg_xy: &Averages, slope: f64, y_intercept: f64
         })
         .sum();
     if sum_expect_sqr.abs() < 1e-100 {
-        // Safeguard for horizontal lines (prevent division by zero)
-        return 1.0;
+        1.0 // Safeguard for horizontal lines (prevent division by zero)
     } else {
         let sum_avg_sqr: f64 = data.iter().map(|dp| f64::powi(dp.y - avg_xy.1, 2)).sum();
-
-        let res = 1.0 - sum_expect_sqr / sum_avg_sqr;
-        res
+        1.0 - sum_expect_sqr / sum_avg_sqr
     }
 }
 

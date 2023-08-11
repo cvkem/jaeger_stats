@@ -14,7 +14,7 @@ pub struct CChainEndPointCache {
 
 impl CChainEndPointCache {
     pub fn new(path: PathBuf) -> Self {
-        let path = path.canonicalize().expect(&format!("Failed to build a Call-Chain cache from folder '{}'. Did you set the -c flag correctly?", path.display()));
+        let path = path.canonicalize().unwrap_or_else(|_| panic!("Failed to build a Call-Chain cache from folder '{}'. Did you set the -c flag correctly?", path.display()));
         Self {
             path,
             cache: HashMap::new(),
@@ -46,7 +46,7 @@ impl CChainEndPointCache {
             .or_insert_with(|| {
                 //                self.load_cchain_key(key)
                 let mut path = self.path.clone();
-                path.push(cchain_filename(&key));
+                path.push(cchain_filename(key));
                 if path.is_file() {
                     match read_cchain_file(&path) {
                         Ok(cchain_key) => Some(cchain_key),
@@ -69,7 +69,7 @@ impl CChainEndPointCache {
     /// the entry should be loaded from file, added to the cache and returned
     fn load_cchain_key(&mut self, key: &str) -> Option<EndPointCChain> {
         let mut path = self.path.clone();
-        path.push(cchain_filename(&key));
+        path.push(cchain_filename(key));
         if path.is_file() {
             match read_cchain_file(&path) {
                 Ok(cchain_key) => Some(cchain_key),

@@ -59,20 +59,12 @@ impl From<StatsRec> for StatsRecJson {
             root_call: sr.root_call,
             num_spans: sr.num_spans,
             num_files: sr.num_files,
-            start_dt: sr
-                .start_dt
-                .into_iter()
-                .map(|dt| datetime_to_micros(dt))
-                .collect(),
-            end_dt: sr
-                .end_dt
-                .into_iter()
-                .map(|dt| datetime_to_micros(dt))
-                .collect(),
+            start_dt: sr.start_dt.into_iter().map(datetime_to_micros).collect(),
+            end_dt: sr.end_dt.into_iter().map(datetime_to_micros).collect(),
             duration_micros: sr.duration_micros,
             time_to_respond_micros: sr.time_to_respond_micros,
             caching_process: sr.caching_process,
-            stats: stats,
+            stats,
         }
     }
 }

@@ -1,4 +1,4 @@
-#![allow(non_snake_case)]
+#![allow(non_snake_case, dead_code)]
 use super::{
     process_map::{build_process_map, Process, ProcessMap},
     unify_operation::unified_operation_name,
@@ -99,7 +99,7 @@ impl Span {
         // })
     }
 
-    fn add_logs(&mut self, logs: &Vec<JaegerLog>) {
+    fn add_logs(&mut self, logs: &[JaegerLog]) {
         let unpack_serde_str = |v: &Value| match v {
             Value::String(s) => s.to_owned(),
             _ => panic!("Invalid type of string-field {:?}", v),
@@ -230,14 +230,13 @@ fn mark_rooted(spans: &mut Spans) {
 
     fn mark_root_path(spans: &mut Spans, idx: usize) -> bool {
         if spans[idx].rooted {
-            return true;
-        }
-        if let Some(parent) = spans[idx].parent {
+            true
+        } else if let Some(parent) = spans[idx].parent {
             let rooted = mark_root_path(spans, parent);
             spans[idx].rooted = rooted;
-            return rooted;
+            rooted
         } else {
-            return false;
+            false
         }
     }
 

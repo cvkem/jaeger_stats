@@ -1,4 +1,3 @@
-use clap;
 use clap::Parser;
 use jaeger_stats::{analyze_file_or_folder, set_comma_float, set_tz_offset_minutes, write_report};
 use std::path::Path;
@@ -28,7 +27,7 @@ fn main() {
     let args = Args::parse();
 
     let caching_processes = if let Some(cache_proc) = args.caching_process {
-        cache_proc.split(",").map(|s| s.to_owned()).collect()
+        cache_proc.split(',').map(|s| s.to_owned()).collect()
     } else {
         Vec::new()
     };
@@ -38,9 +37,9 @@ fn main() {
     set_comma_float(args.comma_float);
 
     let mut path = analyze_file_or_folder(
-        &Path::new(&args.input),
+        Path::new(&args.input),
         caching_processes,
-        &Path::new(&args.call_chain_folder),
+        Path::new(&args.call_chain_folder),
     );
     path.push("report.txt");
     write_report(path.to_str().unwrap());

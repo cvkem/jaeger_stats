@@ -49,6 +49,7 @@ pub type ProcessMap = HashMap<String, Process>;
 /// Build_process takes a JaegerItem and extract a mapping from keys like 'p2' to a Process-structs.
 /// The nested structure of JSON items with flexible key-value pairs is flattened to simple Struct for convenient access downstream (during processing)
 /// (This is the imperative version, next version is in functional style)
+#[allow(dead_code)]
 fn build_process_map_imperative(item: &JaegerItem) -> ProcessMap {
     let mut proc_map = HashMap::new();
 

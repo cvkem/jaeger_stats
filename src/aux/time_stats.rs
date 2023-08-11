@@ -1,13 +1,14 @@
 //! This module contains some tools om timing statistics, such as averages, min, max, median values.
 //! The input is an array of i64 values that represent microseconds. The outputs are metrics in milliseconds.
-
 use super::{calc_rate, format_float, format_float_opt};
+
+#[allow(dead_code)]
 
 pub struct TimeStats<'a>(pub &'a Vec<i64>);
 
 impl<'a> TimeStats<'a> {
     pub fn get_min_millis(&self) -> f64 {
-        *self.0.iter().min().expect("Not an integer") as f64 / 1000 as f64
+        *self.0.iter().min().expect("Not an integer") as f64 / 1000_f64
     }
 
     pub fn get_min_millis_str(&self) -> String {
@@ -30,7 +31,7 @@ impl<'a> TimeStats<'a> {
     }
 
     pub fn get_avg_millis(&self) -> f64 {
-        self.0.iter().sum::<i64>() as f64 / (1000 as f64 * self.0.len() as f64)
+        self.0.iter().sum::<i64>() as f64 / (1000_f64 * self.0.len() as f64)
     }
 
     pub fn get_avg_millis_str(&self) -> String {
@@ -38,7 +39,7 @@ impl<'a> TimeStats<'a> {
     }
 
     pub fn get_max_millis(&self) -> f64 {
-        *self.0.iter().max().expect("Not an integer") as f64 / 1000 as f64
+        *self.0.iter().max().expect("Not an integer") as f64 / 1000_f64
     }
 
     pub fn get_max_millis_str(&self) -> String {
@@ -46,7 +47,7 @@ impl<'a> TimeStats<'a> {
     }
 
     pub fn get_avg_rate(&self, num_files: i32) -> Option<f64> {
-        if let Some((avg_rate, _)) = calc_rate(&self.0, num_files) {
+        if let Some((avg_rate, _)) = calc_rate(self.0, num_files) {
             Some(avg_rate)
         } else {
             None
@@ -60,7 +61,7 @@ impl<'a> TimeStats<'a> {
     /// as the distribution is not symmetric (t >/ 0) the median is not a good estimator for the rate as it exludes one tail.
     /// You can expect that the median T (duration between samples) is above the average, and thus the median rate (f = 1/T) is lower.
     pub fn get_median_rate(&self, num_files: i32) -> Option<f64> {
-        if let Some((_, median_rate)) = calc_rate(&self.0, num_files) {
+        if let Some((_, median_rate)) = calc_rate(self.0, num_files) {
             Some(median_rate)
         } else {
             None

@@ -21,7 +21,7 @@ fn check_bom<P: AsRef<Path>>(path: P) -> Result<&'static Encoding, Box<dyn Error
         Ok(num) => println!("Did read only {num} bytes. At least 3 needed"),
         Err(err) => println!("Failed reading BOM with error {err}"),
     }
-    if let Some((enc, size)) = Encoding::for_bom(&buffer) {
+    if let Some((enc, _size)) = Encoding::for_bom(&buffer) {
         Ok(enc)
     } else {
         Err("No BOM")?
@@ -47,6 +47,12 @@ pub fn read_jaeger_trace_file<P: AsRef<Path> + Copy + Debug>(
             let mut buffer = Vec::with_capacity(file_size.try_into()?);
             reader.read_to_end(&mut buffer)?;
             let (s, malformed) = encoding.decode_with_bom_removal(buffer.as_slice());
+            if malformed {
+                report(
+                    Chapter::Issues,
+                    format!("File {:?} returned a signal Malformed", path),
+                );
+            }
             serde_json::from_str(&s)?
         }
         Err(err) => {

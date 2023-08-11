@@ -4,7 +4,7 @@ use regex::Regex;
 fn replace_regex(s: String, re: &Regex, replacement: &str) -> (String, bool) {
     let tmp = s.clone(); // TODO: this clone is usesless (just to satisfy the borrow-checker)
     let found: Vec<&str> = re.find_iter(&tmp).map(|m| m.as_str()).collect();
-    if found.len() > 0 {
+    if !found.is_empty() {
         let s = found
             .into_iter()
             .fold(s, |s, obs| s.replace(obs, replacement));

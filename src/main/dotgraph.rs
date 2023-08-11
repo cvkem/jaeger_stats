@@ -1,7 +1,6 @@
-use clap;
 use clap::Parser;
-use jaeger_stats::{build_graph, set_comma_float, StatsRecJson};
-use std::{ffi::OsString, path::Path};
+use jaeger_stats::{build_graph, StatsRecJson};
+use std::ffi::OsString;
 
 /// Stitching results of different runs of trace_analysis into a single CSV for visualization in Excel
 #[derive(Parser, Debug)]

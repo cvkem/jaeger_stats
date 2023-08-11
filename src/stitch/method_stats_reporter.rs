@@ -70,14 +70,17 @@ impl<'a> MethodStatsReporter<'a> {
             .iter()
             .map(|stats_rec_json| match stats_rec_json {
                 Some(stats_rec_json) => match stats_rec_json.stats.get(&process) {
-                    Some(st) => match st.method.0.get(&operation) {
-                        Some(oper) => Some((
-                            oper,
-                            stats_rec_json.num_files,
-                            stats_rec_json.trace_id.len(),
-                        )),
-                        None => None,
-                    },
+                    Some(st) => st
+                        .method
+                        .0
+                        .get(&operation) // can return None!
+                        .map(|oper| {
+                            (
+                                oper,
+                                stats_rec_json.num_files,
+                                stats_rec_json.trace_id.len(),
+                            )
+                        }),
                     None => None,
                 },
                 None => None,

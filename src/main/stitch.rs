@@ -1,4 +1,3 @@
-use clap;
 use clap::Parser;
 use jaeger_stats::{read_stitch_list, set_comma_float};
 use std::path::Path;

@@ -1,3 +1,4 @@
+#![allow(clippy::module_inception)]
 use super::call::Call;
 use crate::processed::{Span, Spans, SpansExt};
 

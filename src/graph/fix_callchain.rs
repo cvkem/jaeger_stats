@@ -29,7 +29,7 @@ pub fn fix_call_chain(call_chain: &CallChain) -> CallChain {
             }
         })
         .collect();
-    if issues.len() > 0 {
+    if !issues.is_empty() {
         println!("\nFailed on idx = {issues:?}:");
         for idx in 0..call_chain.len() {
             println!(

@@ -18,7 +18,6 @@ fn read_trace_folder(folder: &Path) -> Result<(Vec<Trace>, i32), Box<dyn Error>>
     let mut num_files = 0;
     let traces = fs::read_dir(folder)
         .expect("Failed to read directory")
-        .into_iter()
         .filter_map(|entry| {
             let entry = entry.expect("Failed to extract file-entry");
             let path = entry.path();
@@ -43,14 +42,14 @@ fn read_trace_folder(folder: &Path) -> Result<(Vec<Trace>, i32), Box<dyn Error>>
 }
 
 ///Check whether path is a file or folder and read all traces.
-pub fn read_process_file_or_folder<'a>(path: &'a Path) -> (Vec<Trace>, i32, &'a Path) {
+pub fn read_process_file_or_folder(path: &Path) -> (Vec<Trace>, i32, &Path) {
     report(
         Chapter::Summary,
         format!("Reading all traces from folder: {}", path.display()),
     );
     let (traces, num_files, folder) =
         if path.is_file() && path.extension() == Some(OsStr::new("json")) {
-            let traces = read_trace_file(&path).unwrap();
+            let traces = read_trace_file(path).unwrap();
             //let path = Path::new(input_file);
             (
                 traces,
@@ -59,7 +58,7 @@ pub fn read_process_file_or_folder<'a>(path: &'a Path) -> (Vec<Trace>, i32, &'a 
                     .expect("Could not extract parent of input_file"),
             )
         } else if path.is_dir() {
-            let (traces, num_files) = read_trace_folder(&path).unwrap();
+            let (traces, num_files) = read_trace_folder(path).unwrap();
             (traces, num_files, path)
         } else {
             panic!(

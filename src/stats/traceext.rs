@@ -13,14 +13,14 @@ use std::{
     // io::Write,
     collections::HashMap,
     mem,
-    path::PathBuf,
+    path::Path,
 };
 
 /// Collect statistics as a string and write it to a textfile in CSV format
 pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec) {
     //println!("Now writing the trace statistics to {csv_file}");
     let stats_csv_str = stats.to_csv_string(stats.num_files);
-    if let Err(err) = write_string_to_file(&csv_file, stats_csv_str) {
+    if let Err(err) = write_string_to_file(csv_file, stats_csv_str) {
         panic!("Writing to file '{csv_file}' failed with error: {err:?}");
     };
 }
@@ -32,13 +32,8 @@ pub struct TraceExt {
 }
 
 impl TraceExt {
-    pub fn new(
-        trace: Trace,
-        folder: &PathBuf,
-        caching_processes: &Vec<String>,
-        num_files: i32,
-    ) -> Self {
-        let base_name = trace.base_name(&folder);
+    pub fn new(trace: Trace, folder: &Path, caching_processes: &[String], num_files: i32) -> Self {
+        let base_name = trace.base_name(folder);
 
         let mut stats = StatsRec::new(caching_processes, num_files);
         stats.extend_statistics(&trace, false);
@@ -80,9 +75,9 @@ impl TraceExt {
             .map(|(key, mut stats)| {
                 let (rooted, mut non_rooted): (Vec<_>, Vec<_>) = stats.call_chain
                     .into_iter()
-                    .partition(|(k2, v2)| v2.rooted);
+                    .partition(|(_k2, v2)| v2.rooted);
 
-                if non_rooted.len() > 0 {
+                if !non_rooted.is_empty() {
                     let depths: Vec<_> = non_rooted.iter().map(|(_k,v)| v.depth).collect();
                     report(Chapter::Details, format!("For key '{key}'  found {} non-rooted out of {} traces at depths {depths:?}", non_rooted.len(), non_rooted.len() + rooted.len()));
                 }
@@ -125,12 +120,12 @@ impl TraceExt {
 
 pub fn build_trace_ext(
     traces: Vec<Trace>,
-    folder: &PathBuf,
+    folder: &Path,
     num_files: i32,
-    caching_processes: &Vec<String>,
+    caching_processes: &[String],
 ) -> Vec<TraceExt> {
     // create a traces folder
-    let trace_folder = extend_create_folder(&folder, "Traces");
+    let trace_folder = extend_create_folder(folder, "Traces");
 
     traces
         .into_iter()

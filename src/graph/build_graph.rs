@@ -2,7 +2,7 @@ use super::{fix_callchain::fix_call_chain, process_node::ProcessNodes};
 use crate::stats::json::StatsRecJson;
 
 pub fn build_graph(srj: &StatsRecJson) -> ProcessNodes {
-    let mut process_nodes = ProcessNodes::new();
+    let mut process_nodes = ProcessNodes::default();
 
     srj.stats.iter().for_each(|(_root_process_key, stat)| {
         stat.call_chain.iter().for_each(|(cc_key, cc_val)| {

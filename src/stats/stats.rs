@@ -1,3 +1,4 @@
+#![allow(clippy::module_inception)]
 use super::{
     call_chain::{
         caching_process_label, call_chain_key, get_call_chain, CChainStats, CChainStatsKey,
@@ -87,27 +88,19 @@ impl From<StatsRecJson> for StatsRec {
             root_call: srj.root_call,
             num_spans: srj.num_spans,
             num_files: srj.num_files, // Was optional for backward compatibiliy
-            start_dt: srj
-                .start_dt
-                .into_iter()
-                .map(|dt| micros_to_datetime(dt))
-                .collect(),
-            end_dt: srj
-                .end_dt
-                .into_iter()
-                .map(|dt| micros_to_datetime(dt))
-                .collect(),
+            start_dt: srj.start_dt.into_iter().map(micros_to_datetime).collect(),
+            end_dt: srj.end_dt.into_iter().map(micros_to_datetime).collect(),
             duration_micros: srj.duration_micros,
             time_to_respond_micros: srj.time_to_respond_micros,
             caching_process: srj.caching_process,
-            stats: stats,
+            stats,
         }
     }
 }
 
 impl StatsRec {
-    pub fn new(caching_process: &Vec<String>, num_files: i32) -> Self {
-        let caching_process = caching_process.clone();
+    pub fn new(caching_process: &[String], num_files: i32) -> Self {
+        let caching_process = caching_process.to_owned();
         StatsRec {
             caching_process,
             num_files,
@@ -182,9 +175,9 @@ impl StatsRec {
                         meth_stat.count += 1;
                         meth_stat.start_dt_micros.push(start_dt_micros);
                         meth_stat.duration_micros.push(duration_micros);
-                        meth_stat.num_not_http_ok += if http_not_ok_vec.len() > 0 { 1 } else { 0 };
+                        meth_stat.num_not_http_ok += if http_not_ok_vec.is_empty() { 0 } else { 1 };
                         meth_stat.num_with_error_logs +=
-                            if error_logs_vec.len() > 0 { 1 } else { 0 };
+                            if error_logs_vec.is_empty() { 0 } else { 1 };
                         meth_stat.http_not_ok.add_items(http_not_ok_vec.clone());
                         meth_stat.error_logs.add_items(error_logs_vec.clone());
                     };
@@ -200,9 +193,9 @@ impl StatsRec {
                         });
 
                     // // add a count per method_including-cached
-                    let call_chain = get_call_chain(idx, &spans);
+                    let call_chain = get_call_chain(idx, spans);
                     let (http_not_ok_vec, error_logs_vec) =
-                        get_cchain_error_information(idx, &spans);
+                        get_cchain_error_information(idx, spans);
                     let caching_process = caching_process_label(&self.caching_process, &call_chain);
 
                     // add call-chain stats
@@ -210,8 +203,8 @@ impl StatsRec {
                     let looped = get_duplicates(&call_chain);
                     let is_leaf = span.is_leaf;
                     let rooted = span.rooted;
-                    let cc_not_http_ok = if http_not_ok_vec.len() > 0 { 1 } else { 0 };
-                    let cc_with_error_log = if error_logs_vec.len() > 0 { 1 } else { 0 };
+                    let cc_not_http_ok = if http_not_ok_vec.is_empty() { 0 } else { 1 };
+                    let cc_with_error_log = if error_logs_vec.is_empty() { 0 } else { 1 };
 
                     let ps_key = CChainStatsKey {
                         call_chain,
@@ -356,7 +349,7 @@ impl StatsRec {
         s.push("\n".to_owned());
 
         let mut data: Vec<_> = self.stats.iter().collect();
-        data.sort_by(|a, b| a.0.cmp(&b.0));
+        data.sort_by(|a, b| a.0.cmp(b.0));
 
         s.push("Process; Num_received_calls; Num_outbound_calls; Num_unknown_calls; Perc_received_calls; Perc_outbound_calls; Perc_unknown_calls".to_owned());
         data.iter().for_each(|(k, stat)| {
@@ -400,7 +393,7 @@ impl StatsRec {
                     .map(|(ps_key, cchain_stats)| (ps_key, key.to_owned(), cchain_stats))
             })
             .collect::<Vec<_>>();
-        ps_data.sort_by(|a, b| a.0.cmp(&b.0));
+        ps_data.sort_by(|a, b| a.0.cmp(b.0));
         ps_data.into_iter().for_each(|(ps_key, key, cchain_stats)| {
             s.push(cchain_stats.report_stats_line(&key, ps_key, num_traces, num_files))
         });
@@ -416,7 +409,7 @@ impl StatsRec {
             .flat_map(|st| {
                 st.call_chain
                     .keys()
-                    .map(|ps_key| call_chain_key(&ps_key.call_chain, &"", ps_key.is_leaf))
+                    .map(|ps_key| call_chain_key(&ps_key.call_chain, "", ps_key.is_leaf))
                     .collect::<Vec<_>>()
             })
             .collect()
@@ -436,21 +429,21 @@ impl StatsRec {
     }
 }
 
-/// Compute basic call statistics, which only looks at functions/operations and does not include the call path
-pub fn basic_stats(trace: &Trace) -> HashMap<String, u32> {
-    let spans = &trace.spans;
+// /// Compute basic call statistics, which only looks at functions/operations and does not include the call path
+// pub fn basic_stats(trace: &Trace) -> HashMap<String, u32> {
+//     let spans = &trace.spans;
 
-    let mut stats = HashMap::new();
-    spans.iter().for_each(|span| {
-        let proc = span.get_process_str();
-        let proc_method = format!("{}/{}", proc, span.operation_name);
-        stats
-            .entry(proc_method)
-            .and_modify(|counter| *counter += 1)
-            .or_insert(1);
-    });
-    stats
-}
+//     let mut stats = HashMap::new();
+//     spans.iter().for_each(|span| {
+//         let proc = span.get_process_str();
+//         let proc_method = format!("{}/{}", proc, span.operation_name);
+//         stats
+//             .entry(proc_method)
+//             .and_modify(|counter| *counter += 1)
+//             .or_insert(1);
+//     });
+//     stats
+// }
 
 /// get all values that appear more than once in the list of strings, while being none-adjacent.
 /// TODO: this is part of a procedure to detect loops, which is not completely correct I guess (in case spans are missing)
@@ -506,7 +499,7 @@ pub fn chained_stats(trace: &Trace) -> HashMap<String, u32> {
 }
 
 /// root_call_stats return a list of root_calls and their count.
-fn root_call_stats(root_calls: &Vec<String>) -> String {
+fn root_call_stats(root_calls: &[String]) -> String {
     let mut stats = HashMap::new();
     root_calls.iter().for_each(|call| {
         stats
@@ -515,11 +508,11 @@ fn root_call_stats(root_calls: &Vec<String>) -> String {
             .or_insert(1);
     });
     let mut data: Vec<_> = stats.iter().collect();
-    data.sort_by(|a, b| b.1.cmp(&a.1));
+    data.sort_by(|a, b| b.1.cmp(a.1));
     format!("{data:?}")
 }
 
-fn root_call_list(trace_ids: &Vec<String>, root_calls: &Vec<String>) -> String {
+fn root_call_list(trace_ids: &[String], root_calls: &[String]) -> String {
     let labelled: Vec<_> = trace_ids
         .iter()
         .zip(root_calls.iter())

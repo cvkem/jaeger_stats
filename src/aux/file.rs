@@ -31,8 +31,8 @@ pub fn write_string_to_file(filename: &str, data: String) -> Result<(), Box<dyn 
 }
 
 /// create a sub-folder if it does not exist yet and return the path to this sub-folder
-pub fn extend_create_folder(folder: &PathBuf, subfolder: &str) -> PathBuf {
-    let mut ext_folder = folder.clone();
+pub fn extend_create_folder(folder: &Path, subfolder: &str) -> PathBuf {
+    let mut ext_folder = folder.to_path_buf();
     ext_folder.push(subfolder);
     if !ext_folder.is_dir() {
         fs::create_dir(ext_folder.clone()).expect("failed to create folder");

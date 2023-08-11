@@ -78,10 +78,10 @@ impl<'a> CallChainReporter<'a> {
             .iter()
             .map(|stats_rec| match stats_rec {
                 Some(stats_rec) => match stats_rec.stats.get(&process) {
-                    Some(st) => match st.call_chain.get(&cc_key) {
-                        Some(oper) => Some((oper, stats_rec.num_files, stats_rec.trace_id.len())),
-                        None => None,
-                    },
+                    Some(st) => st
+                        .call_chain
+                        .get(&cc_key)
+                        .map(|oper| (oper, stats_rec.num_files, stats_rec.trace_id.len())),
                     None => {
                         println!("no process found for '{process}'.");
                         None
@@ -96,10 +96,8 @@ impl<'a> CallChainReporter<'a> {
 
         // set_show_rate_output(&process_operation[..] == "bspc-productinzicht/GET");
 
-        self.report_items
-            .iter()
-            .enumerate()
-            .for_each(|(idx, CCReportItem { label, processor })| {
+        self.report_items.iter().enumerate().for_each(
+            |(idx, CCReportItem { label, processor })| {
                 let values = cc_stats
                     .iter()
                     .map(|ms| ms.map_or(None, |msv_nf| processor(msv_nf.0, msv_nf.1, msv_nf.2)))
@@ -121,6 +119,7 @@ impl<'a> CallChainReporter<'a> {
                     format_float_opt(lr.y_intercept),
                     format_float_opt(lr.R_squared),
                 ));
-            });
+            },
+        );
     }
 }

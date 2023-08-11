@@ -3,11 +3,7 @@ use crate::{
     aux::{read_lines, write_string_to_file},
     stats::StatsRec,
 };
-use std::{
-    error::Error,
-    ffi::OsString,
-    path::{Path, PathBuf},
-};
+use std::{error::Error, ffi::OsString, path::Path};
 
 #[derive(Default, Debug)]
 pub struct StitchList {
@@ -25,16 +21,16 @@ impl StitchList {
         self.lines.push(format!(";{l}"));
     }
 
-    fn add_path(&mut self, base_path: &PathBuf, path: Option<&str>) {
+    fn add_path(&mut self, base_path: &Path, path: Option<&str>) {
         match path {
             Some(path) => {
                 // skip comments at the tail of the path-string
                 let mut path = match path.find('#') {
-                    Some(pos) => &path[0..pos].trim(),
+                    Some(pos) => path[0..pos].trim(),
                     None => path,
                 };
                 // correct base-path for ".." on path
-                let mut base_path = base_path.clone();
+                let mut base_path = base_path.to_path_buf();
                 while path.starts_with("../") || path.starts_with(r"..\") {
                     path = &path[3..];
                     if !base_path.pop() {
@@ -83,14 +79,20 @@ impl StitchList {
 
         let mut csv_string = Vec::new();
         csv_string.push("Contents:".to_owned());
-        (0..6).for_each(|_|  csv_string.push(String::new()));
+        (0..6).for_each(|_| csv_string.push(String::new()));
 
-        csv_string[1] = format!("\trow {}: Column_numbering (based on the input-files", csv_string.len());
+        csv_string[1] = format!(
+            "\trow {}: Column_numbering (based on the input-files",
+            csv_string.len()
+        );
         csv_string.extend(self.lines);
 
         csv_string[2] = format!("\trow {}: Basic statistics", csv_string.len());
         append_basic_stats(&mut csv_string, &data);
-        csv_string[3] = format!("\trow {}: Statistics per BSP/operation combination", csv_string.len());
+        csv_string[3] = format!(
+            "\trow {}: Statistics per BSP/operation combination",
+            csv_string.len()
+        );
         append_method_table(&mut csv_string, &data);
         csv_string[4] = format!("\trow {}: Statistics per call-chain (path from the external end-point to the actual BSP/operation (detailled information)", csv_string.len());
         append_callchain_table(&mut csv_string, &data);
@@ -117,7 +119,7 @@ pub fn read_stitch_list(path: &Path) -> Result<StitchList, Box<dyn Error>> {
     Ok(read_lines(path)?.fold(StitchList::new(), |mut sl, l| {
         let l = l.unwrap();
         let l = l.trim();
-        if l.len() > 0 {
+        if !l.is_empty() {
             let ch = l.chars().next().unwrap();
             match ch {
                 '#' => sl.add_unnumbered(l),

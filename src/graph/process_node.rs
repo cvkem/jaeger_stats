@@ -59,13 +59,13 @@ impl ProcessNode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ProcessNodes(HashMap<String, ProcessNode>);
 
 impl ProcessNodes {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
+    // pub fn new() -> Self {
+    //     Self(HashMap::new())
+    // }
 
     /// termmporary function to check callchains whether they are aloways alternating between server and Client
     pub fn tmp_check_cc(call_chain: &CallChain, is_leaf: bool, rooted: bool, looped: &Vec<String>) {
@@ -73,16 +73,16 @@ impl ProcessNodes {
             .iter()
             .enumerate()
             .filter_map(|(idx, call)| {
-                if idx == 0 && call.call_direction != CallDirection::Inbound {
-                    Some((idx, &call.call_direction))
-                } else if call.call_direction == CallDirection::Unknown {
+                if (idx == 0 && call.call_direction != CallDirection::Inbound)
+                    || call.call_direction == CallDirection::Unknown
+                {
                     Some((idx, &call.call_direction))
                 } else {
                     None
                 }
             })
             .collect();
-        if unexpected.len() > 0 {
+        if !unexpected.is_empty() {
             let cc = call_chain
                 .iter()
                 .enumerate()
@@ -112,6 +112,7 @@ impl ProcessNodes {
             //         Some(pair)
             //     })
             .for_each(|(pred, call)| {
+                // work in progress: pred will be used
                 let amend = |pn: &mut ProcessNode| match call.call_direction {
                     CallDirection::Outbound => pn.add_method(call.method.clone(), count),
                     CallDirection::Inbound => pn.add_operation(call.method.clone(), count),

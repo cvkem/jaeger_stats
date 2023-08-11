@@ -3,11 +3,7 @@ use crate::processed::{Span, Spans, SpansExt};
 ///  returns a tuple with the number of none-http-ok and the number of spans with error-lines
 pub fn get_span_error_information(span: &Span) -> (Vec<i16>, Vec<String>) {
     let http_code = match span.http_status_code {
-        Some(http_code) if http_code != 200 => {
-            let mut v = Vec::with_capacity(1);
-            v.push(http_code);
-            v
-        }
+        Some(http_code) if http_code != 200 => vec![http_code],
         _ => Vec::with_capacity(0),
     };
     let logs = span

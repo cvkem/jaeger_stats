@@ -2,6 +2,7 @@ use std::sync::Mutex;
 
 static SHOW_OUTPUT: Mutex<bool> = Mutex::new(false);
 
+#[allow(dead_code)]
 pub fn set_show_rate_output(val: bool) {
     let mut guard = SHOW_OUTPUT.lock().unwrap();
     *guard = val
@@ -35,7 +36,7 @@ pub fn calc_rate(data: &Vec<i64>, num_outliers: i32) -> Option<(f64, f64)> {
         data.pop();
     }
 
-    if data.len() == 0 {
+    if data.is_empty() {
         return None;
     }
 
