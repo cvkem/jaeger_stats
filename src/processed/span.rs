@@ -1,13 +1,14 @@
 #![allow(non_snake_case)]
-use super::process_map::{build_process_map, Process, ProcessMap};
+use super::{
+    process_map::{build_process_map, Process, ProcessMap},
+    unify_operation::unified_operation_name,
+};
 use crate::{
     micros_to_datetime,
     raw::{JaegerItem, JaegerLog, JaegerSpan, JaegerTags},
 };
 
 use chrono::{DateTime, Utc};
-use lazy_static::lazy_static;
-use regex::Regex;
 use serde_json::Value;
 use std::{collections::HashMap, iter, sync::Mutex};
 
@@ -57,7 +58,7 @@ impl Span {
     fn new(js: &JaegerSpan, proc_map: &ProcessMap) -> Self {
         let parent = None;
         let span_id = js.spanID.to_owned();
-        let (operation_name, full_operation_name) = get_operation_unified(&js.operationName);
+        let (operation_name, full_operation_name) = unified_operation_name(&js.operationName);
 
         let start_dt = micros_to_datetime(js.startTime);
         let duration_micros = js.duration;
@@ -173,62 +174,6 @@ pub struct Log {
     pub timestamp: i64,
     pub level: String,
     pub msg: String,
-}
-
-fn replace_regex(s: String, re: &Regex, replacement: &str) -> (String, bool) {
-    let tmp = s.clone(); // TODO: this clone is usedless (just to satisfy the borrow-checker)
-    let found: Vec<&str> = re.find_iter(&tmp).map(|m| m.as_str()).collect();
-    if found.len() > 0 {
-        let s = found
-            .into_iter()
-            .fold(s, |s, obs| s.replace(obs, replacement));
-        (s, true)
-    } else {
-        (s, false)
-    }
-}
-
-fn get_operation_unified(js_operation: &str) -> (String, Option<String>) {
-    lazy_static! {
-        static ref RE_REK: Regex = Regex::new(r"/\d{6,10}").unwrap();  // typically 8-10
-        // should be a T{0,1}  however, that is inconsistency in source
-        static ref RE_TIME: Regex = Regex::new(r"(?x)
-            /T\d{4}-\d{2}-\d{2}_
-            \d{5,10}").unwrap();
-        static ref RE_TIME2: Regex = Regex::new(r"(?x)
-            /\d{4}-\d{2}-\d{2}_
-            \d{5,10}").unwrap();
-        static ref RE_SPAAR: Regex = Regex::new(r"(?x)
-            /[0-9a-f]{8}-
-            [0-9a-f]{4}-
-            [0-9a-f]{4}-
-            [0-9a-f]{4}-
-            [0-99-f]{12}").unwrap();
-        static ref RE_BASE: Regex = Regex::new(r"(?x)
-            /[a-zA-Z0-9\-_]{39,40}
-            ={0,1}
-            /").unwrap();
-        static ref RE_JAARREK: Regex = Regex::new(r"\-\d{5,9}\-20\d{2}").unwrap();
-    }
-
-    // TODO: Opername is chained through the operations, while repl are individual variables.
-    //  we should also chain the booleans to get a generic solution ()
-    let oper_name = js_operation.to_owned();
-
-    // two variant of time are in use
-    let (oper_name, repl_time) = replace_regex(oper_name, &RE_TIME, "/{TIME}");
-    let (oper_name, repl_time2) = replace_regex(oper_name, &RE_TIME2, "/{TIME2}");
-    let (oper_name, repl_spaarpot) = replace_regex(oper_name, &RE_SPAAR, "/{SPAAR}");
-    let (oper_name, repl_base) = replace_regex(oper_name, &RE_BASE, "/{BASE}/");
-    let (oper_name, repl_jaarrek) = replace_regex(oper_name, &RE_JAARREK, "-{JAARREK}");
-    // do next one last, as it might conflict with others.
-    let (oper_name, repl_rek) = replace_regex(oper_name, &RE_REK, "/{ACCOUNT}");
-
-    if repl_rek || repl_time || repl_time2 || repl_spaarpot || repl_base || repl_jaarrek {
-        (oper_name, Some(js_operation.to_owned()))
-    } else {
-        (oper_name, None)
-    }
 }
 
 /// mark_leafs sets the is_leaf value of each span.

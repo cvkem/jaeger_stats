@@ -2,6 +2,7 @@
 mod process_map;
 mod span;
 mod trace;
+mod unify_operation;
 
 pub use self::{
     span::{set_max_log_msg_length, Span, Spans, SpansExt},
