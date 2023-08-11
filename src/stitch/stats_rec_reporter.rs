@@ -38,25 +38,33 @@ impl<'a> StatsRecReporter<'a> {
     }
 
     pub fn append_report(&mut self) {
-        self.report_items.iter().enumerate().for_each(
-            |(idx, SRReportItem { label, processor })| {
-                let values = self
-                    .data
-                    .iter()
-                    .map(|ms| ms.as_ref().map_or(None, |stats_rec| processor(stats_rec)))
-                    .collect::<Vec<_>>();
+        self.report_items
+            .iter()
+            .enumerate().for_each(
+                |(idx, SRReportItem { label, processor })| {
+                    let values = self
+                        .data
+                        .iter()
+                        .map(|ms| ms.as_ref().map_or(None, |stats_rec| processor(stats_rec)))
+                        .collect::<Vec<_>>();
 
-                let lr = LinearRegression::new(&values);
+                    let lr = LinearRegression::new(&values);
 
-                let values = floats_to_string(values, "; ");
-                self.buffer.push(format!(
-                    "{}; {label}; {values}; ; ; {}; {}; {}",
-                    idx + 1,
-                    format_float_opt(lr.slope),
-                    format_float_opt(lr.y_intercept),
-                    format_float_opt(lr.R_squared)
-                ));
-            },
+                    let values = floats_to_string(values, "; ");
+
+                    let other_columns = 1 + idx * 4;
+                    let other_columns =
+                        (0..other_columns).fold(String::with_capacity(other_columns), |oc, _| oc + ";");
+                    self.buffer.push(format!(
+                        "{label}; {values}; ; ; {}; {}; {};{other_columns};{}; {}; {};",
+                        format_float_opt(lr.slope),
+                        format_float_opt(lr.y_intercept),
+                        format_float_opt(lr.R_squared),
+                        format_float_opt(lr.slope),
+                        format_float_opt(lr.y_intercept),
+                        format_float_opt(lr.R_squared),
+                    ));
+                },
         );
     }
 }

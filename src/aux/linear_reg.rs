@@ -1,5 +1,3 @@
-
-
 #[derive(Debug)]
 struct DataPoint {
     x: f64,
@@ -66,7 +64,9 @@ fn get_slope_intercept(data: &DataSet, avg_xy: &Averages) -> (f64, f64) {
     let slope_num = data
         .iter()
         .fold(0.0, |acc, dp| acc + (dp.x - avg_xy.0) * (dp.y - avg_xy.1));
-    let slope_denum = data.iter().fold(0.0, |acc, dp| acc + f64::powi(dp.x - avg_xy.0, 2));
+    let slope_denum = data
+        .iter()
+        .fold(0.0, |acc, dp| acc + f64::powi(dp.x - avg_xy.0, 2));
     let slope = slope_num / slope_denum;
     let y_intercept = avg_xy.1 - avg_xy.0 * slope;
     (slope, y_intercept)
@@ -81,8 +81,8 @@ fn get_R_squared(data: &DataSet, avg_xy: &Averages, slope: f64, y_intercept: f64
         })
         .sum();
     if sum_expect_sqr.abs() < 1e-100 {
-        // Safeguard for horizontal lines 
-        return 1.0
+        // Safeguard for horizontal lines (prevent division by zero)
+        return 1.0;
     } else {
         let sum_avg_sqr: f64 = data.iter().map(|dp| f64::powi(dp.y - avg_xy.1, 2)).sum();
 
@@ -90,8 +90,6 @@ fn get_R_squared(data: &DataSet, avg_xy: &Averages, slope: f64, y_intercept: f64
         res
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -101,9 +99,9 @@ mod tests {
         match val {
             Some(val) => match expect {
                 Some(expect) => f64::abs(val - expect) < 1e-6,
-                None => false
+                None => false,
             },
-            None => expect.is_none()
+            None => expect.is_none(),
         }
     }
 
@@ -115,7 +113,10 @@ mod tests {
         println!("{lr:?}");
 
         assert!(test_float(lr.slope, Some(0.0)), "Slope incorrect");
-        assert!(test_float(lr.y_intercept, Some(1.0)), "y_intersect incorrect");
+        assert!(
+            test_float(lr.y_intercept, Some(1.0)),
+            "y_intersect incorrect"
+        );
         assert!(test_float(lr.R_squared, Some(1.0)), "R_squared incorrect");
     }
 
@@ -126,8 +127,15 @@ mod tests {
         let lr = LinearRegression::new(&input);
 
         assert!(test_float(lr.slope, Some(0.0)), "Slope incorrect");
-        assert!(test_float(lr.y_intercept, Some(1.03333333333333)), "y_intersect incorrect");
-        assert!(test_float(lr.R_squared, Some(0.0)), "R_squared incorrect: {:?}", lr.R_squared);
+        assert!(
+            test_float(lr.y_intercept, Some(1.03333333333333)),
+            "y_intersect incorrect"
+        );
+        assert!(
+            test_float(lr.R_squared, Some(0.0)),
+            "R_squared incorrect: {:?}",
+            lr.R_squared
+        );
     }
 
     #[test]
@@ -137,9 +145,19 @@ mod tests {
         let lr = LinearRegression::new(&input);
         println!("{lr:?}");
 
-        assert!(test_float(lr.slope, Some(0.050000000000000044)), "Slope incorrect");
-        assert!(test_float(lr.y_intercept, Some(0.9333333333333333)), "y_intersect incorrect");
-        assert!(test_float(lr.R_squared, Some(0.75)), "R_squared incorrect: {:?}", lr.R_squared);
+        assert!(
+            test_float(lr.slope, Some(0.050000000000000044)),
+            "Slope incorrect"
+        );
+        assert!(
+            test_float(lr.y_intercept, Some(0.9333333333333333)),
+            "y_intersect incorrect"
+        );
+        assert!(
+            test_float(lr.R_squared, Some(0.75)),
+            "R_squared incorrect: {:?}",
+            lr.R_squared
+        );
     }
 
     #[test]
@@ -149,13 +167,23 @@ mod tests {
 
         let lr = LinearRegression::new(&input);
 
-        // Expected solution 
+        // Expected solution
         // y = 0.143+1.229    and r2 = 0.895
         println!("{lr:?}");
-        assert!(test_float(lr.slope, Some(1.2285714285714286)), "Slope incorrect: {:?}", lr.slope);
-        assert!(test_float(lr.y_intercept, Some(0.14285714285714235)), "y_intersect incorrect: {:?}", lr.y_intercept);
-        assert!(test_float(lr.R_squared, Some(0.8953995157384989)), "R_squared incorrect: {:?}", lr.R_squared);
+        assert!(
+            test_float(lr.slope, Some(1.2285714285714286)),
+            "Slope incorrect: {:?}",
+            lr.slope
+        );
+        assert!(
+            test_float(lr.y_intercept, Some(0.14285714285714235)),
+            "y_intersect incorrect: {:?}",
+            lr.y_intercept
+        );
+        assert!(
+            test_float(lr.R_squared, Some(0.8953995157384989)),
+            "R_squared incorrect: {:?}",
+            lr.R_squared
+        );
     }
-
-
 }

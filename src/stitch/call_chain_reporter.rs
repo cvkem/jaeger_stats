@@ -98,7 +98,8 @@ impl<'a> CallChainReporter<'a> {
 
         self.report_items
             .iter()
-            .for_each(|CCReportItem { label, processor }| {
+            .enumerate()
+            .for_each(|(idx, CCReportItem { label, processor })| {
                 let values = cc_stats
                     .iter()
                     .map(|ms| ms.map_or(None, |msv_nf| processor(msv_nf.0, msv_nf.1, msv_nf.2)))
@@ -107,11 +108,18 @@ impl<'a> CallChainReporter<'a> {
                 let lr = LinearRegression::new(&values);
 
                 let values = floats_to_string(values, "; ");
+
+                let other_columns = 1 + idx * 4;
+                let other_columns =
+                    (0..other_columns).fold(String::with_capacity(other_columns), |oc, _| oc + ";");
                 self.buffer.push(format!(
-                    "{cc_key_str}; {label}; {values}; ; ; {}; {}; {}",
+                    "{cc_key_str}; {label}; {values}; ; ; {}; {}; {};{other_columns};{}; {}; {};",
                     format_float_opt(lr.slope),
                     format_float_opt(lr.y_intercept),
-                    format_float_opt(lr.R_squared)
+                    format_float_opt(lr.R_squared),
+                    format_float_opt(lr.slope),
+                    format_float_opt(lr.y_intercept),
+                    format_float_opt(lr.R_squared),
                 ));
             });
     }
