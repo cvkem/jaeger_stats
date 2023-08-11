@@ -3,15 +3,15 @@ use crate::{
     micros_to_datetime,
     raw::{JaegerItem, JaegerTrace},
 };
-use chrono::{DateTime, Utc};
+use chrono::NaiveDateTime;
 use std::{ffi::OsString, iter, path::Path};
 
 #[derive(Debug)]
 pub struct Trace {
     pub trace_id: String,
     pub root_call: String,
-    pub start_dt: DateTime<Utc>,
-    pub end_dt: DateTime<Utc>,
+    pub start_dt: NaiveDateTime,
+    pub end_dt: NaiveDateTime,
     pub duration_micros: i64,
     pub time_to_respond_micros: i64,
     pub missing_span_ids: Vec<String>,

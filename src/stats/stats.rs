@@ -14,7 +14,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
-use chrono::{DateTime, Utc};
+use chrono::NaiveDateTime;
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
@@ -70,8 +70,8 @@ pub struct StatsRec {
     pub root_call: Vec<String>,
     pub num_spans: Vec<usize>,
     pub num_files: i32, // the number of files is needed when computing the rate of requests.
-    pub start_dt: Vec<DateTime<Utc>>,
-    pub end_dt: Vec<DateTime<Utc>>,
+    pub start_dt: Vec<NaiveDateTime>,
+    pub end_dt: Vec<NaiveDateTime>,
     pub duration_micros: Vec<i64>,
     pub time_to_respond_micros: Vec<i64>,
     pub caching_process: Vec<String>,

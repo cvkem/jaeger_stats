@@ -8,7 +8,7 @@ use crate::{
     raw::{JaegerItem, JaegerLog, JaegerSpan, JaegerTags},
 };
 
-use chrono::{DateTime, Utc};
+use chrono::NaiveDateTime;
 use serde_json::Value;
 use std::{collections::HashMap, iter, sync::Mutex};
 
@@ -34,7 +34,7 @@ pub struct Span {
     pub span_id: String,
     pub operation_name: String,
     pub full_operation_name: Option<String>,
-    pub start_dt: DateTime<Utc>,
+    pub start_dt: NaiveDateTime,
     pub duration_micros: i64,
     // optional parameters from tags
     // to see statistics on all tags run:
