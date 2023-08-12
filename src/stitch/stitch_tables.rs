@@ -2,44 +2,50 @@ use super::{
     call_chain_reporter::{CCReportItem, CallChainReporter},
     key::Key,
     method_stats_reporter::{MSReportItem, MethodStatsReporter},
-    stats_rec_reporter::{SRReportItem, StatsRecReporter},
+    stats_rec_reporter::{SRReportItem, StatsRecReporterCSV},
 };
 use crate::{aux::TimeStats, stats::StatsRec};
+use lazy_static::lazy_static;
 
-fn add_table_tail_separator(buffer: &mut Vec<String>) {
-    (0..3).for_each(|_| buffer.push(String::new())) // empty lines translate to newlines
+lazy_static! {
+    pub static ref BASIC_REPORT_ITEMS: Vec<SRReportItem> = vec![
+        SRReportItem::new("num_files", |stats_rec| Some(stats_rec.num_files as f64)),
+        SRReportItem::new("rate (req/sec)", |stats_rec| TimeStats(
+            &stats_rec.duration_micros
+        )
+        .get_avg_rate(stats_rec.num_files)),
+        SRReportItem::new("num_traces", |stats_rec| Some(
+            stats_rec.trace_id.len() as f64
+        )),
+        SRReportItem::new("min_duration_millis", |stats_rec| Some(
+            TimeStats(&stats_rec.duration_micros).get_min_millis()
+        )),
+        SRReportItem::new("median_duration_millis", |stats_rec| Some(
+            TimeStats(&stats_rec.duration_micros).get_median_millis()
+        )),
+        SRReportItem::new("avg_duration_millis", |stats_rec| Some(
+            TimeStats(&stats_rec.duration_micros).get_avg_millis()
+        )),
+        SRReportItem::new("max_duration_millis", |stats_rec| Some(
+            TimeStats(&stats_rec.duration_micros).get_max_millis()
+        ))
+    ];
 }
+
+///TODO The remainder of this document is legacy code to be discarded after CSV-output and tables have been extracted
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
 pub fn append_basic_stats(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>>) {
     buffer.push("# Basic statistics over alle stitched files".to_owned());
-    let mut report_items = Vec::new();
-    report_items.push(SRReportItem::new("num_files", |stats_rec| {
-        Some(stats_rec.num_files as f64)
-    }));
-    report_items.push(SRReportItem::new("rate (req/sec)", |stats_rec| {
-        TimeStats(&stats_rec.duration_micros).get_avg_rate(stats_rec.num_files)
-    }));
-    report_items.push(SRReportItem::new("num_traces", |stats_rec| {
-        Some(stats_rec.trace_id.len() as f64)
-    }));
-    report_items.push(SRReportItem::new("min_duration_millis", |stats_rec| {
-        Some(TimeStats(&stats_rec.duration_micros).get_min_millis())
-    }));
-    report_items.push(SRReportItem::new("median_duration_millis", |stats_rec| {
-        Some(TimeStats(&stats_rec.duration_micros).get_median_millis())
-    }));
-    report_items.push(SRReportItem::new("avg_duration_millis", |stats_rec| {
-        Some(TimeStats(&stats_rec.duration_micros).get_avg_millis())
-    }));
-    report_items.push(SRReportItem::new("max_duration_millis", |stats_rec| {
-        Some(TimeStats(&stats_rec.duration_micros).get_max_millis())
-    }));
 
-    let mut reporter = StatsRecReporter::new(buffer, data, report_items);
+    let mut reporter = StatsRecReporterCSV::new(buffer, data, &*BASIC_REPORT_ITEMS);
     reporter.append_report();
 
     add_table_tail_separator(buffer);
+}
+
+fn add_table_tail_separator(buffer: &mut Vec<String>) {
+    (0..3).for_each(|_| buffer.push(String::new())) // empty lines translate to newlines
 }
 
 /// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
