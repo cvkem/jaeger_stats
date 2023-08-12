@@ -76,18 +76,14 @@ impl<'a> CallChainReporter<'a> {
         let cc_stats: Vec<_> = self
             .data
             .iter()
-            .map(|stats_rec| match stats_rec {
-                Some(stats_rec) => match stats_rec.stats.get(&process) {
-                    Some(st) => st
-                        .call_chain
-                        .get(&cc_key)
-                        .map(|oper| (oper, stats_rec.num_files, stats_rec.trace_id.len())),
-                    None => {
-                        println!("no process found for '{process}'.");
-                        None
-                    }
-                },
-                None => None,
+            .map(|stats_rec| {
+                stats_rec.as_ref().and_then(|stats_rec| {
+                    stats_rec.stats.get(&process).and_then(|st| {
+                        st.call_chain
+                            .get(&cc_key)
+                            .map(|oper| (oper, stats_rec.num_files, stats_rec.trace_id.len()))
+                    })
+                })
             })
             .collect();
 

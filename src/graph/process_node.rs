@@ -111,7 +111,7 @@ impl ProcessNodes {
             //         prev = &mut &call;
             //         Some(pair)
             //     })
-            .for_each(|(pred, call)| {
+            .for_each(|(_pred, call)| {
                 // work in progress: pred will be used
                 let amend = |pn: &mut ProcessNode| match call.call_direction {
                     CallDirection::Outbound => pn.add_method(call.method.clone(), count),
