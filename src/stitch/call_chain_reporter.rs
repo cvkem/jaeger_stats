@@ -21,14 +21,14 @@ impl CCReportItem {
 pub struct CallChainReporter<'a> {
     buffer: &'a mut Vec<String>,
     data: &'a Vec<Option<StatsRec>>,
-    report_items: Vec<CCReportItem>,
+    report_items: &'a Vec<CCReportItem>,
 }
 
 impl<'a> CallChainReporter<'a> {
     pub fn new(
         buffer: &'a mut Vec<String>,
         data: &'a Vec<Option<StatsRec>>,
-        report_items: Vec<CCReportItem>,
+        report_items: &'a Vec<CCReportItem>,
     ) -> Self {
         Self {
             buffer,
