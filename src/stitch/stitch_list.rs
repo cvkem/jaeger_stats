@@ -43,7 +43,7 @@ impl StitchSources {
             .push(StitchSourceItem::new(Some(column), description));
     }
 
-    fn csv_output(&self) -> Vec<String> {
+    pub fn csv_output(&self) -> Vec<String> {
         self.0.iter().map(|line| line.to_csv_string()).collect()
     }
 }

@@ -13,3 +13,4 @@ mod stitch_tables;
 mod stitched;
 
 pub use stitch_list::StitchList;
+pub use stitched::Stitched;

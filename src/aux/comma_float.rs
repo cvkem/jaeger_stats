@@ -25,7 +25,21 @@ pub fn format_float_opt(val: Option<f64>) -> String {
     }
 }
 
+/// write a series of floats to a string without consuming them.
+pub fn floats_ref_to_string(values: &Vec<Option<f64>>, sep: &str) -> String {
+    values
+        .iter()
+        .map(|v| match v {
+            Some(v) => format_float(*v),
+            None => "".to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join(sep)
+}
+
+/// write a series of floats to a string and consume the original input (could consume it with into_iter() which might be slightly more efficient)
 pub fn floats_to_string(values: Vec<Option<f64>>, sep: &str) -> String {
+    // floats_ref_to_string(&values, sep)
     values
         .into_iter()
         .map(|v| match v {
