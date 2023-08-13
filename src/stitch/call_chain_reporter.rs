@@ -1,46 +1,63 @@
+use super::stitched::StitchedLine;
 use crate::{
     aux::{floats_to_string, format_float_opt, LinearRegression},
     stats::call_chain::CChainStatsKey,
     stats::{call_chain::CChainStatsValue, StatsRec},
 };
+
 use std::collections::HashSet;
 
-type Processor = fn(&CChainStatsValue, i32, usize) -> Option<f64>;
+/// The POData is the input for the processor (which is a series of report-closures.
+/// If the processor operated on a tuple we could extract a joined type from the next two types.
+type ProcessorInput<'a> = (&'a CChainStatsValue, i32, usize);
+type Processor = fn(&ProcessorInput) -> Option<f64>;
+type CCData<'a> = Vec<Option<ProcessorInput<'a>>>;
 
+/// Call-chain report items are defined in this structure.
+/// TODO: as this is a copy of the POReportItem, including all code we should move this to generics
+///   only the Processor-type and thus the input data are different.
 pub struct CCReportItem {
     label: &'static str,
     processor: Processor,
 }
 
+// this container of ReportItems is primarily used to bundle the methods that runs over a set of .
+/// TODO: when using generics we could have one-codebase for POReportItems and CCReportItems
+pub struct CCReportItems(pub Vec<CCReportItem>);
+
 impl CCReportItem {
     pub fn new(label: &'static str, processor: Processor) -> Self {
         Self { label, processor }
+    }
+
+    pub fn extract_stitched_line(&self, data: &CCData) -> StitchedLine {
+        let values = data
+            .iter()
+            .map(|ms| ms.as_ref().and_then(self.processor))
+            .collect::<Vec<_>>();
+
+        let lin_reg = LinearRegression::new(&values);
+        StitchedLine {
+            label: self.label.to_string(),
+            data: values,
+            lin_reg,
+        }
     }
 }
 
 pub struct CallChainReporter<'a> {
     buffer: &'a mut Vec<String>,
     data: &'a Vec<Option<StatsRec>>,
-    report_items: &'a Vec<CCReportItem>,
+    report_items: &'a CCReportItems,
 }
 
-impl<'a> CallChainReporter<'a> {
-    pub fn new(
-        buffer: &'a mut Vec<String>,
-        data: &'a Vec<Option<StatsRec>>,
-        report_items: &'a Vec<CCReportItem>,
-    ) -> Self {
-        Self {
-            buffer,
-            data,
-            report_items,
-        }
-    }
-
-    // find a deduplicated set of all keys and sort them
-    pub fn get_keys(&self) -> Vec<CChainStatsKey> {
+impl CCReportItems {
+    /// get all the keys that are relevant for a CC-report
+    /// TODO: when using generics we could have one-codebase for POReportItems and CCReportItems
+    /// Here it is only the inner loop that generates a key that needs to be split out.
+    pub fn get_keys(data: &[Option<StatsRec>]) -> Vec<CChainStatsKey> {
         let mut keys = HashSet::new(); // Computing all possible keys over the different datasets that need to be stitched.
-        self.data.iter().for_each(|stats_rec| {
+        data.iter().for_each(|stats_rec| {
             if let Some(stats_rec) = stats_rec {
                 stats_rec.stats.iter().for_each(|(proc_key, st)| {
                     st.call_chain.iter().for_each(|(cc_key, _)| {
@@ -66,16 +83,17 @@ impl<'a> CallChainReporter<'a> {
         keys
     }
 
-    pub fn append_report(&mut self, cc_key: CChainStatsKey) {
+    pub fn extract_dataset<'a>(
+        data: &'a Vec<Option<StatsRec>>,
+        cc_key: &'a CChainStatsKey,
+    ) -> CCData<'a> {
         let process = cc_key.get_leaf_process();
 
-        // extract the three values that are needed for the analysis being:
-        //    1. the complete MethodStatsValue record
+        // a ref to the extract the three values that are needed for the analysis being:
+        //    1. the complete CallChainValue record
         //    2. the number of files in the analysis
         //    3. the number of traces included in this analysis
-        let cc_stats: Vec<_> = self
-            .data
-            .iter()
+        data.iter()
             .map(|stats_rec| {
                 stats_rec.as_ref().and_then(|stats_rec| {
                     stats_rec.stats.get(&process).and_then(|st| {
@@ -85,37 +103,62 @@ impl<'a> CallChainReporter<'a> {
                     })
                 })
             })
-            .collect();
+            .collect()
+    }
+}
 
-        let cc_key_str = cc_key.call_chain_key();
+impl<'a> CallChainReporter<'a> {
+    pub fn new(
+        buffer: &'a mut Vec<String>,
+        data: &'a Vec<Option<StatsRec>>,
+        report_items: &'a CCReportItems,
+    ) -> Self {
+        Self {
+            buffer,
+            data,
+            report_items,
+        }
+    }
+
+    // find a deduplicated set of all keys and sort them
+    pub fn get_keys(&self) -> Vec<CChainStatsKey> {
+        CCReportItems::get_keys(self.data)
+    }
+
+    pub fn append_report(&mut self, cc_key: CChainStatsKey) {
+        let cc_data = CCReportItems::extract_dataset(&self.data, &cc_key);
+
+        let cc_key_str = cc_key.to_string();
         self.buffer.push(format!("# statistics for {cc_key_str}"));
 
         // set_show_rate_output(&process_operation[..] == "bspc-productinzicht/GET");
 
-        self.report_items.iter().enumerate().for_each(
-            |(idx, CCReportItem { label, processor })| {
-                let values = cc_stats
-                    .iter()
-                    .map(|ms| ms.map_or(None, |msv_nf| processor(msv_nf.0, msv_nf.1, msv_nf.2)))
-                    .collect::<Vec<_>>();
+        self.report_items
+            .0
+            .iter()
+            .enumerate()
+            .for_each(|(idx, cc_report_item)| {
+                let StitchedLine {
+                    label,
+                    data,
+                    lin_reg,
+                } = cc_report_item.extract_stitched_line(&cc_data);
 
-                let lr = LinearRegression::new(&values);
-
-                let values = floats_to_string(values, "; ");
+                // Produce the CSV_output
+                let values = floats_to_string(data, "; ");
 
                 let other_columns = 1 + idx * 4;
                 let other_columns =
                     (0..other_columns).fold(String::with_capacity(other_columns), |oc, _| oc + ";");
                 self.buffer.push(format!(
                     "{cc_key_str}; {label}; {values}; ; ; {}; {}; {};{other_columns};{}; {}; {};",
-                    format_float_opt(lr.slope),
-                    format_float_opt(lr.y_intercept),
-                    format_float_opt(lr.R_squared),
-                    format_float_opt(lr.slope),
-                    format_float_opt(lr.y_intercept),
-                    format_float_opt(lr.R_squared),
+                    format_float_opt(lin_reg.slope),
+                    format_float_opt(lin_reg.y_intercept),
+                    format_float_opt(lin_reg.R_squared),
+                    format_float_opt(lin_reg.slope),
+                    format_float_opt(lin_reg.y_intercept),
+                    format_float_opt(lin_reg.R_squared),
                 ));
-            },
-        );
+            });
     }
 }

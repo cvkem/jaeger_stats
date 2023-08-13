@@ -160,6 +160,12 @@ impl CChainStatsKey {
     }
 }
 
+impl ToString for CChainStatsKey {
+    fn to_string(&self) -> String {
+        self.call_chain_key()
+    }
+}
+
 impl CChainStatsValue {
     pub fn new(depth: usize, looped: Vec<String>, rooted: bool) -> Self {
         Self {

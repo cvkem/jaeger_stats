@@ -21,11 +21,9 @@ pub struct POReportItem {
 }
 
 /// this container of ReportItems is primarily used to bundle the methods that runs over a set of .
-pub struct POReportItems ( pub Vec<POReportItem> );
-
+pub struct POReportItems(pub Vec<POReportItem>);
 
 impl POReportItem {
-
     pub fn new(label: &'static str, processor: Processor) -> Self {
         Self { label, processor }
     }
@@ -71,8 +69,7 @@ impl POReportItems {
         //    1. the complete MethodStatsValue record
         //    2. the number of files in the analysis
         //    3. the number of traces included in this analysis
-        data
-            .iter()
+        data.iter()
             .map(|stats_rec| {
                 stats_rec.as_ref().and_then(|stats_rec| {
                     stats_rec.stats.get(&po_key.process).and_then(|st| {
