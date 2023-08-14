@@ -30,7 +30,7 @@ pub fn process_and_fix_traces(
     folder: PathBuf,
     traces: Vec<TraceExt>,
     caching_processes: Vec<String>,
-    cc_path: &Path,
+    cc_path: &str,
     num_files: i32,
 ) {
     let total_traces = traces.len();
@@ -54,7 +54,21 @@ pub fn process_and_fix_traces(
     // extract call_chain and statistics per call-chain
     let num_end_points = sort_traces.len();
     let mut incomplete_traces = 0;
-    let cchain_folder = extend_create_folder(&folder, "CallChain");
+
+    /// Cchain-folder for input and output are set to the same folder.
+    report(Chapter::Details, format!("Input for cc_path = {cc_path}"));
+    let cc_path = {
+        let  cc_path_full = Path::new(cc_path).to_path_buf();
+        if cc_path_full.is_absolute() {
+            cc_path_full
+        } else {
+            extend_create_folder(&folder, cc_path)
+        }
+    };
+    report(Chapter::Details, format!("Translates to cc_path = {}", cc_path.display()));
+    let cchain_folder = cc_path.to_path_buf();
+    report(Chapter::Details, format!("Translates to cchain_folder = {}", cchain_folder.display()));
+
     sort_traces.into_iter()
         .for_each(|(k, traces)| {
             let mut csv_file = stats_folder.clone();

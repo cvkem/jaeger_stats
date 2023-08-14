@@ -17,7 +17,8 @@ mod write;
 pub fn analyze_file_or_folder(
     path: &Path,
     caching_processes: Vec<String>,
-    cc_path: &Path,
+    cc_path: &str,
+    trace_output: bool,
 ) -> PathBuf {
     // Read raw jaeger-traces and process them to clean traces.
     let (traces, num_files, folder) = read::read_process_file_or_folder(path);
@@ -39,7 +40,10 @@ pub fn analyze_file_or_folder(
     // Translate to Extended traces and write the traces to a JSON file
     let traces = crate_stats::build_trace_ext(traces, &folder, num_files, &caching_processes);
     // write the traces
-    traces.iter().for_each(|trace| trace.write_trace());
+
+    if trace_output {
+        traces.iter().for_each(|trace| trace.write_trace());
+    }
 
     stats::process_and_fix_traces(
         folder.clone(),

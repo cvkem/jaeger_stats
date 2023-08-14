@@ -13,14 +13,18 @@ struct Args {
     #[arg(long)]
     caching_process: Option<String>,
 
-    #[arg(short, long, default_value_t = String::from("/home/ceesvk/CallChain/"))]
+    /// The default sources is the current folder
+    #[arg(short, long, default_value_t = String::from("CallChain/"))]
     call_chain_folder: String,
 
-    #[arg(short, long, default_value_t = 2*60)]
+    #[arg(short = 'z', long, default_value_t = 2*60)]
     timezone_minutes: i64,
 
     #[arg(short = 'f', long, default_value_t = true)]
     comma_float: bool,
+
+    #[arg(short, long, default_value_t = false)]
+    trace_output: bool,
 }
 
 fn main() {
@@ -39,7 +43,8 @@ fn main() {
     let mut path = analyze_file_or_folder(
         Path::new(&args.input),
         caching_processes,
-        Path::new(&args.call_chain_folder),
+        &args.call_chain_folder,
+        args.trace_output
     );
     path.push("report.txt");
     write_report(path.to_str().unwrap());
