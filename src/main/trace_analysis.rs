@@ -44,7 +44,7 @@ fn main() {
         Path::new(&args.input),
         caching_processes,
         &args.call_chain_folder,
-        args.trace_output
+        args.trace_output,
     );
     path.push("report.txt");
     write_report(path.to_str().unwrap());

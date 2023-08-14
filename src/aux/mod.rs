@@ -11,7 +11,9 @@ mod report;
 mod time_stats;
 
 pub use self::{
-    comma_float::{floats_to_string, floats_ref_to_string, format_float, format_float_opt, set_comma_float},
+    comma_float::{
+        floats_ref_to_string, floats_to_string, format_float, format_float_opt, set_comma_float,
+    },
     counted::Counted,
     datetime::{
         datetime_micros_str, datetime_millis_str, datetime_to_micros, micros_to_datetime,

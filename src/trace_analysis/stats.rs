@@ -55,19 +55,25 @@ pub fn process_and_fix_traces(
     let num_end_points = sort_traces.len();
     let mut incomplete_traces = 0;
 
-    /// Cchain-folder for input and output are set to the same folder.
+    // Cchain-folder for input and output are set to the same folder.
     report(Chapter::Details, format!("Input for cc_path = {cc_path}"));
     let cc_path = {
-        let  cc_path_full = Path::new(cc_path).to_path_buf();
+        let cc_path_full = Path::new(cc_path).to_path_buf();
         if cc_path_full.is_absolute() {
             cc_path_full
         } else {
             extend_create_folder(&folder, cc_path)
         }
     };
-    report(Chapter::Details, format!("Translates to cc_path = {}", cc_path.display()));
+    report(
+        Chapter::Details,
+        format!("Translates to cc_path = {}", cc_path.display()),
+    );
     let cchain_folder = cc_path.to_path_buf();
-    report(Chapter::Details, format!("Translates to cchain_folder = {}", cchain_folder.display()));
+    report(
+        Chapter::Details,
+        format!("Translates to cchain_folder = {}", cchain_folder.display()),
+    );
 
     sort_traces.into_iter()
         .for_each(|(k, traces)| {

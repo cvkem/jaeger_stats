@@ -17,5 +17,5 @@ pub use graph::build_graph;
 pub use raw::{read_jaeger_trace_file, JaegerItem, JaegerLog, JaegerSpan, JaegerTags, JaegerTrace};
 pub use stats::{chained_stats, json::StatsRecJson, CChainEndPointCache, StatsRec};
 
-pub use stitch::{Stitched, StitchList};
+pub use stitch::{StitchList, Stitched};
 pub use trace_analysis::analyze_file_or_folder;
