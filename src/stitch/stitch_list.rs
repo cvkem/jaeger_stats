@@ -1,6 +1,5 @@
-use super::stitch_tables::{append_basic_stats, append_callchain_table, append_method_table};
 use crate::{
-    aux::{read_lines, write_string_to_file},
+    aux::read_lines,
     stats::StatsRec,
 };
 use std::{error::Error, ffi::OsString, path::Path};
@@ -110,40 +109,6 @@ impl StitchList {
                 }
             })
             .collect()
-    }
-
-    /// Read all stitched data and write it out to a CSV files
-    /// TODO: refactor to separate the CSV-output phase from the actual transposition and structuring of the data.
-    pub fn write_stitched_csv(self, path: &Path) {
-        let data = self.read_data();
-
-        let mut csv_string = Vec::new();
-        csv_string.push("Contents:".to_owned());
-        (0..6).for_each(|_| csv_string.push(String::new()));
-
-        csv_string[1] = format!(
-            "\trow {}: Column_numbering (based on the input-files",
-            csv_string.len()
-        );
-        csv_string.append(&mut self.lines.csv_output());
-
-        csv_string[2] = format!("\trow {}: Basic statistics", csv_string.len());
-        append_basic_stats(&mut csv_string, &data);
-        csv_string[3] = format!(
-            "\trow {}: Statistics per BSP/operation combination",
-            csv_string.len()
-        );
-        append_method_table(&mut csv_string, &data);
-        csv_string[4] = format!("\trow {}: Statistics per call-chain (path from the external end-point to the actual BSP/operation (detailled information)", csv_string.len());
-        append_callchain_table(&mut csv_string, &data);
-
-        match write_string_to_file(path.to_str().unwrap(), csv_string.join("\n")) {
-            Ok(()) => (),
-            Err(err) => println!(
-                "Writing file '{}' failed with Error: {err:?}",
-                path.display()
-            ),
-        };
     }
 
     /// Read a stitch-list file and return a struct showing the contents.
