@@ -1,4 +1,4 @@
-use super::stitched::StitchedLine;
+use super::stitched_set::StitchedLine;
 use crate::{
     aux::{floats_to_string, format_float_opt, LinearRegression},
     stats::StatsRec,
@@ -17,7 +17,7 @@ impl SRReportItem {
     }
 
     /// extract a line of stitched data for the current report item.
-    pub fn extract_stitched_line(&self, data: &Vec<Option<StatsRec>>) -> StitchedLine {
+    pub fn extract_stitched_line(&self, data: &[Option<StatsRec>]) -> StitchedLine {
         let values = data
             .iter()
             .map(|ms| ms.as_ref().and_then(self.processor))
@@ -64,7 +64,7 @@ impl<'a> StatsRecReporterCSV<'a> {
                     label,
                     data,
                     lin_reg,
-                } = sr_report.extract_stitched_line(&self.data);
+                } = sr_report.extract_stitched_line(self.data);
 
                 let values = floats_to_string(data, "; ");
 
