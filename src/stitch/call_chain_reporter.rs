@@ -45,11 +45,6 @@ impl CCReportItem {
     }
 }
 
-pub struct CallChainReporter<'a> {
-    buffer: &'a mut Vec<String>,
-    data: &'a Vec<Option<StatsRec>>,
-    report_items: &'a CCReportItems,
-}
 
 impl CCReportItems {
     /// get all the keys that are relevant for a CC-report
@@ -87,6 +82,7 @@ impl CCReportItems {
         data: &'a [Option<StatsRec>],
         cc_key: &'a CChainStatsKey,
     ) -> CCData<'a> {
+        // We only need to search in the subset that belongs to this process as that pare will contain all records for this call-chain.
         let process = cc_key.get_leaf_process();
 
         // a ref to the extract the three values that are needed for the analysis being:
@@ -104,61 +100,5 @@ impl CCReportItems {
                 })
             })
             .collect()
-    }
-}
-
-impl<'a> CallChainReporter<'a> {
-    pub fn new(
-        buffer: &'a mut Vec<String>,
-        data: &'a Vec<Option<StatsRec>>,
-        report_items: &'a CCReportItems,
-    ) -> Self {
-        Self {
-            buffer,
-            data,
-            report_items,
-        }
-    }
-
-    // find a deduplicated set of all keys and sort them
-    pub fn get_keys(&self) -> Vec<CChainStatsKey> {
-        CCReportItems::get_keys(self.data)
-    }
-
-    pub fn append_report(&mut self, cc_key: CChainStatsKey) {
-        let cc_data = CCReportItems::extract_dataset(&self.data, &cc_key);
-
-        let cc_key_str = cc_key.to_string();
-        self.buffer.push(format!("# statistics for {cc_key_str}"));
-
-        // set_show_rate_output(&process_operation[..] == "bspc-productinzicht/GET");
-
-        self.report_items
-            .0
-            .iter()
-            .enumerate()
-            .for_each(|(idx, cc_report_item)| {
-                let StitchedLine {
-                    label,
-                    data,
-                    lin_reg,
-                } = cc_report_item.extract_stitched_line(&cc_data);
-
-                // Produce the CSV_output
-                let values = floats_to_string(data, "; ");
-
-                let other_columns = 1 + idx * 4;
-                let other_columns =
-                    (0..other_columns).fold(String::with_capacity(other_columns), |oc, _| oc + ";");
-                self.buffer.push(format!(
-                    "{cc_key_str}; {label}; {values}; ; ; {}; {}; {};{other_columns};{}; {}; {};",
-                    format_float_opt(lin_reg.slope),
-                    format_float_opt(lin_reg.y_intercept),
-                    format_float_opt(lin_reg.R_squared),
-                    format_float_opt(lin_reg.slope),
-                    format_float_opt(lin_reg.y_intercept),
-                    format_float_opt(lin_reg.R_squared),
-                ));
-            });
     }
 }

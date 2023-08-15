@@ -1,7 +1,7 @@
 use super::{
-    call_chain_reporter::{CCReportItem, CCReportItems, CallChainReporter},
+    call_chain_reporter::{CCReportItem, CCReportItems},
     method_stats_reporter::{MethodStatsReporter, POReportItem, POReportItems},
-    stats_rec_reporter::{SRReportItem, StatsRecReporterCSV},
+    stats_rec_reporter::SRReportItem,
 };
 use crate::{aux::TimeStats, stats::StatsRec};
 use lazy_static::lazy_static;
@@ -77,49 +77,3 @@ lazy_static! {
     ]);
 }
 
-///
-///TODO The remainder of this document is legacy code to be discarded after CSV-output and tables have been extracted
-///
-
-fn add_table_tail_separator(buffer: &mut Vec<String>) {
-    (0..3).for_each(|_| buffer.push(String::new())) // empty lines translate to newlines
-}
-
-/// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
-pub fn append_basic_stats(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>>) {
-    buffer.push("# Basic statistics over alle stitched files".to_owned());
-
-    let mut reporter = StatsRecReporterCSV::new(buffer, data, &*BASIC_REPORT_ITEMS);
-    reporter.append_report();
-
-    add_table_tail_separator(buffer);
-}
-
-/// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
-pub fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>>) {
-    buffer.push("# Method table".to_owned());
-
-    // Build a reporter that handles shows the items defined in the report_items. Each item is a data-column.
-    let mut reporter = MethodStatsReporter::new(buffer, data, &PROC_OPER_REPORT_ITEMS);
-
-    // Find all keys and generate an output line for each of these keys.
-    let keys = reporter.get_keys();
-    keys.into_iter().for_each(|key| reporter.append_report(key));
-
-    add_table_tail_separator(buffer);
-}
-
-/// Find all potential 'method/operation' key, loop over these keys and write a csv-line per metric
-pub fn append_callchain_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>>) {
-    buffer.push("# Call-chain table".to_owned());
-    // build the stack of reports that need to be calculated
-
-    // Build a reporter that handles shows the items defined in the report_items. Each item is a data-column.
-    let mut reporter = CallChainReporter::new(buffer, data, &CALL_CHAIN_REPORT_ITEMS);
-
-    // Find all keys and generate an output line for each of these keys.
-    let keys = reporter.get_keys();
-    keys.into_iter().for_each(|k| reporter.append_report(k));
-
-    add_table_tail_separator(buffer);
-}
