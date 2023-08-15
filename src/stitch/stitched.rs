@@ -38,8 +38,10 @@ impl StitchedSet {
         self.0.iter().enumerate().map(|(idx, line)| line.to_csv_string(header, idx)).collect()
     }
 
-    pub fn summary_header(&self) -> Vec<String> {
-        self.0.iter().map(|sl| sl.label.to_owned()).collect()
+    pub fn summary_header(&self, extra_count: bool) -> Vec<String> {
+        let mut result: Vec<_> = self.0.iter().map(|sl| sl.label.to_owned()).collect();
+        result.insert(0, "COUNT".to_owned());
+        result
     }
 
     pub fn full_data_header(&self) -> String {
@@ -55,11 +57,25 @@ impl StitchedSet {
     }
 
     pub fn summary_slopes(&self) -> Vec<Option<f64>>{
-        self.0.iter().map(|sl| sl.avg()).collect()
+        let count = if self.0.is_empty() {
+            None
+        } else {
+            self.0[0].avg()
+        };
+        let mut result: Vec<_> = self.0.iter().map(|sl| sl.lin_reg.slope).collect();
+        result.insert(0, count);
+        result
     }
 
     pub fn summary_scaled_slopes(&self) -> Vec<Option<f64>>{
-        self.0.iter().map(|sl| sl.scaled_slope()).collect()
+        let count = if self.0.is_empty() {
+            None
+        } else {
+            self.0[0].avg()
+        };
+        let mut result: Vec<_> = self.0.iter().map(|sl| sl.scaled_slope()).collect();
+        result.insert(0, count);
+        result
     }
 
 }
@@ -96,7 +112,7 @@ impl StitchedLine {
     /// return the headers that correspond to a data-row (assuming this Line is representative for data availability over the full dataset).
     pub fn headers(&self) -> String {
         let columns = self.data.iter().enumerate().map(|(idx, x)| if x.is_some() { format!("{}", idx+1) } else { format!("_{}", idx+1)}).collect::<Vec<_>>().join("; ");
-        format!("label; {columns}; ; slope, y_intercept; R_squared; scaled_slope")
+        format!("label; {columns}; ; ; slope; y_intercept; R_squared; scaled_slope")
     }
 
     /// Show the current line as a string in the csv-format with a ';' separator
@@ -175,8 +191,8 @@ impl Stitched {
     }
 
 
-    pub fn summary_header(&self, table_type: &str) -> String {
-        let col_headers = if self.process_operation.is_empty() { "NO DATA".to_owned() }  else { self.process_operation[0].1.summary_header().join("; ") };
+    pub fn summary_header(&self, table_type: &str, extra_count: bool) -> String {
+        let col_headers = if self.process_operation.is_empty() { "NO DATA".to_owned() }  else { self.process_operation[0].1.summary_header(extra_count).join("; ") };
         format!("{table_type}; {}", col_headers)
     }
 
@@ -200,19 +216,19 @@ impl Stitched {
         csv.append(&mut self.sources.csv_output());
 
         csv.add_section("Summary_statistics per BSP-operation");
-        csv.add_line(self.summary_header("BSP/operation"));
+        csv.add_line(self.summary_header("BSP/operation", false));
         self.process_operation
             .iter()
             .for_each(|(label, stitched_set)| csv.add_line(format!("{label}; {}", floats_to_string(stitched_set.summary_avg(), " ;"))));
 
         csv.add_section("Slope summary per BSP-operation");
-        csv.add_line(self.summary_header("BSP/operation"));
+        csv.add_line(self.summary_header("BSP/operation", true));
         self.process_operation
             .iter()
             .for_each(|(label, stitched_set)| csv.add_line(format!("{label}; {}", floats_to_string(stitched_set.summary_slopes(), " ;"))));
 
         csv.add_section("Scaled Slope summary per BSP-operation");
-        csv.add_line(self.summary_header("BSP/operation"));
+        csv.add_line(self.summary_header("BSP/operation", true));
         self.process_operation
             .iter()
             .for_each(|(label, stitched_set)| csv.add_line(format!("{label}; {}", floats_to_string(stitched_set.summary_scaled_slopes(), " ;"))));    
