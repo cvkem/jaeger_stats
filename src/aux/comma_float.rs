@@ -26,7 +26,7 @@ pub fn format_float_opt(val: Option<f64>) -> String {
 }
 
 /// write a series of floats to a string without consuming them.
-pub fn floats_ref_to_string(values: &Vec<Option<f64>>, sep: &str) -> String {
+pub fn floats_ref_to_string(values: &[Option<f64>], sep: &str) -> String {
     values
         .iter()
         .map(|v| match v {

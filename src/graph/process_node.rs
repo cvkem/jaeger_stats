@@ -137,5 +137,3 @@ struct LinkKey {
     process: String,
     end_point: String,
 }
-
-type LinkCount = HashMap<LinkKey, i32>;

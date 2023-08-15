@@ -1,4 +1,4 @@
-use super::stitched::StitchedLine;
+use super::stitched_set::StitchedLine;
 use crate::{
     aux::{floats_to_string, format_float_opt, LinearRegression},
     stats::call_chain::CChainStatsKey,
@@ -84,7 +84,7 @@ impl CCReportItems {
     }
 
     pub fn extract_dataset<'a>(
-        data: &'a Vec<Option<StatsRec>>,
+        data: &'a [Option<StatsRec>],
         cc_key: &'a CChainStatsKey,
     ) -> CCData<'a> {
         let process = cc_key.get_leaf_process();
@@ -98,7 +98,7 @@ impl CCReportItems {
                 stats_rec.as_ref().and_then(|stats_rec| {
                     stats_rec.stats.get(&process).and_then(|st| {
                         st.call_chain
-                            .get(&cc_key)
+                            .get(cc_key)
                             .map(|oper| (oper, stats_rec.num_files, stats_rec.trace_id.len()))
                     })
                 })

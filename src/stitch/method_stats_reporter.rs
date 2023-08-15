@@ -6,7 +6,7 @@ use crate::{
 };
 use std::collections::HashSet;
 
-use super::{key::Key, stitched::StitchedLine};
+use super::{key::Key, stitched_set::StitchedLine};
 
 /// The POData is the input for the processor (which is a series of report-closures.
 /// If the processor operated on a tuple we could extract a joined type from the next two types.

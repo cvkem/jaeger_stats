@@ -100,7 +100,7 @@ pub fn append_method_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsRec>
     buffer.push("# Method table".to_owned());
 
     // Build a reporter that handles shows the items defined in the report_items. Each item is a data-column.
-    let mut reporter = MethodStatsReporter::new(buffer, data, &*PROC_OPER_REPORT_ITEMS);
+    let mut reporter = MethodStatsReporter::new(buffer, data, &PROC_OPER_REPORT_ITEMS);
 
     // Find all keys and generate an output line for each of these keys.
     let keys = reporter.get_keys();
@@ -115,7 +115,7 @@ pub fn append_callchain_table(buffer: &mut Vec<String>, data: &Vec<Option<StatsR
     // build the stack of reports that need to be calculated
 
     // Build a reporter that handles shows the items defined in the report_items. Each item is a data-column.
-    let mut reporter = CallChainReporter::new(buffer, data, &*CALL_CHAIN_REPORT_ITEMS);
+    let mut reporter = CallChainReporter::new(buffer, data, &CALL_CHAIN_REPORT_ITEMS);
 
     // Find all keys and generate an output line for each of these keys.
     let keys = reporter.get_keys();
