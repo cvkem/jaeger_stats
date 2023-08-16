@@ -45,12 +45,36 @@ impl CCReportItem {
     }
 }
 
+type CCKey = (String, Vec<CChainStatsKey>);
 
 impl CCReportItems {
+    /// repartion the keys by grouping on the string value
+    fn repartition_keys(mut keys: Vec<(String, CChainStatsKey)>) -> Vec<CCKey> {
+        keys.sort_unstable();
+
+        keys.into_iter()
+            .fold(
+                (Vec::<CCKey>::new(), String::new()),
+                |(mut acc, curr_po), (proc_oper, cck)| {
+                    if proc_oper == curr_po {
+                        //acc[acc.len()-1].1.push(cck);   // needs to be split out to two lines to satisfy borrow-checker
+                        let len = acc.len();
+                        acc[len - 1].1.push(cck);
+                        (acc, curr_po)
+                    } else {
+                        let curr_po = proc_oper.to_owned();
+                        acc.push((proc_oper.to_owned(), [cck].to_vec()));
+                        (acc, curr_po)
+                    }
+                },
+            )
+            .0
+    }
+
     /// get all the keys that are relevant for a CC-report
     /// TODO: when using generics we could have one-codebase for POReportItems and CCReportItems
     /// Here it is only the inner loop that generates a key that needs to be split out.
-    pub fn get_keys(data: &[Option<StatsRec>]) -> Vec<CChainStatsKey> {
+    pub fn get_keys(data: &[Option<StatsRec>]) -> Vec<CCKey> {
         let mut keys = HashSet::new(); // Computing all possible keys over the different datasets that need to be stitched.
         data.iter().for_each(|stats_rec| {
             if let Some(stats_rec) = stats_rec {
@@ -67,15 +91,15 @@ impl CCReportItems {
                                 "Mismatch between '{proc_key}' and extracted proces '{process}'"
                             )
                         }
-
                         _ = keys.insert(cc_key_clone)
                     })
                 })
             }
         });
-        let mut keys: Vec<_> = keys.into_iter().collect();
-        keys.sort_unstable();
-        keys
+        let keys: Vec<_> = keys.into_iter().map(|cck| (cck.get_leaf(), cck)).collect();
+
+        // make grouping based on the Process_operation field (get_leaf)
+        Self::repartition_keys(keys)
     }
 
     pub fn extract_dataset<'a>(

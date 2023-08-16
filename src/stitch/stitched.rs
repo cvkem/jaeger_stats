@@ -18,7 +18,7 @@ pub struct Stitched {
     pub sources: StitchSources,
     pub basic: StitchedSet,
     pub process_operation: Vec<(String, StitchedSet)>,
-    pub call_chain: Vec<(String, StitchedSet)>,
+    pub call_chain: Vec<(String, Vec<(String, StitchedSet)>)>,
 }
 
 impl Stitched {
@@ -53,16 +53,20 @@ impl Stitched {
 
         CCReportItems::get_keys(&data)
             .into_iter()
-            .for_each(|cc_key| {
-                let key_data = CCReportItems::extract_dataset(&data, &cc_key);
-                let stitched_set = CALL_CHAIN_REPORT_ITEMS
-                    .0
-                    .iter()
-                    .map(|por| por.extract_stitched_line(&key_data))
+            .for_each(|(proc_oper, cc_keys)| {
+                let call_chains = cc_keys
+                    .into_iter()
+                    .map(|cc_key| {
+                        let key_data = CCReportItems::extract_dataset(&data, &cc_key);
+                        let stitched_set = CALL_CHAIN_REPORT_ITEMS
+                            .0
+                            .iter()
+                            .map(|por| por.extract_stitched_line(&key_data))
+                            .collect();
+                        (cc_key.to_string(), StitchedSet(stitched_set))
+                    })
                     .collect();
-                stitched
-                    .call_chain
-                    .push((cc_key.to_string(), StitchedSet(stitched_set)))
+                stitched.call_chain.push((proc_oper, call_chains))
             });
 
         stitched
@@ -145,10 +149,13 @@ impl Stitched {
 
         csv.add_section("Statistics per call-chain (path from the external end-point to the actual BSP/operation (detailled information):");
         csv.add_line(self.full_data_header("Full call-chain"));
-        self.call_chain
-            .iter()
-            .for_each(|(label, stitched_set)| csv.append(&mut stitched_set.csv_output(label)));
-
+        self.call_chain.iter().for_each(|(label, call_chains)| {
+            csv.add_empty_lines(1);
+            csv.add_line(self.full_data_header(&format!("PROC_OPER: {label}")));
+            call_chains
+                .iter()
+                .for_each(|(label, stitched_set)| csv.append(&mut stitched_set.csv_output(label)));
+        });
         csv.write_file(path);
     }
 
@@ -157,8 +164,8 @@ impl Stitched {
         mem::take(&mut self.process_operation).into_iter().collect()
     }
 
-    /// Take the call_chain data out of the record and return as a hashmap
-    pub fn call_chain_as_hashmap(&mut self) -> HashMap<String, StitchedSet> {
-        mem::take(&mut self.call_chain).into_iter().collect()
-    }
+    // /// Take the call_chain data out of the record and return as a hashmap
+    // pub fn call_chain_as_hashmap(&mut self) -> HashMap<String, StitchedSet> {
+    //     mem::take(&mut self.call_chain).into_iter().collect()
+    // }
 }
