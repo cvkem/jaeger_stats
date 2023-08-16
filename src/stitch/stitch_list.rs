@@ -1,7 +1,4 @@
-use crate::{
-    aux::read_lines,
-    stats::StatsRec,
-};
+use crate::{aux::read_lines, stats::StatsRec};
 use std::{error::Error, ffi::OsString, path::Path};
 
 #[derive(Debug)]
