@@ -33,6 +33,7 @@ lazy_static! {
 
 lazy_static! {
     pub static ref PROC_OPER_REPORT_ITEMS: POReportItems = POReportItems(vec![
+        /// The downstream analysis assumes that the first Report item is the Count measure!!
         POReportItem::new("count", |&(msv, _, _)| Some(msv.count as f64)),
         POReportItem::new("Occurance percentage", |&(msv, _, num_traces)| Some(
             msv.count as f64 / num_traces as f64
@@ -56,6 +57,7 @@ lazy_static! {
 
 lazy_static! {
     pub static ref CALL_CHAIN_REPORT_ITEMS: CCReportItems = CCReportItems(vec![
+        /// The downstream analysis assumes that the first Report item is the Count measure!!
         CCReportItem::new("count", |&(ccv, _, _)| Some(ccv.count as f64)),
         CCReportItem::new("Occurance percentage", |&(ccv, _, num_traces)| Some(
             ccv.count as f64 / num_traces as f64

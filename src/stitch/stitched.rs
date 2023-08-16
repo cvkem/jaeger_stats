@@ -147,6 +147,21 @@ impl Stitched {
             .iter()
             .for_each(|(label, stitched_set)| csv.append(&mut stitched_set.csv_output(label)));
 
+        csv.add_section(
+            "Summary_statistics call-chain decending on count and grouped by BSP/operation",
+        );
+        csv.add_line(self.summary_header("BSP/operation", false));
+        self.call_chain.iter().for_each(|(label, call_chains)| {
+            csv.add_empty_lines(1);
+            csv.add_line(self.summary_header(&format!("PROC_OPER: {label}"), false));
+            call_chains.iter().for_each(|(label, stitched_set)| {
+                csv.add_line(format!(
+                    "{label}; {}",
+                    floats_to_string(stitched_set.summary_avg(), " ;")
+                ))
+            });
+        });
+
         csv.add_section("Statistics per call-chain (path from the external end-point to the actual BSP/operation (detailled information):");
         csv.add_line(self.full_data_header("Full call-chain"));
         self.call_chain.iter().for_each(|(label, call_chains)| {
@@ -156,6 +171,7 @@ impl Stitched {
                 .iter()
                 .for_each(|(label, stitched_set)| csv.append(&mut stitched_set.csv_output(label)));
         });
+
         csv.write_file(path);
     }
 

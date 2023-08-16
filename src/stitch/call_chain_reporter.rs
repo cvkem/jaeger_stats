@@ -5,7 +5,7 @@ use crate::{
     stats::{call_chain::CChainStatsValue, StatsRec},
 };
 
-use std::collections::HashSet;
+use std::{cmp::Ordering, collections::HashMap};
 
 /// The POData is the input for the processor (which is a series of report-closures.
 /// If the processor operated on a tuple we could extract a joined type from the next two types.
@@ -48,14 +48,18 @@ impl CCReportItem {
 type CCKey = (String, Vec<CChainStatsKey>);
 
 impl CCReportItems {
-    /// repartion the keys by grouping on the string value
-    fn repartition_keys(mut keys: Vec<(String, CChainStatsKey)>) -> Vec<CCKey> {
-        keys.sort_unstable();
+    /// repartition the keys by grouping on the string value (proc_oper) and then on the usize decending
+    /// the resturned value groups the cck-keys behind each proc_oper in decending count order (So most frequent call-chains on top of the table)
+    fn repartition_keys(mut keys: Vec<(String, CChainStatsKey, usize)>) -> Vec<CCKey> {
+        keys.sort_unstable_by(|a, b| match a.0.cmp(&b.0) {
+            Ordering::Equal => a.2.cmp(&b.2).reverse(),
+            other => other,
+        });
 
         keys.into_iter()
             .fold(
                 (Vec::<CCKey>::new(), String::new()),
-                |(mut acc, curr_po), (proc_oper, cck)| {
+                |(mut acc, curr_po), (proc_oper, cck, _)| {
                     if proc_oper == curr_po {
                         //acc[acc.len()-1].1.push(cck);   // needs to be split out to two lines to satisfy borrow-checker
                         let len = acc.len();
@@ -75,11 +79,11 @@ impl CCReportItems {
     /// TODO: when using generics we could have one-codebase for POReportItems and CCReportItems
     /// Here it is only the inner loop that generates a key that needs to be split out.
     pub fn get_keys(data: &[Option<StatsRec>]) -> Vec<CCKey> {
-        let mut keys = HashSet::new(); // Computing all possible keys over the different datasets that need to be stitched.
+        let mut keys = HashMap::new(); // Computing all possible keys over the different datasets that need to be stitched.
         data.iter().for_each(|stats_rec| {
             if let Some(stats_rec) = stats_rec {
                 stats_rec.stats.iter().for_each(|(proc_key, st)| {
-                    st.call_chain.iter().for_each(|(cc_key, _)| {
+                    st.call_chain.iter().for_each(|(cc_key, cc_val)| {
                         // checks
                         let cc_key_clone = cc_key.clone();
                         if *cc_key != cc_key_clone {
@@ -91,12 +95,17 @@ impl CCReportItems {
                                 "Mismatch between '{proc_key}' and extracted proces '{process}'"
                             )
                         }
-                        _ = keys.insert(cc_key_clone)
+                        keys.entry(cc_key_clone)
+                            .and_modify(|v| *v += cc_val.count)
+                            .or_insert(cc_val.count);
                     })
                 })
             }
         });
-        let keys: Vec<_> = keys.into_iter().map(|cck| (cck.get_leaf(), cck)).collect();
+        let keys: Vec<_> = keys
+            .into_iter()
+            .map(|(cck, count)| (cck.get_leaf(), cck, count))
+            .collect();
 
         // make grouping based on the Process_operation field (get_leaf)
         Self::repartition_keys(keys)
