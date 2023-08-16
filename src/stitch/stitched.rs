@@ -137,6 +137,18 @@ impl Stitched {
                     floats_to_string(stitched_set.summary_scaled_slopes(), " ;")
                 ))
             });
+
+        csv.add_section("Last-deviation-scaled summary per BSP-operation");
+        csv.add_line(self.summary_header("BSP/operation", true));
+        self.process_operation
+            .iter()
+            .for_each(|(label, stitched_set)| {
+                csv.add_line(format!(
+                    "{label}; {}",
+                    floats_to_string(stitched_set.summary_last_deviation_scaled(), " ;")
+                ))
+            });
+
         csv.add_section("Basic statistics per input file");
         csv.add_line(self.full_data_header("Input-files"));
         csv.append(&mut self.basic.csv_output(""));

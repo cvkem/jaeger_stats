@@ -10,32 +10,40 @@ type Averages = (f64, f64);
 
 #[derive(Debug)]
 pub struct LinearRegression {
-    pub slope: Option<f64>,
-    pub y_intercept: Option<f64>,
-    pub R_squared: Option<f64>,
+    pub slope: f64,
+    pub y_intercept: f64,
+    pub R_squared: f64,
+    pub L1_deviation: f64,
 }
 
 impl LinearRegression {
-    pub fn new(data: &[Option<f64>]) -> Self {
+    pub fn new(data: &[Option<f64>]) -> Option<Self> {
         let data = get_dataset(data);
         if data.len() < 2 {
             // insufficient data to compute a value
-            Self {
-                slope: None,
-                y_intercept: None,
-                R_squared: None,
-            }
+            None
         } else {
             let avg_xy = get_average_xy(&data);
             let (slope, y_intercept) = get_slope_intercept(&data, &avg_xy);
 
             let R_squared = get_R_squared(&data, &avg_xy, slope, y_intercept);
-            Self {
-                slope: Some(slope),
-                y_intercept: Some(y_intercept),
-                R_squared: Some(R_squared),
-            }
+            let L1_deviation = get_L1_deviation(&data, slope, y_intercept);
+            Some(Self {
+                slope,
+                y_intercept,
+                R_squared,
+                L1_deviation,
+            })
         }
+    }
+
+    pub fn get_deviation(&self, data: &[Option<f64>], idx: usize) -> Option<f64> {
+        assert!(idx < data.len());
+        data[idx].and_then(|y| {
+            let x = (idx + 1) as f64;
+            let expect = self.y_intercept + x * self.slope;
+            Some(y - expect)
+        })
     }
 }
 
@@ -86,6 +94,17 @@ fn get_R_squared(data: &DataSet, avg_xy: &Averages, slope: f64, y_intercept: f64
         let sum_avg_sqr: f64 = data.iter().map(|dp| f64::powi(dp.y - avg_xy.1, 2)).sum();
         1.0 - sum_expect_sqr / sum_avg_sqr
     }
+}
+
+fn get_L1_deviation(data: &DataSet, slope: f64, y_intercept: f64) -> f64 {
+    let sum_L1: f64 = data
+        .iter()
+        .map(|dp| {
+            let expect = y_intercept + dp.x * slope;
+            (dp.y - expect).abs()
+        })
+        .sum();
+    sum_L1 / data.len() as f64
 }
 
 #[cfg(test)]
