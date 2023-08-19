@@ -19,6 +19,7 @@ pub fn analyze_file_or_folder(
     caching_processes: Vec<String>,
     cc_path: &str,
     trace_output: bool,
+    output_ext: &str,
 ) -> PathBuf {
     // Read raw jaeger-traces and process them to clean traces.
     let (traces, num_files, folder) = read::read_process_file_or_folder(path);
@@ -51,6 +52,7 @@ pub fn analyze_file_or_folder(
         caching_processes,
         cc_path,
         num_files,
+        output_ext,
     );
     folder
 }

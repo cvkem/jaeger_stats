@@ -1,5 +1,5 @@
 use super::{fix_callchain::fix_call_chain, process_node::ProcessNodes};
-use crate::stats::json::StatsRecJson;
+use crate::stats::file::StatsRecJson;
 
 pub fn build_graph(srj: &StatsRecJson) -> ProcessNodes {
     let mut process_nodes = ProcessNodes::default();

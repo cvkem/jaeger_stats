@@ -2,7 +2,7 @@
 use crate::{
     stats::{
         call_chain::{cchain_filename, CChainEndPointCache},
-        json::dump_as_json,
+        file::write_stats,
         write_stats_to_csv_file, StatsRec, TraceExt,
     },
     utils::{extend_create_folder, report, write_string_to_file, Chapter},
@@ -32,6 +32,7 @@ pub fn process_and_fix_traces(
     caching_processes: Vec<String>,
     cc_path: &str,
     num_files: i32,
+    output_ext: &str,
 ) {
     let total_traces = traces.len();
 
@@ -43,7 +44,7 @@ pub fn process_and_fix_traces(
         let traces: Vec<_> = traces.iter().collect(); // switch to references
         let cumm_stats = create_trace_statistics(&traces, &caching_processes, num_files);
         write_stats_to_csv_file(csv_file.to_str().unwrap(), &cumm_stats);
-        dump_as_json(csv_file.to_str().unwrap(), cumm_stats);
+        write_stats(csv_file.to_str().unwrap(), cumm_stats, output_ext);
     }
 
     let mut sort_traces = HashMap::new();
@@ -109,7 +110,7 @@ pub fn process_and_fix_traces(
             // and add these to the statistics
             part_traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );
             write_stats_to_csv_file(csv_file.to_str().unwrap(), &cumm_stats);
-            dump_as_json(csv_file.to_str().unwrap(), cumm_stats);
+            write_stats(csv_file.to_str().unwrap(), cumm_stats, output_ext);
         });
 
     println!();

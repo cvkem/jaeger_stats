@@ -2,10 +2,10 @@
 
 pub mod call_chain; // already defines its public interface
 mod error_stats;
-pub mod json;
+pub mod file;
 mod proc_oper_stats;
 mod stats;
-mod traceext; // already defines its public interface
+mod traceext; // already defines its public interface // already defines its public interface
 
 pub use {
     call_chain::CChainEndPointCache,

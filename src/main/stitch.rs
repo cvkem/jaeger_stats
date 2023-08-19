@@ -31,5 +31,5 @@ fn main() {
     let path = Path::new(&args.output);
     stitched.write_csv(path);
 
-    //    stitch_list.write_stitched_csv(Path::new(&args.output));
+    println!("Stitched output written to: '{}'", path.display());
 }

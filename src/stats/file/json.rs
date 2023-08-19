@@ -1,14 +1,11 @@
 //!  Write the statistics to a JSON file and read them back in memory
 //!
-use super::StatsRec;
+use super::super::StatsRec;
 use std::{fs, io};
 
-mod stats_json;
+use super::StatsRecJson;
 
-pub use stats_json::{StatsJson, StatsRecJson};
-
-pub fn dump_as_json(file_name: &str, stats: StatsRec) {
-    let file_name = file_name.replace(".csv", ".json");
+pub fn dump_file(file_name: &str, stats: StatsRec) {
     let f = fs::File::create(file_name).expect("Failed to open file");
     let writer = io::BufWriter::new(f);
     let srj: StatsRecJson = stats.into();

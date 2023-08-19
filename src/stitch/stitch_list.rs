@@ -112,7 +112,7 @@ impl StitchList {
     pub fn read_stitch_list(path: &Path) -> Result<StitchList, Box<dyn Error>> {
         let base_path = path
             .canonicalize()
-            .expect("Failed to make canonical stitch-list-path. Path probably does not exist!")
+            .unwrap_or_else(|err| panic!("Failed to make canonical stitch-list-path. Path '{}' probably does not exist!\n\tError: {err}", path.display()))
             .parent()
             .expect("Could not extract base_path of stitch-list")
             .to_path_buf();
