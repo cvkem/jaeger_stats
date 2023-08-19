@@ -109,12 +109,18 @@ fn get_L1_deviation(data: &DataSet, slope: f64, y_intercept: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::aux::LinearRegression;
+    use super::LinearRegression;
 
-    fn test_float(val: Option<f64>, expect: Option<f64>) -> bool {
+    // helper to compare two floats
+    fn match_floats(val: f64, expect: f64) -> bool {
+        // do not make bound to strict as we write out fractional values.
+        (val - expect).abs() < 1e-10
+    }
+
+    fn match_float_opts(val: Option<f64>, expect: Option<f64>) -> bool {
         match val {
             Some(val) => match expect {
-                Some(expect) => f64::abs(val - expect) < 1e-6,
+                Some(expect) => match_floats(val, expect),
                 None => false,
             },
             None => expect.is_none(),
@@ -125,30 +131,27 @@ mod tests {
     fn horizontal_line() {
         let input = vec![Some(1.0), Some(1.0)];
 
-        let lr = LinearRegression::new(&input);
+        let lr = LinearRegression::new(&input).unwrap(); // should exist
         println!("{lr:?}");
 
-        assert!(test_float(lr.slope, Some(0.0)), "Slope incorrect");
-        assert!(
-            test_float(lr.y_intercept, Some(1.0)),
-            "y_intersect incorrect"
-        );
-        assert!(test_float(lr.R_squared, Some(1.0)), "R_squared incorrect");
+        assert!(match_floats(lr.slope, 0.0), "Slope incorrect");
+        assert!(match_floats(lr.y_intercept, 1.0), "y_intersect incorrect");
+        assert!(match_floats(lr.R_squared, 1.0), "R_squared incorrect");
     }
 
     #[test]
     fn horizontal_line_R_non_opt() {
         let input = vec![Some(1.0), Some(1.1), Some(1.0)];
 
-        let lr = LinearRegression::new(&input);
+        let lr = LinearRegression::new(&input).unwrap();
 
-        assert!(test_float(lr.slope, Some(0.0)), "Slope incorrect");
+        assert!(match_floats(lr.slope, 0.0), "Slope incorrect");
         assert!(
-            test_float(lr.y_intercept, Some(1.03333333333333)),
+            match_floats(lr.y_intercept, 1.03333333333333),
             "y_intersect incorrect"
         );
         assert!(
-            test_float(lr.R_squared, Some(0.0)),
+            match_floats(lr.R_squared, 0.0),
             "R_squared incorrect: {:?}",
             lr.R_squared
         );
@@ -158,19 +161,19 @@ mod tests {
     fn nearly_horizontal_line() {
         let input = vec![Some(1.0), Some(1.0), Some(1.1)];
 
-        let lr = LinearRegression::new(&input);
+        let lr = LinearRegression::new(&input).unwrap();
         println!("{lr:?}");
 
         assert!(
-            test_float(lr.slope, Some(0.050000000000000044)),
+            match_floats(lr.slope, 0.050000000000000044),
             "Slope incorrect"
         );
         assert!(
-            test_float(lr.y_intercept, Some(0.9333333333333333)),
+            match_floats(lr.y_intercept, 0.9333333333333333),
             "y_intersect incorrect"
         );
         assert!(
-            test_float(lr.R_squared, Some(0.75)),
+            match_floats(lr.R_squared, 0.75),
             "R_squared incorrect: {:?}",
             lr.R_squared
         );
@@ -181,23 +184,23 @@ mod tests {
         // exmple taken from source: https://www.ncl.ac.uk/webtemplate/ask-assets/external/maths-resources/statistics/regression-and-correlation/coefficient-of-determination-r-squared.html
         let input = vec![None, Some(2.0), Some(4.0), Some(6.0), None, Some(7.0)];
 
-        let lr = LinearRegression::new(&input);
+        let lr = LinearRegression::new(&input).unwrap();
 
         // Expected solution
         // y = 0.143+1.229    and r2 = 0.895
         println!("{lr:?}");
         assert!(
-            test_float(lr.slope, Some(1.2285714285714286)),
+            match_floats(lr.slope, 1.2285714285714286),
             "Slope incorrect: {:?}",
             lr.slope
         );
         assert!(
-            test_float(lr.y_intercept, Some(0.14285714285714235)),
+            match_floats(lr.y_intercept, 0.14285714285714235),
             "y_intersect incorrect: {:?}",
             lr.y_intercept
         );
         assert!(
-            test_float(lr.R_squared, Some(0.8953995157384989)),
+            match_floats(lr.R_squared, 0.8953995157384989),
             "R_squared incorrect: {:?}",
             lr.R_squared
         );
