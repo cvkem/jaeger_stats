@@ -192,12 +192,20 @@ impl CChainStatsValue {
         TimeStats(&self.duration_micros).get_avg_millis_str()
     }
 
-    pub fn get_median_millis(&self) -> f64 {
+    pub fn get_median_millis(&self) -> Option<f64> {
         TimeStats(&self.duration_micros).get_median_millis()
     }
 
     pub fn get_median_millis_str(&self) -> String {
         TimeStats(&self.duration_micros).get_median_millis_str()
+    }
+
+    pub fn get_p_millis(&self, p: f64) -> Option<f64> {
+        TimeStats(&self.duration_micros).get_p_millis(p)
+    }
+
+    pub fn get_p_millis_str(&self, p: f64) -> String {
+        TimeStats(&self.duration_micros).get_p_millis_str(p)
     }
 
     pub fn get_max_millis(&self) -> f64 {

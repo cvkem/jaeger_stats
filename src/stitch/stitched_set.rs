@@ -122,11 +122,12 @@ impl StitchedSet {
     pub fn summary_slopes(&self) -> Vec<Option<f64>> {
         let count = self.0.first().and_then(|data| data.avg());
         iter::once(count)
-            .chain(self
-                .0
-                .iter()
-                .map(|sl| sl.lin_reg.as_ref().map(|lr| lr.slope)))
-                .collect()
+            .chain(
+                self.0
+                    .iter()
+                    .map(|sl| sl.lin_reg.as_ref().map(|lr| lr.slope)),
+            )
+            .collect()
     }
 
     pub fn summary_last_deviation_scaled(&self) -> Vec<Option<f64>> {

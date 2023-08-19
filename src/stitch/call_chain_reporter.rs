@@ -1,6 +1,6 @@
 use super::stitched_set::StitchedLine;
 use crate::{
-    aux::{floats_to_string, format_float_opt, LinearRegression},
+    aux::LinearRegression,
     stats::call_chain::CChainStatsKey,
     stats::{call_chain::CChainStatsValue, StatsRec},
 };

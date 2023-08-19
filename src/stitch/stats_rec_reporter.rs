@@ -1,8 +1,5 @@
 use super::stitched_set::StitchedLine;
-use crate::{
-    aux::{floats_to_string, format_float_opt, LinearRegression},
-    stats::StatsRec,
-};
+use crate::{aux::LinearRegression, stats::StatsRec};
 
 type SRProcessor = fn(&StatsRec) -> Option<f64>;
 

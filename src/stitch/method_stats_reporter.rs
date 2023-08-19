@@ -1,6 +1,6 @@
 use crate::{
     //rate::set_show_rate_output,
-    aux::{floats_to_string, format_float_opt, LinearRegression},
+    aux::LinearRegression,
     stats::MethodStatsValue,
     stats::StatsRec,
 };
