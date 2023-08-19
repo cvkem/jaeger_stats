@@ -1,9 +1,9 @@
-use crate::aux::{format_float, Counted, TimeStats};
+use crate::utils::{format_float, Counted, TimeStats};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct MethodStatsValue {
+pub struct ProcOperStatsValue {
     pub count: usize,
     pub duration_micros: Vec<i64>,
     pub start_dt_micros: Vec<i64>, // represented via start_dt.timestamp_micros()
@@ -13,7 +13,7 @@ pub struct MethodStatsValue {
     pub error_logs: Counted<String>,
 }
 
-impl MethodStatsValue {
+impl ProcOperStatsValue {
     pub fn get_min_millis(&self) -> f64 {
         TimeStats(&self.duration_micros).get_min_millis()
     }
@@ -104,4 +104,4 @@ impl MethodStatsValue {
 
 /// the information is distributed over the key and the value (no duplication in value)
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct MethodStats(pub HashMap<String, MethodStatsValue>);
+pub struct MethodStats(pub HashMap<String, ProcOperStatsValue>);

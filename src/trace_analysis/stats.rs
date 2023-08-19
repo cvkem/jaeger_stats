@@ -1,11 +1,11 @@
 //! Creating the statistics
 use crate::{
-    aux::{extend_create_folder, report, write_string_to_file, Chapter},
     stats::{
         call_chain::{cchain_filename, CChainEndPointCache},
         json::dump_as_json,
         write_stats_to_csv_file, StatsRec, TraceExt,
     },
+    utils::{extend_create_folder, report, write_string_to_file, Chapter},
 };
 use std::{
     collections::HashMap,

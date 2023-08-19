@@ -4,8 +4,8 @@ use super::{
     file::{call_chain_key, LEAF_LABEL},
 };
 use crate::{
-    aux::{format_float, report, Chapter, Counted, TimeStats},
     string_hash,
+    utils::{format_float, report, Chapter, Counted, TimeStats},
 };
 use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, collections::HashMap, error::Error};
@@ -200,6 +200,7 @@ impl CChainStatsValue {
         TimeStats(&self.duration_micros).get_median_millis_str()
     }
 
+    /// get the P-percentile over the values
     pub fn get_p_millis(&self, p: f64) -> Option<f64> {
         TimeStats(&self.duration_micros).get_p_millis(p)
     }

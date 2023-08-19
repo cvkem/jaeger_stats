@@ -6,11 +6,11 @@ use super::{
     },
     error_stats::{get_cchain_error_information, get_span_error_information},
     json::{StatsJson, StatsRecJson},
-    method_stats::{MethodStats, MethodStatsValue},
+    proc_oper_stats::{MethodStats, ProcOperStatsValue},
 };
 use crate::{
-    aux::{format_float, micros_to_datetime},
     processed::Trace,
+    utils::{format_float, micros_to_datetime},
 };
 use serde::{Deserialize, Serialize};
 
@@ -171,7 +171,7 @@ impl StatsRec {
                     let start_dt_micros = span.start_dt.timestamp_micros();
                     let (http_not_ok_vec, error_logs_vec) = get_span_error_information(span);
 
-                    let update_ms = |meth_stat: &mut MethodStatsValue| {
+                    let update_ms = |meth_stat: &mut ProcOperStatsValue| {
                         meth_stat.count += 1;
                         meth_stat.start_dt_micros.push(start_dt_micros);
                         meth_stat.duration_micros.push(duration_micros);
@@ -187,7 +187,7 @@ impl StatsRec {
                         .entry(method.to_owned())
                         .and_modify(|meth_stat| update_ms(meth_stat))
                         .or_insert_with(|| {
-                            let mut meth_stat = MethodStatsValue::default();
+                            let mut meth_stat = ProcOperStatsValue::default();
                             update_ms(&mut meth_stat);
                             meth_stat
                         });

@@ -3,13 +3,13 @@
 pub mod call_chain; // already defines its public interface
 mod error_stats;
 pub mod json;
-mod method_stats;
+mod proc_oper_stats;
 mod stats;
 mod traceext; // already defines its public interface
 
 pub use {
     call_chain::CChainEndPointCache,
-    method_stats::{MethodStats, MethodStatsValue},
+    proc_oper_stats::{MethodStats, ProcOperStatsValue},
     stats::{chained_stats, Stats, StatsRec, Version},
     traceext::{build_trace_ext, write_stats_to_csv_file, TraceExt},
 };

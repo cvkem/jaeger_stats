@@ -1,7 +1,7 @@
 use super::{
     call::Call, call_chain::CallChain, cchain_cache::EndPointCChain, cchain_stats::CChainStatsKey,
 };
-use crate::aux::read_lines;
+use crate::utils::read_lines;
 use std::{error::Error, path::Path};
 
 /// get the file-name for a specific key (excluding path)

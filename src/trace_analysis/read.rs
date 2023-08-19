@@ -1,8 +1,8 @@
 //! Reading raw json-formatted Jaeger-traces from file
 use crate::{
-    aux::{report, Chapter},
     processed::{extract_traces, Trace},
     raw::read_jaeger_trace_file,
+    utils::{report, Chapter},
 };
 use std::{error::Error, ffi::OsStr, fs, path::Path};
 

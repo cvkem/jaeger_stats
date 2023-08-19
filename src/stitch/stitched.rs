@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use crate::{aux::floats_to_string, StitchList};
+use crate::{utils::floats_to_string, StitchList};
 
 use super::{
     call_chain_reporter::CCReportItems,
     csv_file::CsvFileBuffer,
-    method_stats_reporter::POReportItems,
+    proc_oper_stats_reporter::POReportItems,
     stitch_list::StitchSources,
     stitch_tables::{BASIC_REPORT_ITEMS, CALL_CHAIN_REPORT_ITEMS, PROC_OPER_REPORT_ITEMS},
     stitched_set::StitchedSet,

@@ -1,4 +1,4 @@
-use crate::aux::write_string_to_file;
+use crate::utils::write_string_to_file;
 use std::path::Path;
 
 #[derive(Default)]

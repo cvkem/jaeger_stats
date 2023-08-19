@@ -1,8 +1,8 @@
 use crate::{
-    //rate::set_show_rate_output,
-    aux::LinearRegression,
-    stats::MethodStatsValue,
+    stats::ProcOperStatsValue,
     stats::StatsRec,
+    //rate::set_show_rate_output,
+    utils::LinearRegression,
 };
 use std::collections::HashSet;
 
@@ -10,7 +10,7 @@ use super::{key::Key, stitched_set::StitchedLine};
 
 /// The POData is the input for the processor (which is a series of report-closures.
 /// If the processor operated on a tuple we could extract a joined type from the next two types.
-type ProcessorInput<'a> = (&'a MethodStatsValue, i32, usize);
+type ProcessorInput<'a> = (&'a ProcOperStatsValue, i32, usize);
 type Processor = fn(&ProcessorInput) -> Option<f64>;
 type POData<'a> = Vec<Option<ProcessorInput<'a>>>;
 
@@ -83,63 +83,3 @@ impl POReportItems {
             .collect()
     }
 }
-
-// pub struct MethodStatsReporter<'a> {
-//     buffer: &'a mut Vec<String>,
-//     data: &'a Vec<Option<StatsRec>>,
-//     report_items: &'a POReportItems,
-// }
-
-// impl<'a> MethodStatsReporter<'a> {
-//     pub fn new(
-//         buffer: &'a mut Vec<String>,
-//         data: &'a Vec<Option<StatsRec>>,
-//         report_items: &'a POReportItems,
-//     ) -> Self {
-//         Self {
-//             buffer,
-//             data,
-//             report_items,
-//         }
-//     }
-
-//     // find a deduplicated set of all keys and sort them
-//     pub fn get_keys(&self) -> Vec<Key> {
-//         POReportItems::get_keys(self.data)
-//     }
-
-//     pub fn append_report(&mut self, po_key: Key) {
-//         let po_data = POReportItems::extract_dataset(&self.data, &po_key);
-
-//         // do the actual reporting for all files over the selected three values per Method.
-//         let process_operation = po_key.to_string();
-//         self.buffer
-//             .push(format!("# statistics for {process_operation}"));
-
-//         self.report_items.0
-//             .iter()
-//             .enumerate()
-//             .for_each(|(idx, po_report_item)| {
-//                 let StitchedLine {
-//                     label,
-//                     data,
-//                     lin_reg,
-//                 } = po_report_item.extract_stitched_line(&po_data);
-
-//                 // Produce the CSV_output
-//                 let values = floats_to_string(data, "; ");
-
-//                 let other_columns = 1 + idx * 4;
-//                 let other_columns = (0..other_columns).fold(String::with_capacity(other_columns), |oc, _| oc + ";");
-//                 self.buffer.push(format!(
-//                     "{process_operation}; {label}; {values}; ; ; {}; {}; {};{other_columns};{}; {}; {};",
-//                     format_float_opt(lin_reg.slope),
-//                     format_float_opt(lin_reg.y_intercept),
-//                     format_float_opt(lin_reg.R_squared),
-//                     format_float_opt(lin_reg.slope),
-//                     format_float_opt(lin_reg.y_intercept),
-//                     format_float_opt(lin_reg.R_squared),
-//                 ));
-//             });
-//     }
-// }
