@@ -5,7 +5,7 @@ use super::{
         CChainStatsValue, CallChain,
     },
     error_stats::{get_cchain_error_information, get_span_error_information},
-    json::{StatsJson, StatsRecJson},
+    file::{StatsJson, StatsRecJson},
     proc_oper_stats::{MethodStats, ProcOperStatsValue},
 };
 use crate::{

@@ -10,7 +10,9 @@ use crate::{
     utils::datetime_to_micros,
 };
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, error::Error, ffi::OsString, fs::File, io};
+use std::{
+    collections::HashMap, error::Error, ffi::OsStr, ffi::OsString, fs::File, io, path::Path,
+};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct StatsJson {
@@ -72,9 +74,24 @@ impl From<StatsRec> for StatsRecJson {
 impl StatsRecJson {
     /// StatsJson file and parse it
     pub fn read_file(path: &OsString) -> Result<Self, Box<dyn Error>> {
+        let keep = path.clone().into_string().unwrap();
+        let path_str = Path::new(&keep);
         let f = File::open(path)?;
         let reader = io::BufReader::new(f);
-        let sj = serde_json::from_reader(reader)?;
+
+        let Some(ext) = path_str.extension() else {
+            panic!("Failed to find extension of '{}'", path_str.display());
+        };
+        let ext = ext.to_str().unwrap();
+
+        let sj = match ext {
+            "json" => serde_json::from_reader(reader)?,
+            "bincode" => bincode::deserialize_from(reader)?,
+            ext => panic!(
+                "Unknown extension '{ext}'of inputfile {}",
+                path_str.display()
+            ),
+        };
         Ok(sj)
     }
 }

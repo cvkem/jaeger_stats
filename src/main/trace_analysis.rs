@@ -25,6 +25,10 @@ struct Args {
 
     #[arg(short, long, default_value_t = false)]
     trace_output: bool,
+
+    /// The output-extension determines the output-types are 'json' and 'bincode' (which is also used as the file-extension).
+    #[arg(short, long, default_value_t = String::from("bincode"))]
+    output_ext: String,
 }
 
 fn main() {
@@ -45,6 +49,7 @@ fn main() {
         caching_processes,
         &args.call_chain_folder,
         args.trace_output,
+        &args.output_ext,
     );
     path.push("report.txt");
     write_report(path.to_str().unwrap());
