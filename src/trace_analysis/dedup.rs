@@ -1,7 +1,7 @@
 //! Deduplication of traces based on the GUID (Identifier of the traces)
 use crate::{
-    aux::{report, Chapter},
     processed::Trace,
+    utils::{report, Chapter},
 };
 use std::collections::HashSet;
 

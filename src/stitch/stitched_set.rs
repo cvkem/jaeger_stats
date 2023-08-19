@@ -1,4 +1,4 @@
-use crate::aux::{floats_ref_to_string, format_float, format_float_opt, LinearRegression};
+use crate::utils::{floats_ref_to_string, format_float, format_float_opt, LinearRegression};
 use std::iter;
 
 #[derive(Debug)]

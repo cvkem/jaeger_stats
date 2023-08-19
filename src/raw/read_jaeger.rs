@@ -7,7 +7,7 @@ use std::{
 };
 
 use super::jaeger::JaegerTrace;
-use crate::aux::{report, Chapter};
+use crate::utils::{report, Chapter};
 
 use encoding_rs::Encoding;
 

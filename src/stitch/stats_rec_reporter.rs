@@ -1,5 +1,5 @@
 use super::stitched_set::StitchedLine;
-use crate::{aux::LinearRegression, stats::StatsRec};
+use crate::{stats::StatsRec, utils::LinearRegression};
 
 type SRProcessor = fn(&StatsRec) -> Option<f64>;
 

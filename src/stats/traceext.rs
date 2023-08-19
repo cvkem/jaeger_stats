@@ -1,11 +1,11 @@
 use crate::{
-    aux::write_string_to_file,
-    aux::{extend_create_folder, report, Chapter},
     processed::Trace,
     stats::{
         call_chain::{CChainEndPointCache, CChainStatsValue},
         stats::StatsRec,
     },
+    utils::write_string_to_file,
+    utils::{extend_create_folder, report, Chapter},
 };
 use std::{
     // error::Error,

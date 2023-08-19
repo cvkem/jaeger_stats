@@ -1,8 +1,8 @@
 use super::stitched_set::StitchedLine;
 use crate::{
-    aux::LinearRegression,
     stats::call_chain::CChainStatsKey,
     stats::{call_chain::CChainStatsValue, StatsRec},
+    utils::LinearRegression,
 };
 
 use std::{cmp::Ordering, collections::HashMap};

@@ -3,11 +3,11 @@
 //!    1. It contains a HashMap (call-chain) with non-string keys
 //!    2. It contains date-times which can not represented in JSON (we will store them as a i64, just like we had in the Jaeger-JSON file)
 use crate::{
-    aux::datetime_to_micros,
     stats::{
         call_chain::{CChainStatsKey, CChainStatsValue},
         MethodStats, Stats, StatsRec, Version,
     },
+    utils::datetime_to_micros,
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error, ffi::OsString, fs::File, io};

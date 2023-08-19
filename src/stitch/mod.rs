@@ -7,7 +7,7 @@
 mod call_chain_reporter;
 mod csv_file;
 mod key;
-mod method_stats_reporter;
+mod proc_oper_stats_reporter;
 mod stats_rec_reporter;
 mod stitch_list;
 mod stitch_tables;

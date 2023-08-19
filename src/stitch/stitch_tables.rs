@@ -1,9 +1,9 @@
 use super::{
     call_chain_reporter::{CCReportItem, CCReportItems},
-    method_stats_reporter::{POReportItem, POReportItems},
+    proc_oper_stats_reporter::{POReportItem, POReportItems},
     stats_rec_reporter::SRReportItem,
 };
-use crate::aux::TimeStats;
+use crate::utils::TimeStats;
 use lazy_static::lazy_static;
 
 lazy_static! {
