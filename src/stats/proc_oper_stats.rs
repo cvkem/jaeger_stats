@@ -5,11 +5,18 @@ use std::collections::HashMap;
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct ProcOperStatsValue {
     pub count: usize,
+    /// Duration in microseconds of this Proces/Operation. This includes the full span, so it also covers the waiting-time for (synchronous) downstream calls
     pub duration_micros: Vec<i64>,
-    pub start_dt_micros: Vec<i64>, // represented via start_dt.timestamp_micros()
-    pub num_not_http_ok: i32, // count of the number of call chanis that has one of more HTTP-error(s) somewhere along the chain
-    pub num_with_error_logs: i32, // count of the number of call chanis that has one of more ERROR log-lines somewhere along the chain
+    /// Represented via start_dt.timestamp_micros(). The end_dt_micros can be derived when adding duration
+    pub start_dt_micros: Vec<i64>,
+    /// Count of the number of call-chains that has one of more HTTP-error(s) somewhere along the chain
+    pub num_not_http_ok: i32,
+    /// Count of the number of call-chains that has one of more ERROR log-lines somewhere along the chain (Other log-levels are ignored).
+    pub num_with_error_logs: i32,
+    /// Contains the actual error-codes that have been observed including the count of these codes
+    /// TODO: rename to 'http_not_ok_codes' for clarity. However, this rename will change the file-format.
     pub http_not_ok: Counted<i16>,
+    /// Contains the counted list of error-messages that have been observed (Other log-levels are ignored).
     pub error_logs: Counted<String>,
 }
 
@@ -104,4 +111,4 @@ impl ProcOperStatsValue {
 
 /// the information is distributed over the key and the value (no duplication in value)
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct MethodStats(pub HashMap<String, ProcOperStatsValue>);
+pub struct ProcOperStats(pub HashMap<String, ProcOperStatsValue>);

@@ -6,7 +6,7 @@ use super::{
     },
     error_stats::{get_cchain_error_information, get_span_error_information},
     file::{StatsJson, StatsRecJson},
-    proc_oper_stats::{MethodStats, ProcOperStatsValue},
+    proc_oper_stats::{ProcOperStats, ProcOperStatsValue},
 };
 use crate::{
     processed::Trace,
@@ -25,11 +25,17 @@ use std::{
 
 #[derive(Debug, Default)]
 pub struct Stats {
-    pub num_received_calls: usize, // inbound calls to this process
-    pub num_outbound_calls: usize, // outbound calls to other processes
+    /// The Operation either inbound (when this process acts as a server) or outbound (when this process is the client that initiates the request)
+    /// TODO: we should rename this field, but that makes all old traces incombatible as the file format changes !!
+    pub method: ProcOperStats,
+    // TODO:  add num_traces: usize. This requires a processing step in the stats to find unique spans per trace and process these
+    /// number of inbound calls to this Process/Operation. The process is incoded in the key this value belongs to
+    pub num_received_calls: usize,
+    /// number of outbound calls from this Process/Operation to other proceses
+    pub num_outbound_calls: usize,
+    /// Unknown calls can come from partially malformed (corrupted traces), where either the sending or the receiving side of a call are missing (these are two records in a complete trace!)
     pub num_unknown_calls: usize,
-    pub method: MethodStats,
-    //    method_cache_suffix: HashMap<String, usize>,  // methods in a cache-chain have a suffix.
+    /// The statistics over all call-chains that lead to this Process/Operation
     pub call_chain: CChainStats,
 }
 
@@ -65,17 +71,28 @@ impl Default for Version {
 
 #[derive(Debug, Default)]
 pub struct StatsRec {
+    /// version numbering to handle diversity of analyzed data-sets (not yet needed)
     pub version: Version,
+    /// Ordered list of all the trace_ids present in this
     pub trace_id: Vec<String>,
+    /// The root-method (initial call) of each of the traces
     pub root_call: Vec<String>,
+    /// The total number of spans per trace
     pub num_spans: Vec<usize>,
-    pub num_files: i32, // the number of files is needed when computing the rate of requests.
+    /// The number of input-files used to collect this set of traces. This number is eeded when computing the rate of requests as we need to correct for possible gaps between files
+    pub num_files: i32,
+    /// Start date-time per trace in a Naive format as the encoding in the source-files is based on Epoch-micros and does not contain time-zone information
     pub start_dt: Vec<NaiveDateTime>,
+    /// End date-time for each trace
     pub end_dt: Vec<NaiveDateTime>,
+    /// The duration in microseconds is added for convenience. This information is aligned with 'end_dt - start_dt'.
     pub duration_micros: Vec<i64>,
+    /// The Time_to_respond_micros measures when a response is returned, as a some background computation, or writing of data might happen after this time.
     pub time_to_respond_micros: Vec<i64>,
+    /// List of processes that perform caching, which is an input parameter to this analysis
     pub caching_process: Vec<String>,
-    pub stats: HashMap<String, Stats>, // hashmap base on the leaf process (as that is the initial level of reporting)
+    /// Statistis per leaf-process (end-point of the chain of processes)
+    pub stats: HashMap<String, Stats>, // hashmap based on the leaf process (as that is the initial level of reporting)
 }
 
 impl From<StatsRecJson> for StatsRec {

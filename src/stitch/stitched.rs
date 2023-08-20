@@ -5,6 +5,7 @@ use crate::{utils::floats_to_string, StitchList};
 use super::{
     call_chain_reporter::CCReportItems,
     csv_file::CsvFileBuffer,
+    dataseries::DataSeries,
     proc_oper_stats_reporter::POReportItems,
     stitch_list::StitchSources,
     stitch_tables::{BASIC_REPORT_ITEMS, CALL_CHAIN_REPORT_ITEMS, PROC_OPER_REPORT_ITEMS},
@@ -23,14 +24,18 @@ pub struct Stitched {
 
 impl Stitched {
     /// build a stitched dataset based on a StitchList
-    pub fn build(mut stitch_list: StitchList) -> Self {
+    pub fn build(mut stitch_list: StitchList, drop_count: usize) -> Self {
         let sources = mem::take(&mut stitch_list.lines);
         let mut stitched = Self {
             sources,
             ..Self::default()
         };
 
-        let data = stitch_list.read_data();
+        // this method reads the data in the original format, so data contains one column (StatsRec) per dataset
+        let mut data = stitch_list.read_data();
+
+        let num_dropped = DataSeries(&mut data).drop_low_volume_traces(drop_count);
+        println!("Based on drop_count={drop_count} we have dropped {num_dropped} Processes over all datasets.");
 
         // add the basic report items as defined in stitch_tables::BASIC_REPORT_ITEMS.
         BASIC_REPORT_ITEMS

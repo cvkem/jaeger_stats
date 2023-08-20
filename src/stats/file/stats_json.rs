@@ -5,7 +5,7 @@
 use crate::{
     stats::{
         call_chain::{CChainStatsKey, CChainStatsValue},
-        MethodStats, Stats, StatsRec, Version,
+        ProcOperStats, Stats, StatsRec, Version,
     },
     utils::datetime_to_micros,
 };
@@ -19,7 +19,8 @@ pub struct StatsJson {
     pub num_received_calls: usize, // inbound calls to this process
     pub num_outbound_calls: usize, // outbound calls to other processes
     pub num_unknown_calls: usize,
-    pub method: MethodStats,
+    // TODO: move this to the top of the record to match structure of Stats.
+    pub method: ProcOperStats,
     //    method_cache_suffix: HashMap<String, usize>,  // methods in a cache-chain have a suffix.
     pub call_chain: Vec<(CChainStatsKey, CChainStatsValue)>,
 }

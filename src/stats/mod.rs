@@ -9,7 +9,7 @@ mod traceext; // already defines its public interface // already defines its pub
 
 pub use {
     call_chain::CChainEndPointCache,
-    proc_oper_stats::{MethodStats, ProcOperStatsValue},
+    proc_oper_stats::{ProcOperStats, ProcOperStatsValue},
     stats::{chained_stats, Stats, StatsRec, Version},
     traceext::{build_trace_ext, write_stats_to_csv_file, TraceExt},
 };
