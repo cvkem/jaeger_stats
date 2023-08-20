@@ -15,6 +15,9 @@ struct Args {
 
     #[arg(short, long, default_value_t = true)]
     comma_float: bool,
+
+    #[arg(short, long, default_value_t = 0)]
+    drop_count: usize,
 }
 
 fn main() {
@@ -26,7 +29,7 @@ fn main() {
 
     let stitch_list =
         StitchList::read_stitch_list(stitch_list_path).expect("Failed to read stitchlist-file");
-    let stitched = Stitched::build(stitch_list);
+    let stitched = Stitched::build(stitch_list, args.drop_count);
 
     let path = Path::new(&args.output);
     stitched.write_csv(path);
