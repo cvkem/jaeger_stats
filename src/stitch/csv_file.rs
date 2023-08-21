@@ -13,6 +13,10 @@ impl CsvFileBuffer {
         Self::default()
     }
 
+    pub fn num_lines(&self) -> usize {
+        self.buffer.len()
+    }
+
     /// Adding empty lines to the buffer
     pub fn add_empty_lines(&mut self, num: u32) {
         (0..num).for_each(|_| self.buffer.push(String::new())) // empty lines translate to newlines

@@ -1,4 +1,4 @@
-use super::stitched_set::StitchedLine;
+use super::stitched_line::StitchedLine;
 use crate::{
     stats::call_chain::CChainStatsKey,
     stats::{call_chain::CChainStatsValue, StatsRec},
@@ -36,12 +36,7 @@ impl CCReportItem {
             .map(|ms| ms.as_ref().and_then(self.processor))
             .collect::<Vec<_>>();
 
-        let lin_reg = LinearRegression::new(&values);
-        StitchedLine {
-            label: self.label.to_string(),
-            data: values,
-            lin_reg,
-        }
+        StitchedLine::new(self.label.to_string(), values)
     }
 }
 

@@ -13,6 +13,7 @@ mod stats_rec_reporter;
 mod stitch_list;
 mod stitch_tables;
 mod stitched;
+mod stitched_line;
 mod stitched_set;
 
 pub use stitch_list::StitchList;

@@ -10,5 +10,7 @@ pub fn dump_file(file_name: &str, stats: StatsRec) {
     let writer = io::BufWriter::new(f);
 
     let srj: StatsRecJson = stats.into();
-    bincode::serialize_into(writer, &srj);
+    if let Err(err) = bincode::serialize_into(writer, &srj) {
+        panic!("Dump of data to file {file_name} failed.\n\tError: {err:?}");
+    };
 }

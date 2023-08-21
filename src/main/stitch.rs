@@ -13,6 +13,9 @@ struct Args {
     #[arg(short, long, default_value_t = String::from("stitched.csv"))]
     output: String,
 
+    #[arg(short, long, default_value_t = String::from("anomalies.csv"))]
+    anomalies: String,
+
     #[arg(short, long, default_value_t = true)]
     comma_float: bool,
 
@@ -35,4 +38,15 @@ fn main() {
     stitched.write_csv(path);
 
     println!("Stitched output written to: '{}'", path.display());
+
+    let path = Path::new(&args.anomalies);
+    let num_anomalies = stitched.write_anomalies_csv(path);
+    if num_anomalies > 0 {
+        println!(
+            "Detected {num_anomalies}.\n\tFor further information check file '{}'",
+            path.display()
+        );
+    } else {
+        println!("NO anomalies detected");
+    }
 }
