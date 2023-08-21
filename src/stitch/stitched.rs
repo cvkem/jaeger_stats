@@ -101,7 +101,7 @@ impl Stitched {
 
     /// Read all stitched data and write it out to a CSV files
     /// TODO: refactor to separate the CSV-output phase from the actual transposition and structuring of the data.
-    pub fn write_csv(self, path: &Path) {
+    pub fn write_csv(&self, path: &Path) {
         let mut csv = CsvFileBuffer::new();
 
         csv.add_empty_lines(2);
@@ -190,6 +190,46 @@ impl Stitched {
         });
 
         csv.write_file(path);
+    }
+
+    /// Filter the anonalies out of the full dataset based on three criteria:
+    ///    1. Overall slope more than 1,05 (more than 5% increase per day)
+    ///    2. Short term slope significant higher than the average slope over the full dataset (velocity of increase is ramping up)
+    ///    3. The deviation for today is 2x higher than average L1-deviation
+    /// The reporting happens per Measure and subsequently per BSP and the most important measures are handled first.
+    /// On each line all three criteria are shown (with value and with a flag which values exceed the bound)
+    pub fn write_anomalies_csv(&self, path: &Path) -> usize {
+        let mut csv = CsvFileBuffer::new();
+
+        let mut num_anomalies = 0;
+
+        let metrics: Vec<_> = PROC_OPER_REPORT_ITEMS
+            .0
+            .iter()
+            .map(|por| por.label)
+            .collect();
+        metrics.iter().for_each(|metric| {
+            csv.add_line(format!("Proces/Operation metric: {metric}"));
+
+            self.process_operation.iter().for_each(|(po, lines)| {
+                lines
+                    .0
+                    .iter()
+                    .filter(|s| s.label[..] == **metric)
+                    .for_each(|line| {
+                        if let Some(anomalies) = line.anomalies() {
+                            num_anomalies += 1;
+                            csv.add_line(format!("{po};{}", anomalies.to_csv()))
+                        }
+                    })
+            });
+            csv.add_empty_lines(2);
+        });
+
+        if num_anomalies > 0 {
+            csv.write_file(path);
+        }
+        num_anomalies
     }
 
     /// Take the process-operation data out of the record and return as a hashmap

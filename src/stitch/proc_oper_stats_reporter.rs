@@ -6,7 +6,7 @@ use crate::{
 };
 use std::collections::HashSet;
 
-use super::{key::Key, stitched_set::StitchedLine};
+use super::{key::Key, stitched_line::StitchedLine};
 
 /// The POData is the input for the processor (which is a series of report-closures.
 /// If the processor operated on a tuple we could extract a joined type from the next two types.
@@ -16,7 +16,7 @@ type POData<'a> = Vec<Option<ProcessorInput<'a>>>;
 
 /// Process-Operation report items
 pub struct POReportItem {
-    label: &'static str,
+    pub label: &'static str,
     processor: Processor,
 }
 
@@ -34,12 +34,7 @@ impl POReportItem {
             .map(|ms| ms.as_ref().and_then(self.processor))
             .collect::<Vec<_>>();
 
-        let lin_reg = LinearRegression::new(&values);
-        StitchedLine {
-            label: self.label.to_string(),
-            data: values,
-            lin_reg,
-        }
+        StitchedLine::new(self.label.to_string(), values)
     }
 }
 
