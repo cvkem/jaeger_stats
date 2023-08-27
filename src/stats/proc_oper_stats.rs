@@ -1,4 +1,4 @@
-use crate::utils::{format_float, Counted, TimeStats};
+use crate::utils::{self, Counted, TimeStats};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -73,7 +73,7 @@ impl ProcOperStatsValue {
         self.num_not_http_ok as f64 / self.count as f64
     }
     pub fn get_frac_not_http_ok_str(&self) -> String {
-        format_float(self.get_frac_not_http_ok())
+        utils::format_float(self.get_frac_not_http_ok())
     }
 
     pub fn get_frac_error_log(&self) -> f64 {
@@ -81,7 +81,7 @@ impl ProcOperStatsValue {
     }
 
     pub fn get_frac_error_log_str(&self) -> String {
-        format_float(self.get_frac_error_log())
+        utils::format_float(self.get_frac_error_log())
     }
 
     /// header for report_stats_line output in ';'-separated csv-format
@@ -108,9 +108,9 @@ impl ProcOperStatsValue {
             self.get_median_millis_str(),
             self.get_avg_millis_str(),
             self.get_max_millis_str(),
-            format_float(percentage),
+            utils::format_float(percentage),
             self.get_avg_rate_str(num_files),
-            format_float(expect_duration),
+            utils::format_float(expect_duration),
             self.get_frac_not_http_ok_str(),
             self.get_frac_error_log_str()
         );

@@ -7,7 +7,7 @@ use super::{
     file::OperationStatsJson,
     proc_oper_stats::{ProcOperStats, ProcOperStatsValue},
 };
-use crate::{processed::Span, utils::format_float};
+use crate::{processed::Span, utils};
 
 #[derive(Debug, Default)]
 pub struct OperationStats {
@@ -146,9 +146,9 @@ impl OperationStats {
             self.num_received_calls,
             self.num_outbound_calls,
             self.num_unknown_calls,
-            format_float(freq_rc),
-            format_float(freq_oc),
-            format_float(freq_uc)
+            utils::format_float(freq_rc),
+            utils::format_float(freq_oc),
+            utils::format_float(freq_uc)
         )
     }
 }

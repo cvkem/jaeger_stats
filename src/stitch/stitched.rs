@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use crate::{utils, StitchList};
 
 use super::{
+    anomalies::Anomalies,
     call_chain_reporter::CCReportItems,
     csv_file::CsvFileBuffer,
     dataseries::DataSeries,
     proc_oper_stats_reporter::POReportItems,
     stitch_list::StitchSources,
     stitch_tables::{BASIC_REPORT_ITEMS, CALL_CHAIN_REPORT_ITEMS, PROC_OPER_REPORT_ITEMS},
-    stitched_set::StitchedSet, 
-    anomalies::Anomalies,
+    stitched_set::StitchedSet,
 };
 use std::{mem, path::Path};
 

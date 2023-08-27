@@ -7,7 +7,6 @@ pub struct Anomalies {
 }
 
 impl Anomalies {
-
     /// header for report_stats_line output in ';'-separated csv-format
     pub fn report_stats_line_header_str() -> &'static str {
         "Process; Slope; Short-term slope; L1-deviation"
@@ -15,7 +14,7 @@ impl Anomalies {
 
     pub fn report_stats_line(&self, po: &str) -> String {
         let data = [self.slope, self.st_slope, self.l1_deviation].to_vec();
-        
+
         format!("{po};{}", utils::floats_to_string(data, "; "))
     }
 }

@@ -7,7 +7,7 @@ use crate::{
         call_chain::{CChainStatsKey, CChainStatsValue},
         OperationStats, ProcOperStats, StatsRec, Version,
     },
-    utils::datetime_to_micros,
+    utils,
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error, ffi::OsString, fs::File, io, path::Path};
@@ -63,8 +63,16 @@ impl From<StatsRec> for StatsRecJson {
             root_call: sr.root_call,
             num_spans: sr.num_spans,
             num_files: sr.num_files,
-            start_dt: sr.start_dt.into_iter().map(datetime_to_micros).collect(),
-            end_dt: sr.end_dt.into_iter().map(datetime_to_micros).collect(),
+            start_dt: sr
+                .start_dt
+                .into_iter()
+                .map(utils::datetime_to_micros)
+                .collect(),
+            end_dt: sr
+                .end_dt
+                .into_iter()
+                .map(utils::datetime_to_micros)
+                .collect(),
             duration_micros: sr.duration_micros,
             time_to_respond_micros: sr.time_to_respond_micros,
             caching_process: sr.caching_process,
