@@ -37,11 +37,12 @@ impl StitchedSet {
     }
 
     pub fn summary_avg(&self) -> Vec<Option<f64>> {
-        self.0.iter().map(|sl| sl.avg()).collect()
+        self.0.iter().map(|sl| sl.data_avg).collect()
     }
 
     pub fn summary_slopes(&self) -> Vec<Option<f64>> {
-        let count = self.0.first().and_then(|data| data.avg());
+        // NOTE: here we assume first line always is a count
+        let count = self.0.first().and_then(|data| data.data_avg);
         iter::once(count)
             .chain(
                 self.0
@@ -52,14 +53,16 @@ impl StitchedSet {
     }
 
     pub fn summary_last_deviation_scaled(&self) -> Vec<Option<f64>> {
-        let count = self.0.first().and_then(|data| data.avg());
+        // NOTE: here we assume first line always is a count
+        let count = self.0.first().and_then(|data| data.data_avg);
         iter::once(count)
             .chain(self.0.iter().map(|sl| sl.last_deviation_scaled()))
             .collect()
     }
 
     pub fn summary_scaled_slopes(&self) -> Vec<Option<f64>> {
-        let count = self.0.first().and_then(|sl| sl.avg());
+        // NOTE: here we assume first line always is a count
+        let count = self.0.first().and_then(|sl| sl.data_avg);
         iter::once(count)
             .chain(self.0.iter().map(|sl| sl.scaled_slope()))
             .collect()
