@@ -1,17 +1,10 @@
-#![allow(clippy::module_inception)]
 use super::{
-    call_chain::{
-        caching_process_label, call_chain_key, get_call_chain, CChainStats, CChainStatsKey,
-        CChainStatsValue, CallChain,
-    },
-    error_stats::{get_cchain_error_information, get_span_error_information},
-    file::{StatsJson, StatsRecJson},
-    proc_oper_stats::{ProcOperStats, ProcOperStatsValue},
+    call_chain::{call_chain_key, get_call_chain, CChainStatsValue},
+    file::StatsRecJson,
+    operation_stats::OperationStats,
+    proc_oper_stats::ProcOperStatsValue,
 };
-use crate::{
-    processed::Trace,
-    utils::{format_float, micros_to_datetime},
-};
+use crate::{processed::Trace, utils::micros_to_datetime};
 use serde::{Deserialize, Serialize};
 
 use chrono::NaiveDateTime;
@@ -21,42 +14,6 @@ use std::{
     ffi::OsString,
 };
 
-//type ProcessKey = String;    // does not deliver any additional type-safety
-
-#[derive(Debug, Default)]
-pub struct Stats {
-    /// The Operation either inbound (when this process acts as a server) or outbound (when this process is the client that initiates the request)
-    /// TODO: we should rename this field, but that makes all old traces incombatible as the file format changes !!
-    pub method: ProcOperStats,
-    // TODO:  add num_traces: usize. This requires a processing step in the stats to find unique spans per trace and process these
-    /// number of inbound calls to this Process/Operation. The process is incoded in the key this value belongs to
-    pub num_received_calls: usize,
-    /// number of outbound calls from this Process/Operation to other proceses
-    pub num_outbound_calls: usize,
-    /// Unknown calls can come from partially malformed (corrupted traces), where either the sending or the receiving side of a call are missing (these are two records in a complete trace!)
-    pub num_unknown_calls: usize,
-    /// The statistics over all call-chains that lead to this Process/Operation
-    pub call_chain: CChainStats,
-}
-
-impl Stats {
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
-impl From<StatsJson> for Stats {
-    fn from(stj: StatsJson) -> Self {
-        Self {
-            num_received_calls: stj.num_received_calls,
-            num_outbound_calls: stj.num_outbound_calls,
-            num_unknown_calls: stj.num_unknown_calls,
-            method: stj.method,
-            call_chain: stj.call_chain.into_iter().collect(),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct Version {
     pub major: u16,
@@ -65,13 +22,14 @@ pub struct Version {
 
 impl Default for Version {
     fn default() -> Self {
-        Version { major: 0, minor: 1 }
+        Version { major: 0, minor: 2 }
     }
 }
 
 #[derive(Debug, Default)]
 pub struct StatsRec {
-    /// version numbering to handle diversity of analyzed data-sets (not yet needed)
+    /// version numbering to handle diversity of analyzed data-sets.
+    /// Currently we do not have the code that handles or checks versions. So only present for post-mortem analysis or future usage.
     pub version: Version,
     /// Ordered list of all the trace_ids present in this
     pub trace_id: Vec<String>,
@@ -92,12 +50,12 @@ pub struct StatsRec {
     /// List of processes that perform caching, which is an input parameter to this analysis
     pub caching_process: Vec<String>,
     /// Statistis per leaf-process (end-point of the chain of processes)
-    pub stats: HashMap<String, Stats>, // hashmap based on the leaf process (as that is the initial level of reporting)
+    pub stats: HashMap<String, OperationStats>, // hashmap based on the leaf process (as that is the initial level of reporting)
 }
 
 impl From<StatsRecJson> for StatsRec {
     fn from(srj: StatsRecJson) -> Self {
-        let stats: HashMap<String, Stats> =
+        let stats: HashMap<String, OperationStats> =
             srj.stats.into_iter().map(|(k, v)| (k, v.into())).collect();
         Self {
             version: srj.version,
@@ -157,6 +115,9 @@ impl StatsRec {
         self.time_to_respond_micros
             .push(trace.time_to_respond_micros);
 
+        let mut proc_used = HashSet::new();
+        // keep track of the proces/operation combinations used at least once in this process
+        let mut proc_oper_used = HashSet::new();
         spans
             .iter()
             .enumerate()
@@ -169,112 +130,15 @@ impl StatsRec {
                 }
             })
             .for_each(|(idx, span)| {
-                let proc = span.get_process_str().to_owned();
-                let method = &span.operation_name;
+                let proc = span.get_process_str();
 
-                // The update_stat closure is the actual update operation
-                // This clojure is later applied to the newly inserted record for this process, or is used to update an existing record.
-                let update_stat = |stat: &mut Stats| {
-                    match &span.span_kind {
-                        Some(kind) => match &kind[..] {
-                            "server" => stat.num_received_calls += 1,
-                            "client" => stat.num_outbound_calls += 1,
-                            _ => stat.num_unknown_calls += 1,
-                        },
-                        None => stat.num_unknown_calls += 1,
-                    }
+                // keep track of the proces/operation (via &str references)
+                let _ = proc_used.insert(proc);
+                let _ = proc_oper_used.insert((proc, &span.operation_name));
+                let proc = proc.to_owned();
 
-                    let duration_micros = span.duration_micros;
-                    let start_dt_micros = span.start_dt.timestamp_micros();
-                    let (http_not_ok_vec, error_logs_vec) = get_span_error_information(span);
-
-                    let update_ms = |meth_stat: &mut ProcOperStatsValue| {
-                        meth_stat.count += 1;
-                        meth_stat.start_dt_micros.push(start_dt_micros);
-                        meth_stat.duration_micros.push(duration_micros);
-                        meth_stat.num_not_http_ok += if http_not_ok_vec.is_empty() { 0 } else { 1 };
-                        meth_stat.num_with_error_logs +=
-                            if error_logs_vec.is_empty() { 0 } else { 1 };
-                        meth_stat.http_not_ok.add_items(http_not_ok_vec.clone());
-                        meth_stat.error_logs.add_items(error_logs_vec.clone());
-                    };
-                    // add a count per method
-                    stat.method
-                        .0
-                        .entry(method.to_owned())
-                        .and_modify(|meth_stat| update_ms(meth_stat))
-                        .or_insert_with(|| {
-                            let mut meth_stat = ProcOperStatsValue::default();
-                            update_ms(&mut meth_stat);
-                            meth_stat
-                        });
-
-                    // // add a count per method_including-cached
-                    let call_chain = get_call_chain(idx, spans);
-                    let (http_not_ok_vec, error_logs_vec) =
-                        get_cchain_error_information(idx, spans);
-                    let caching_process = caching_process_label(&self.caching_process, &call_chain);
-
-                    // add call-chain stats
-                    let depth = call_chain.len();
-                    let looped = get_duplicates(&call_chain);
-                    let is_leaf = span.is_leaf;
-                    let rooted = span.rooted;
-                    let cc_not_http_ok = if http_not_ok_vec.is_empty() { 0 } else { 1 };
-                    let cc_with_error_log = if error_logs_vec.is_empty() { 0 } else { 1 };
-
-                    let ps_key = CChainStatsKey {
-                        call_chain,
-                        caching_process,
-                        is_leaf,
-                    };
-
-                    let update_ps_val = |ps: &mut CChainStatsValue| {
-                        ps.count += 1;
-                        ps.start_dt_micros.push(start_dt_micros);
-                        ps.duration_micros.push(duration_micros);
-                        ps.cc_not_http_ok += cc_not_http_ok;
-                        ps.cc_with_error_logs += cc_with_error_log;
-                        ps.http_not_ok.add_items(http_not_ok_vec.clone()); // clone needed as otherwise this will be an FnOnce while rust thinks it is used twicecargo
-                        ps.error_logs.add_items(error_logs_vec.clone());
-                    };
-                    stat.call_chain
-                        .entry(ps_key)
-                        // next part could be made more dry via an update-closure
-                        .and_modify(|ps| update_ps_val(ps))
-                        //     ps.count += 1;
-                        //     ps.start_dt_micros.push(start_dt_micros);
-                        //     ps.duration_micros.push(duration_micros);
-                        //     ps.cc_not_http_ok += cc_not_http_ok;
-                        //     ps.cc_with_error_log += cc_with_error_log;
-                        //     ps.http_not_ok.add_items(http_not_ok_vec);
-                        //     ps.error_logs.add_items(error_logs_vec);
-                        // })
-                        .or_insert_with(|| {
-                            let mut ps = CChainStatsValue::new(depth, looped, rooted);
-                            update_ps_val(&mut ps);
-                            ps
-                        });
-                    //     let dms: Box<[_]> = Box::new([duration_micros]);
-                    //     let duration_micros = dms.into_vec();
-                    //     let start_dt_micros = [start_dt_micros].to_vec();
-                    //     let mut http_not_ok = Counted::new();
-                    //     http_not_ok.add_items(http_not_ok_vec);
-                    //     let mut error_logs = Counted::new();
-                    //     error_logs.add_items(error_logs_vec);
-                    //     CChainStatsValue {
-                    //         count: 1,
-                    //         depth,
-                    //         duration_micros,
-                    //         start_dt_micros,
-                    //         looped,
-                    //         rooted,
-                    //         cc_not_http_ok,
-                    //         cc_with_error_log,
-                    //         http_not_ok,
-                    //         error_logs
-                    //     }
-                    // });
+                let update_stat = |stat: &mut OperationStats| {
+                    stat.update(idx, span, spans, &self.caching_process);
                 };
 
                 // This is the actual insert or update baed on the 'update_stats'.
@@ -282,11 +146,26 @@ impl StatsRec {
                     .entry(proc)
                     .and_modify(update_stat)
                     .or_insert_with(|| {
-                        let mut stat = Stats::new();
+                        let mut stat = OperationStats::new();
                         update_stat(&mut stat);
                         stat
                     });
             });
+
+        // Update num_traces such that each process is uniquely counted.
+        proc_used.into_iter().for_each(|proc| {
+            self.stats
+                .entry(proc.to_owned())
+                .and_modify(|st| st.num_traces += 1);
+        });
+        proc_oper_used.into_iter().for_each(|(proc, oper)| {
+            self.stats.entry(proc.to_owned()).and_modify(|st| {
+                st.operation
+                    .0
+                    .entry(oper.to_owned())
+                    .and_modify(|oper| oper.num_traces += 1);
+            });
+        });
     }
 
     pub fn to_csv_string(&self, num_files: i32) -> String {
@@ -368,28 +247,15 @@ impl StatsRec {
         let mut data: Vec<_> = self.stats.iter().collect();
         data.sort_by(|a, b| a.0.cmp(b.0));
 
-        s.push("Process; Num_received_calls; Num_outbound_calls; Num_unknown_calls; Perc_received_calls; Perc_outbound_calls; Perc_unknown_calls".to_owned());
-        data.iter().for_each(|(k, stat)| {
-            let freq_rc = stat.num_received_calls as f64 / num_traces as f64;
-            let freq_oc = stat.num_outbound_calls as f64 / num_traces as f64;
-            let freq_uc = stat.num_outbound_calls as f64 / num_traces as f64;
-            let line = format!(
-                "{k}; {}; {}; {}; {}; {}; {}",
-                stat.num_received_calls,
-                stat.num_outbound_calls,
-                stat.num_unknown_calls,
-                format_float(freq_rc),
-                format_float(freq_oc),
-                format_float(freq_uc)
-            );
-            s.push(line);
-        });
+        s.push(OperationStats::report_stats_line_header_str().to_owned());
+        data.iter()
+            .for_each(|(k, stat)| s.push(stat.report_stats_line(k, num_traces as f64)));
         s.push("\n".to_owned());
 
         let num_traces = num_traces as f64;
-        s.push("Process; Count; Min_millis; Avg_millis; Max_millis; Percentage; Rate; Expect_duration; frac_not_http_ok; frac_error_logs".to_owned());
+        s.push(ProcOperStatsValue::report_stats_line_header_str().to_owned());
         data.iter().for_each(|(k, stat)| {
-            stat.method.0.iter().for_each(|(method, meth_stat)| {
+            stat.operation.0.iter().for_each(|(method, meth_stat)| {
                 let line = meth_stat.report_stats_line(k, method, num_traces, num_files);
                 s.push(line);
             })
@@ -398,7 +264,7 @@ impl StatsRec {
 
         s.push("#The unique key of the next table is 'Call_Chain' (which includes full path and the leaf-marker). So the Process column contains duplicates".to_owned());
 
-        s.push("Call_chain; cc_hash; End_point; Process/operation; Is_leaf; Depth; Count; Looped; Revisit; Caching_proces; Min_millis; Avg_millis; Max_millis; Percentage; Rate; expect_duration; expect_contribution; frac_http_not_ok; frac_error_logs".to_owned());
+        s.push(CChainStatsValue::report_stats_line_header_str().to_owned());
 
         // reorder data based on the full call-chain
         //  key is the ProcessKey and ps_key is the PathStatsKey (a.o. call-chain)
@@ -461,40 +327,6 @@ impl StatsRec {
 //     });
 //     stats
 // }
-
-/// get all values that appear more than once in the list of strings, while being none-adjacent.
-/// TODO: this is part of a procedure to detect loops, which is not completely correct I guess (in case spans are missing)
-fn get_duplicates(names: &CallChain) -> Vec<String> {
-    let mut duplicates = Vec::new();
-    for idx in 0..names.len() {
-        let proc = &names[idx].process;
-        let mut j = 0;
-        loop {
-            if j >= duplicates.len() {
-                break;
-            }
-            if duplicates[j] == *proc {
-                break;
-            }
-            j += 1;
-        }
-        if j < duplicates.len() {
-            continue;
-        }
-        //  nme does not exist in duplicates yet, so find it in names
-        let mut j = idx + 2; // Step by 2 as we want to prevent matching sub-sequent GET calls
-        loop {
-            if j >= names.len() || names[j].process == *proc {
-                break;
-            }
-            j += 1;
-        }
-        if j < names.len() {
-            duplicates.push(proc.to_owned());
-        }
-    }
-    duplicates
-}
 
 /// Compute basic call statistics, which only looks at functions/operations and does not include the call path
 pub fn chained_stats(trace: &Trace) -> HashMap<String, u32> {

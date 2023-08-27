@@ -2,12 +2,16 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 fn replace_regex(s: String, re: &Regex, replacement: &str) -> (String, bool) {
-    let tmp = s.clone(); // TODO: this clone is usesless (just to satisfy the borrow-checker)
-    let found: Vec<&str> = re.find_iter(&tmp).map(|m| m.as_str()).collect();
+    //let s_clone = s.clone();
+    // TODO: this clone is needed to satisfy the borrow-checker.
+    // Without Clone the 's' would be borrowed to build 'found'. S will be moved again as initial value for the iterator.
+    // this might be a nice example where you trip if you do not have a borrow-checker in place
+    // However, the clone above could move down as it is only needed in case we observe replacements (preventing needless clones)
+    let found: Vec<&str> = re.find_iter(&s).map(|m| m.as_str()).collect();
     if !found.is_empty() {
         let s = found
             .into_iter()
-            .fold(s, |s, obs| s.replace(obs, replacement));
+            .fold(s.clone(), |s, obs| s.replace(obs, replacement));
         (s, true)
     } else {
         (s, false)

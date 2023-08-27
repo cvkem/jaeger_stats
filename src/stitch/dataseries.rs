@@ -1,6 +1,8 @@
 use crate::{utils::Counted, StatsRec};
 use std::mem;
 
+/// A dataseries is a time-series of StatsRec, where a StatsRec represents a single Trace_analysis outcome.
+/// The dataseries is intended to represent an equidistant series of StatsRec, such that lineair regression does return realistic slopes (rates of increase or decrease)
 pub struct DataSeries<'a>(pub &'a mut Vec<Option<StatsRec>>);
 
 impl<'a> DataSeries<'a> {

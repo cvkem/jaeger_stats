@@ -6,6 +6,9 @@ use std::collections::HashMap;
 pub struct ProcOperStatsValue {
     pub count: usize,
     /// Duration in microseconds of this Proces/Operation. This includes the full span, so it also covers the waiting-time for (synchronous) downstream calls
+    /// num_traces is used, as the name says, to find how many traces use this value.
+    /// The other call values below can be inflated in case each trace can call a operation many times.
+    pub num_traces: usize,
     pub duration_micros: Vec<i64>,
     /// Represented via start_dt.timestamp_micros(). The end_dt_micros can be derived when adding duration
     pub start_dt_micros: Vec<i64>,
@@ -15,7 +18,7 @@ pub struct ProcOperStatsValue {
     pub num_with_error_logs: i32,
     /// Contains the actual error-codes that have been observed including the count of these codes
     /// TODO: rename to 'http_not_ok_codes' for clarity. However, this rename will change the file-format.
-    pub http_not_ok: Counted<i16>,
+    pub http_not_ok_codes: Counted<i16>,
     /// Contains the counted list of error-messages that have been observed (Other log-levels are ignored).
     pub error_logs: Counted<String>,
 }
@@ -81,11 +84,16 @@ impl ProcOperStatsValue {
         format_float(self.get_frac_error_log())
     }
 
-    /// reports the statistics for a single line
+    /// header for report_stats_line output in ';'-separated csv-format
+    pub fn report_stats_line_header_str() -> &'static str {
+        "Process/Oper; Count; Num_traces; Min_millis; Avg_millis; Max_millis; Percentage; Rate; Expect_duration; frac_not_http_ok; frac_error_logs"
+    }
+
+    /// reports the statistics for a single line in ';'-separated csv-format
     pub fn report_stats_line(
         &self,
         process_key: &str,
-        method: &str,
+        operation: &str,
         n: f64,
         num_files: i32,
     ) -> String {
@@ -93,8 +101,9 @@ impl ProcOperStatsValue {
         let expect_duration = percentage * self.get_avg_millis();
         // let expect_contribution = if ps_key.is_leaf { expect_duration } else { 0.0 };
         let line = format!(
-            "{process_key}/{method}; {}; {}; {}; {}; {}; {}; {}; {}; {}; {}",
+            "{process_key}/{operation}; {}; {}; {}; {}; {}; {}; {}; {}; {}; {}; {}",
             self.count,
+            self.num_traces,
             self.get_min_millis_str(),
             self.get_median_millis_str(),
             self.get_avg_millis_str(),

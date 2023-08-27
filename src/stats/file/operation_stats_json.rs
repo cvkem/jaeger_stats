@@ -5,33 +5,34 @@
 use crate::{
     stats::{
         call_chain::{CChainStatsKey, CChainStatsValue},
-        ProcOperStats, Stats, StatsRec, Version,
+        OperationStats, ProcOperStats, StatsRec, Version,
     },
     utils::datetime_to_micros,
 };
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap, error::Error, ffi::OsStr, ffi::OsString, fs::File, io, path::Path,
-};
+use std::{collections::HashMap, error::Error, ffi::OsString, fs::File, io, path::Path};
 
+/// The OperationStatsJson is used as an intermediate value for storage as JSON does not allow compound hashmap-keys.
+/// Thus Hashmap is flattened to a vector of key-value pairs. For more details on the fields see OperationStats.
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct StatsJson {
+pub struct OperationStatsJson {
+    pub method: ProcOperStats,
+    pub num_traces: usize,
     pub num_received_calls: usize, // inbound calls to this process
     pub num_outbound_calls: usize, // outbound calls to other processes
     pub num_unknown_calls: usize,
-    // TODO: move this to the top of the record to match structure of Stats.
-    pub method: ProcOperStats,
     //    method_cache_suffix: HashMap<String, usize>,  // methods in a cache-chain have a suffix.
     pub call_chain: Vec<(CChainStatsKey, CChainStatsValue)>,
 }
 
-impl From<Stats> for StatsJson {
-    fn from(st: Stats) -> Self {
+impl From<OperationStats> for OperationStatsJson {
+    fn from(st: OperationStats) -> Self {
         Self {
+            method: st.operation,
+            num_traces: st.num_traces,
             num_received_calls: st.num_received_calls,
             num_outbound_calls: st.num_outbound_calls,
             num_unknown_calls: st.num_unknown_calls,
-            method: st.method,
             call_chain: st.call_chain.into_iter().collect(),
         }
     }
@@ -49,12 +50,12 @@ pub struct StatsRecJson {
     pub duration_micros: Vec<i64>,
     pub time_to_respond_micros: Vec<i64>,
     pub caching_process: Vec<String>,
-    pub stats: HashMap<String, StatsJson>, // hashmap base on the leaf process (as that is the initial level of reporting)
+    pub stats: HashMap<String, OperationStatsJson>, // hashmap base on the leaf process (as that is the initial level of reporting)
 }
 
 impl From<StatsRec> for StatsRecJson {
     fn from(sr: StatsRec) -> Self {
-        let stats: HashMap<String, StatsJson> =
+        let stats: HashMap<String, OperationStatsJson> =
             sr.stats.into_iter().map(|(k, v)| (k, v.into())).collect();
         Self {
             version: sr.version,
