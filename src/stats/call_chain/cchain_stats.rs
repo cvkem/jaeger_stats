@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
     string_hash,
-    utils::{format_float, report, Chapter, Counted, TimeStats},
+    utils::{self, Chapter, Counted, TimeStats},
 };
 use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, collections::HashMap, error::Error};
@@ -140,7 +140,7 @@ impl CChainStatsKey {
                 }
             }
             n => {
-                report(
+                utils::report(
                     Chapter::Details,
                     format!(
                         "NO FIX: {n} matches found for non-rooted '{:?}'",
@@ -229,7 +229,7 @@ impl CChainStatsValue {
         self.cc_not_http_ok as f64 / self.count as f64
     }
     pub fn get_frac_not_http_ok_str(&self) -> String {
-        format_float(self.get_frac_not_http_ok())
+        utils::format_float(self.get_frac_not_http_ok())
     }
 
     pub fn get_frac_error_log(&self) -> f64 {
@@ -237,7 +237,7 @@ impl CChainStatsValue {
     }
 
     pub fn get_frac_error_log_str(&self) -> String {
-        format_float(self.get_frac_error_log())
+        utils::format_float(self.get_frac_error_log())
     }
 
     /// header for report_stats_line output in ';'-separated csv-format
@@ -282,10 +282,10 @@ impl CChainStatsValue {
             self.get_median_millis_str(),
             self.get_avg_millis_str(),
             self.get_max_millis_str(),
-            format_float(percentage),
+            utils::format_float(percentage),
             self.get_avg_rate_str(num_files),
-            format_float(expect_duration),
-            format_float(expect_contribution),
+            utils::format_float(expect_duration),
+            utils::format_float(expect_contribution),
             self.get_frac_not_http_ok_str(),
             self.get_frac_error_log_str()
         );

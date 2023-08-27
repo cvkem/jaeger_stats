@@ -1,5 +1,5 @@
-use crate::utils::{floats_ref_to_string, format_float, format_float_opt, LinearRegression};
 use super::anomalies::Anomalies;
+use crate::utils::{self, LinearRegression};
 use std::iter;
 
 const ST_DATA_LEN: usize = 5;
@@ -22,7 +22,6 @@ pub struct StitchedLine {
     pub lin_reg: Option<LinearRegression>,
     pub st_line: Option<ShortTermStitchedLine>,
 }
-
 
 impl StitchedLine {
     pub fn new(label: String, data: Vec<Option<f64>>) -> Self {
@@ -53,7 +52,6 @@ impl StitchedLine {
             st_line,
         }
     }
-
 
     pub fn anomalies(&self) -> Option<Anomalies> {
         self.lin_reg.as_ref().and_then(|_lin_reg| {
@@ -146,18 +144,18 @@ impl StitchedLine {
     /// Show the current line as a string in the csv-format with a ';' separator
     pub fn to_csv_string(&self, header: &str, idx: usize) -> String {
         // Produce the CSV_output
-        let values = floats_ref_to_string(&self.data, "; ");
+        let values = utils::floats_ref_to_string(&self.data, "; ");
 
         if let Some(lr) = &self.lin_reg {
             format!(
                 "{header}; {}; {values}; ; ; {}; {}; {}; {}; {}; {}",
                 self.label,
-                format_float(lr.slope),
-                format_float(lr.y_intercept),
-                format_float(lr.R_squared),
-                format_float(lr.L1_deviation),
-                format_float_opt(self.scaled_slope()),
-                format_float_opt(self.last_deviation_scaled()),
+                utils::format_float(lr.slope),
+                utils::format_float(lr.y_intercept),
+                utils::format_float(lr.R_squared),
+                utils::format_float(lr.L1_deviation),
+                utils::format_float_opt(self.scaled_slope()),
+                utils::format_float_opt(self.last_deviation_scaled()),
             )
         } else {
             format!("{header}; {}; {values}; ; ; ; ; ;", self.label,)

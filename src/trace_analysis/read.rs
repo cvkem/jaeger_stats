@@ -2,7 +2,7 @@
 use crate::{
     processed::{extract_traces, Trace},
     raw::read_jaeger_trace_file,
-    utils::{report, Chapter},
+    utils::{self, Chapter},
 };
 use std::{error::Error, ffi::OsStr, fs, path::Path};
 
@@ -43,7 +43,7 @@ fn read_trace_folder(folder: &Path) -> Result<(Vec<Trace>, i32), Box<dyn Error>>
 
 ///Check whether path is a file or folder and read all traces.
 pub fn read_process_file_or_folder(path: &Path) -> (Vec<Trace>, i32, &Path) {
-    report(
+    utils::report(
         Chapter::Summary,
         format!("Reading all traces from folder: {}", path.display()),
     );
@@ -66,7 +66,7 @@ pub fn read_process_file_or_folder(path: &Path) -> (Vec<Trace>, i32, &Path) {
                 path.display()
             );
         };
-    report(
+    utils::report(
         Chapter::Summary,
         format!(
             "Read {} traces in total from {} files.",

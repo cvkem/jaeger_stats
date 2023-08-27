@@ -1,4 +1,4 @@
-use crate::utils::{report, Chapter};
+use crate::utils::{self, Chapter};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Clone)]
@@ -18,8 +18,8 @@ impl From<&str> for CallDirection {
             _ => {
                 let msg = format!("Invalid value for CallDirection. Observed: {s}");
                 let ingest_msg = "Issue might be ingest issue: ".to_string() + &msg;
-                report(Chapter::Details, msg);
-                report(crate::utils::Chapter::Ingest, ingest_msg);
+                utils::report(Chapter::Details, msg);
+                utils::report(Chapter::Ingest, ingest_msg);
                 CallDirection::Unknown
             }
         }
@@ -35,8 +35,8 @@ impl From<Option<&String>> for CallDirection {
                 _ => {
                     let msg = format!("Invalid value for CallDirection. Observed: {s:?}");
                     let ingest_msg = "Issue might be ingest issue: ".to_string() + &msg;
-                    report(Chapter::Details, msg);
-                    report(crate::utils::Chapter::Ingest, ingest_msg);
+                    utils::report(Chapter::Details, msg);
+                    utils::report(Chapter::Ingest, ingest_msg);
                     CallDirection::Unknown
                 }
             },

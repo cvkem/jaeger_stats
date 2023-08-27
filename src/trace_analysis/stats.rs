@@ -1,11 +1,11 @@
 //! Creating the statistics
 use crate::{
     stats::{
+        self,
         call_chain::{cchain_filename, CChainEndPointCache},
-        file::write_stats,
-        write_stats_to_csv_file, StatsRec, TraceExt,
+        file, StatsRec, TraceExt,
     },
-    utils::{extend_create_folder, report, write_string_to_file, Chapter},
+    utils::{self, Chapter},
 };
 use std::{
     collections::HashMap,
@@ -36,15 +36,15 @@ pub fn process_and_fix_traces(
 ) {
     let total_traces = traces.len();
 
-    let stats_folder = extend_create_folder(&folder, "Stats");
+    let stats_folder = utils::extend_create_folder(&folder, "Stats");
     {
         let mut csv_file = stats_folder.clone();
         csv_file.push("cummulative_trace_stats.csv");
         //println!("Writing to file: {:?}", csv_file);
         let traces: Vec<_> = traces.iter().collect(); // switch to references
         let cumm_stats = create_trace_statistics(&traces, &caching_processes, num_files);
-        write_stats_to_csv_file(csv_file.to_str().unwrap(), &cumm_stats);
-        write_stats(csv_file.to_str().unwrap(), cumm_stats, output_ext);
+        stats::write_stats_to_csv_file(csv_file.to_str().unwrap(), &cumm_stats);
+        file::write_stats(csv_file.to_str().unwrap(), cumm_stats, output_ext);
     }
 
     let mut sort_traces = HashMap::new();
@@ -57,21 +57,21 @@ pub fn process_and_fix_traces(
     let mut incomplete_traces = 0;
 
     // Cchain-folder for input and output are set to the same folder.
-    report(Chapter::Details, format!("Input for cc_path = {cc_path}"));
+    utils::report(Chapter::Details, format!("Input for cc_path = {cc_path}"));
     let cc_path = {
         let cc_path_full = Path::new(cc_path).to_path_buf();
         if cc_path_full.is_absolute() {
             cc_path_full
         } else {
-            extend_create_folder(&folder, cc_path)
+            utils::extend_create_folder(&folder, cc_path)
         }
     };
-    report(
+    utils::report(
         Chapter::Details,
         format!("Translates to cc_path = {}", cc_path.display()),
     );
     let cchain_folder = cc_path.to_path_buf();
-    report(
+    utils::report(
         Chapter::Details,
         format!("Translates to cchain_folder = {}", cchain_folder.display()),
     );
@@ -87,7 +87,7 @@ pub fn process_and_fix_traces(
                 let mut cchain_file = cchain_folder.clone();
                 cchain_file.push(cchain_filename(&k));
                 let cchain_str = cumm_stats.call_chain_str();
-                write_string_to_file(cchain_file.to_str().unwrap(), cchain_str).expect("Failed to write cchain-files.");
+                utils::write_string_to_file(cchain_file.to_str().unwrap(), cchain_str).expect("Failed to write cchain-files.");
                 cumm_stats
             } else {
                 println!("No complete traces, so we can not produce the call-chain file");
@@ -100,7 +100,7 @@ pub fn process_and_fix_traces(
                 let trace_len = traces.len();
                 let tot_trace = trace_len + part_trace_len;
                 let part_frac = 100.0 * part_trace_len as f64 / tot_trace as f64;
-                report(Chapter::Analysis, format!("For end-point (root) '{k}' found {part_trace_len} incomplete out of {tot_trace} traces ({part_frac:.1}%)"));
+                utils::report(Chapter::Analysis, format!("For end-point (root) '{k}' found {part_trace_len} incomplete out of {tot_trace} traces ({part_frac:.1}%)"));
             }
 
             let mut cchain_cache = CChainEndPointCache::new(cc_path.to_path_buf());
@@ -109,13 +109,13 @@ pub fn process_and_fix_traces(
             part_traces.iter_mut().for_each(|tr| tr.fix_cchains(&mut cchain_cache));
             // and add these to the statistics
             part_traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );
-            write_stats_to_csv_file(csv_file.to_str().unwrap(), &cumm_stats);
-            write_stats(csv_file.to_str().unwrap(), cumm_stats, output_ext);
+            stats::write_stats_to_csv_file(csv_file.to_str().unwrap(), &cumm_stats);
+            file::write_stats(csv_file.to_str().unwrap(), cumm_stats, output_ext);
         });
 
     println!();
-    report(Chapter::Summary, format!("Processed {total_traces} traces covering {num_end_points} end-points  (on average {:.1} trace per end-point).", total_traces as f64/num_end_points as f64));
-    report(
+    utils::report(Chapter::Summary, format!("Processed {total_traces} traces covering {num_end_points} end-points  (on average {:.1} trace per end-point).", total_traces as f64/num_end_points as f64));
+    utils::report(
         Chapter::Summary,
         format!(
             "Observed {incomplete_traces} incomplete traces, which is {:.1}% of the total",

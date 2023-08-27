@@ -1,5 +1,4 @@
 use super::stitched_line::StitchedLine;
-use crate::utils::{floats_ref_to_string, format_float, format_float_opt, LinearRegression};
 use std::iter;
 
 #[derive(Default, Debug)]

@@ -7,7 +7,7 @@ use std::{
 };
 
 use super::jaeger::JaegerTrace;
-use crate::utils::{report, Chapter};
+use crate::utils::{self, Chapter};
 
 use encoding_rs::Encoding;
 
@@ -36,7 +36,7 @@ pub fn read_jaeger_trace_file<P: AsRef<Path> + Copy + Debug>(
             // an encoding is found, so we need to decode and to drop the BOM as serde can not handle it.
             // beware, this consumes quite a bit of memory as the data is present 3 times (raw, decoded and as json)
             let file_size = fs::metadata(path)?.len();
-            report(
+            utils::report(
                 Chapter::Details,
                 format!(
                     "File {path:?}: Found encoding {encoding:?} for a file with size: {file_size}"
@@ -48,7 +48,7 @@ pub fn read_jaeger_trace_file<P: AsRef<Path> + Copy + Debug>(
             reader.read_to_end(&mut buffer)?;
             let (s, malformed) = encoding.decode_with_bom_removal(buffer.as_slice());
             if malformed {
-                report(
+                utils::report(
                     Chapter::Issues,
                     format!("File {:?} returned a signal Malformed", path),
                 );
@@ -56,7 +56,7 @@ pub fn read_jaeger_trace_file<P: AsRef<Path> + Copy + Debug>(
             serde_json::from_str(&s)?
         }
         Err(err) => {
-            report(
+            utils::report(
                 Chapter::Details,
                 format!("File {path:?}: Failed to find encoding: {err:?}"),
             );

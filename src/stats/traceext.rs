@@ -4,8 +4,7 @@ use crate::{
         call_chain::{CChainEndPointCache, CChainStatsValue},
         stats_rec::StatsRec,
     },
-    utils::write_string_to_file,
-    utils::{extend_create_folder, report, Chapter},
+    utils::{self, Chapter},
 };
 use std::{
     // error::Error,
@@ -20,7 +19,7 @@ use std::{
 pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec) {
     //println!("Now writing the trace statistics to {csv_file}");
     let stats_csv_str = stats.to_csv_string(stats.num_files);
-    if let Err(err) = write_string_to_file(csv_file, stats_csv_str) {
+    if let Err(err) = utils::write_string_to_file(csv_file, stats_csv_str) {
         panic!("Writing to file '{csv_file}' failed with error: {err:?}");
     };
 }
@@ -56,12 +55,12 @@ impl TraceExt {
         let trace_str = format!("{:#?}", self.trace);
         let output_file = format!("{}.txt", self.base_name);
         //println!("Now writing the read Jaeger_trace to {output_file}");
-        write_string_to_file(&output_file, trace_str)
+        utils::write_string_to_file(&output_file, trace_str)
             .expect("Failed to write trace (.txt) to file");
     }
 
     pub fn fix_cchains(&mut self, cchain_cache: &mut CChainEndPointCache) {
-        report(
+        utils::report(
             Chapter::Details,
             format!(
                 "Trace: {} does have {}",
@@ -79,7 +78,7 @@ impl TraceExt {
 
                 if !non_rooted.is_empty() {
                     let depths: Vec<_> = non_rooted.iter().map(|(_k,v)| v.depth).collect();
-                    report(Chapter::Details, format!("For key '{key}'  found {} non-rooted out of {} traces at depths {depths:?}", non_rooted.len(), non_rooted.len() + rooted.len()));
+                    utils::report(Chapter::Details, format!("For key '{key}'  found {} non-rooted out of {} traces at depths {depths:?}", non_rooted.len(), non_rooted.len() + rooted.len()));
                 }
 
                 // fix the non-rooted paths by a rewrite of the key
@@ -93,7 +92,7 @@ impl TraceExt {
                             fix_failed += 1;
                         }});
                 if fix_failed > 0 {
-                    report(Chapter::Details, format!("Failed to fix {fix_failed} chains out of {} non-rooted chains.", non_rooted.len()));
+                    utils::report(Chapter::Details, format!("Failed to fix {fix_failed} chains out of {} non-rooted chains.", non_rooted.len()));
                 }
 
                 let new_call_chain = rooted.into_iter()
@@ -125,7 +124,7 @@ pub fn build_trace_ext(
     caching_processes: &[String],
 ) -> Vec<TraceExt> {
     // create a traces folder
-    let trace_folder = extend_create_folder(folder, "Traces");
+    let trace_folder = utils::extend_create_folder(folder, "Traces");
 
     traces
         .into_iter()
