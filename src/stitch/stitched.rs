@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{utils::floats_to_string, StitchList};
+use crate::{utils, StitchList};
 
 use super::{
     call_chain_reporter::CCReportItems,
@@ -9,7 +9,8 @@ use super::{
     proc_oper_stats_reporter::POReportItems,
     stitch_list::StitchSources,
     stitch_tables::{BASIC_REPORT_ITEMS, CALL_CHAIN_REPORT_ITEMS, PROC_OPER_REPORT_ITEMS},
-    stitched_set::StitchedSet,
+    stitched_set::StitchedSet, 
+    anomalies::Anomalies,
 };
 use std::{mem, path::Path};
 
@@ -117,7 +118,7 @@ impl Stitched {
             .for_each(|(label, stitched_set)| {
                 csv.add_line(format!(
                     "{label}; {}",
-                    floats_to_string(stitched_set.summary_avg(), " ;")
+                    utils::floats_to_string(stitched_set.summary_avg(), " ;")
                 ))
             });
 
@@ -128,7 +129,7 @@ impl Stitched {
             .for_each(|(label, stitched_set)| {
                 csv.add_line(format!(
                     "{label}; {}",
-                    floats_to_string(stitched_set.summary_slopes(), " ;")
+                    utils::floats_to_string(stitched_set.summary_slopes(), " ;")
                 ))
             });
 
@@ -139,7 +140,7 @@ impl Stitched {
             .for_each(|(label, stitched_set)| {
                 csv.add_line(format!(
                     "{label}; {}",
-                    floats_to_string(stitched_set.summary_scaled_slopes(), " ;")
+                    utils::floats_to_string(stitched_set.summary_scaled_slopes(), " ;")
                 ))
             });
 
@@ -150,7 +151,7 @@ impl Stitched {
             .for_each(|(label, stitched_set)| {
                 csv.add_line(format!(
                     "{label}; {}",
-                    floats_to_string(stitched_set.summary_last_deviation_scaled(), " ;")
+                    utils::floats_to_string(stitched_set.summary_last_deviation_scaled(), " ;")
                 ))
             });
 
@@ -174,7 +175,7 @@ impl Stitched {
             call_chains.iter().for_each(|(label, stitched_set)| {
                 csv.add_line(format!(
                     "{label}; {}",
-                    floats_to_string(stitched_set.summary_avg(), " ;")
+                    utils::floats_to_string(stitched_set.summary_avg(), " ;")
                 ))
             });
         });
@@ -211,6 +212,8 @@ impl Stitched {
         metrics.iter().for_each(|metric| {
             csv.add_line(format!("Proces/Operation metric: {metric}"));
 
+            csv.add_line(Anomalies::report_stats_line_header_str().to_owned());
+
             self.process_operation.iter().for_each(|(po, lines)| {
                 lines
                     .0
@@ -219,7 +222,7 @@ impl Stitched {
                     .for_each(|line| {
                         if let Some(anomalies) = line.anomalies() {
                             num_anomalies += 1;
-                            csv.add_line(format!("{po};{}", anomalies.to_csv()))
+                            csv.add_line(anomalies.report_stats_line(po))
                         }
                     })
             });

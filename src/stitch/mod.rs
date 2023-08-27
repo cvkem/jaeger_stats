@@ -3,7 +3,8 @@
 //! for a specific method-operation of call-chain and thus shows how this value evolves over time.
 //! In the current version the output goes to a CSV-file that can be read in Excel. In this version the data-transformation and the output generation are coupled. In a next version we should
 //! split these phases such that we a separation of concerns and open new options to use the data.
-//!
+
+mod anomalies;
 mod call_chain_reporter;
 mod csv_file;
 mod dataseries;

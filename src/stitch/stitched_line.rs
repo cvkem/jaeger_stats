@@ -1,4 +1,5 @@
-use crate::utils::{self, floats_ref_to_string, format_float, format_float_opt, LinearRegression};
+use crate::utils::{floats_ref_to_string, format_float, format_float_opt, LinearRegression};
+use super::anomalies::Anomalies;
 use std::iter;
 
 const ST_DATA_LEN: usize = 5;
@@ -22,18 +23,6 @@ pub struct StitchedLine {
     pub st_line: Option<ShortTermStitchedLine>,
 }
 
-pub struct Anomalies {
-    pub slope: Option<f64>,
-    pub st_slope: Option<f64>,
-    pub l1_deviation: Option<f64>,
-}
-
-impl Anomalies {
-    pub fn to_csv(&self) -> String {
-        let data = [self.slope, self.st_slope, self.l1_deviation].to_vec();
-        utils::floats_to_string(data, "; ")
-    }
-}
 
 impl StitchedLine {
     pub fn new(label: String, data: Vec<Option<f64>>) -> Self {
@@ -64,6 +53,7 @@ impl StitchedLine {
             st_line,
         }
     }
+
 
     pub fn anomalies(&self) -> Option<Anomalies> {
         self.lin_reg.as_ref().and_then(|_lin_reg| {
