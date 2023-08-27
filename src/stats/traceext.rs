@@ -2,7 +2,7 @@ use crate::{
     processed::Trace,
     stats::{
         call_chain::{CChainEndPointCache, CChainStatsValue},
-        stats::StatsRec,
+        stats_rec::StatsRec,
     },
     utils::write_string_to_file,
     utils::{extend_create_folder, report, Chapter},

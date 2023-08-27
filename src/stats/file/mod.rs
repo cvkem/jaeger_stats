@@ -2,11 +2,11 @@
 //!
 mod bincode;
 mod json;
-mod stats_json;
+mod operation_stats_json;
 
 use super::StatsRec;
 
-pub use stats_json::{StatsJson, StatsRecJson};
+pub use operation_stats_json::{OperationStatsJson, StatsRecJson};
 
 pub fn write_stats(file_name: &str, stats: StatsRec, ext: &str) {
     let file_name = file_name.replace(".csv", &format!(".{ext}"));

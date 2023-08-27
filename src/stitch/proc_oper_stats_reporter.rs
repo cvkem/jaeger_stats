@@ -45,7 +45,7 @@ impl POReportItems {
         data.iter().for_each(|stats_rec| {
             if let Some(stats_rec) = stats_rec {
                 stats_rec.stats.iter().for_each(|(proc_key, st)| {
-                    st.method.0.iter().for_each(|(oper_key, _)| {
+                    st.operation.0.iter().for_each(|(oper_key, _)| {
                         _ = keys.insert(Key {
                             process: proc_key.to_owned(),
                             operation: oper_key.to_owned(),
@@ -68,7 +68,7 @@ impl POReportItems {
             .map(|stats_rec| {
                 stats_rec.as_ref().and_then(|stats_rec| {
                     stats_rec.stats.get(&po_key.process).and_then(|st| {
-                        st.method
+                        st.operation
                             .0
                             .get(&po_key.operation) // can return None!
                             .map(|oper| (oper, stats_rec.num_files, stats_rec.trace_id.len()))

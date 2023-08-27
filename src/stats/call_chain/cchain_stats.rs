@@ -240,7 +240,12 @@ impl CChainStatsValue {
         format_float(self.get_frac_error_log())
     }
 
-    /// reports the statistics for a single line
+    /// header for report_stats_line output in ';'-separated csv-format
+    pub fn report_stats_line_header_str() -> &'static str {
+        "Call_chain; cc_hash; End_point; Process/operation; Is_leaf; Depth; Count; Looped; Revisit; Caching_proces; Min_millis; Avg_millis; Max_millis; Percentage; Rate; expect_duration; expect_contribution; frac_http_not_ok; frac_error_logs"
+    }
+
+    /// reports the statistics for a single line in ';'-separated csv-format
     pub fn report_stats_line(
         &self,
         process_key: &str,

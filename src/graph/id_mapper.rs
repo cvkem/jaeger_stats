@@ -44,7 +44,9 @@ impl IdMapper {
     //         let id = self.id_generator.get_id();
     //         // next line triggers error:
     //         // error[E0502]: cannot borrow `self.mapping` as mutable because it is also borrowed as immutable
-    //         // which is incorrect as the mapping.get has finished
+    //         // which ssems incorrect as the mapping.get has finished
+    //         // However, get key returns a reference which triggers this behavior as the compiler might conservaly suspect
+    //         // this reference could point/refer to a value inside the object, while it actually is a normal value.
     //         self.mapping.insert(key.to_owned(), id);
     //         self.mapping.get(key).expect("Inserted key does not exist!!")
     //     }
