@@ -17,6 +17,7 @@ pub struct ShortTermStitchedLine {
 pub struct StitchedLine {
     pub label: String,
     pub data: Vec<Option<f64>>,
+    pub data_avg: Option<f64>,
     pub lin_reg: Option<LinearRegression>,
     pub st_line: Option<ShortTermStitchedLine>,
 }
@@ -53,9 +54,12 @@ impl StitchedLine {
             None
         };
 
+        let data_avg = Self::calculate_avg(&data);
+
         Self {
             label,
             data,
+            data_avg,
             lin_reg,
             st_line,
         }
@@ -89,9 +93,8 @@ impl StitchedLine {
         })
     }
 
-    /// TODO: the average should be cached or precomputed as we use this value many times
-    pub fn avg(&self) -> Option<f64> {
-        let values: Vec<_> = self.data.iter().filter_map(|x| *x).collect();
+    pub fn calculate_avg(data: &Vec<Option<f64>>) -> Option<f64> {
+        let values: Vec<_> = data.iter().filter_map(|x| *x).collect();
         if values.is_empty() {
             None
         } else {
@@ -100,7 +103,7 @@ impl StitchedLine {
     }
 
     pub fn scaled_slope(&self) -> Option<f64> {
-        self.avg().and_then(|avg| {
+        self.data_avg.and_then(|avg| {
             if avg.abs() > 1e-100 {
                 self.lin_reg.as_ref().map(|lin_reg| lin_reg.slope / avg)
             } else {
@@ -110,7 +113,7 @@ impl StitchedLine {
     }
 
     pub fn scaled_st_slope(&self) -> Option<f64> {
-        self.avg().and_then(|avg| {
+        self.data_avg.and_then(|avg| {
             if avg.abs() > 1e-100 {
                 self.st_line.as_ref().map(|stl| stl.lin_reg.slope / avg)
             } else {
