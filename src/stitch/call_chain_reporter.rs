@@ -2,6 +2,7 @@ use super::stitched_line::StitchedLine;
 use crate::{
     stats::call_chain::CChainStatsKey,
     stats::{call_chain::CChainStatsValue, StatsRec},
+    AnomalyParameters,
 };
 
 use std::{cmp::Ordering, collections::HashMap};
@@ -29,13 +30,13 @@ impl CCReportItem {
         Self { label, processor }
     }
 
-    pub fn extract_stitched_line(&self, data: &CCData) -> StitchedLine {
+    pub fn extract_stitched_line(&self, data: &CCData, pars: &AnomalyParameters) -> StitchedLine {
         let values = data
             .iter()
             .map(|ms| ms.as_ref().and_then(self.processor))
             .collect::<Vec<_>>();
 
-        StitchedLine::new(self.label.to_string(), values)
+        StitchedLine::new(self.label.to_string(), values, pars)
     }
 }
 

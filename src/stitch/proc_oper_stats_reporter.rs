@@ -1,4 +1,4 @@
-use crate::{stats::ProcOperStatsValue, stats::StatsRec};
+use crate::{stats::ProcOperStatsValue, stats::StatsRec, AnomalyParameters};
 use std::collections::HashSet;
 
 use super::{key::Key, stitched_line::StitchedLine};
@@ -23,13 +23,13 @@ impl POReportItem {
         Self { label, processor }
     }
 
-    pub fn extract_stitched_line(&self, data: &POData) -> StitchedLine {
+    pub fn extract_stitched_line(&self, data: &POData, pars: &AnomalyParameters) -> StitchedLine {
         let values = data
             .iter()
             .map(|ms| ms.as_ref().and_then(self.processor))
             .collect::<Vec<_>>();
 
-        StitchedLine::new(self.label.to_string(), values)
+        StitchedLine::new(self.label.to_string(), values, pars)
     }
 }
 

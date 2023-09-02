@@ -5,6 +5,7 @@ use super::stitched_line::StitchedLine;
 #[derive(Debug)]
 pub struct AnomalyParameters {
     pub scaled_slope_bound: f64,    // default 0.05
+    pub st_num_points: usize,       // default 5
     pub scaled_st_slope_bound: f64, // default 0.05
     pub l1_dev_bound: f64,          // default 2.0
 }
