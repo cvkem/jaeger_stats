@@ -2,6 +2,7 @@
 //!
 mod comma_float;
 mod counted;
+mod csv_file;
 mod datetime;
 mod file;
 mod hash;
@@ -15,6 +16,7 @@ pub use self::{
         floats_ref_to_string, floats_to_string, format_float, format_float_opt, set_comma_float,
     },
     counted::Counted,
+    csv_file::CsvFileBuffer,
     datetime::{
         datetime_micros_str, datetime_millis_str, datetime_to_micros, micros_to_datetime,
         set_tz_offset_minutes,
