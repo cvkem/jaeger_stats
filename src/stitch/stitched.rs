@@ -6,7 +6,7 @@ use crate::{
 };
 
 use super::{
-    anomalies::Anomalies,
+    anomalies::{Anomalies, AnomalyParameters},
     call_chain_reporter::CCReportItems,
     dataseries::DataSeries,
     proc_oper_stats_reporter::POReportItems,
@@ -204,7 +204,11 @@ impl Stitched {
     }
 
     /// Add the anomalies on the Process/Operation-level to the 'csv'.
-    fn add_process_operation_anomalies(&self, csv: &mut CsvFileBuffer) -> usize {
+    fn add_process_operation_anomalies(
+        &self,
+        csv: &mut CsvFileBuffer,
+        pars: &AnomalyParameters,
+    ) -> usize {
         let mut num_anomalies = 0;
 
         let metrics: Vec<_> = PROC_OPER_REPORT_ITEMS
@@ -223,7 +227,7 @@ impl Stitched {
                     .iter()
                     .filter(|s| s.label[..] == **metric)
                     .for_each(|line| {
-                        if let Some(anomalies) = line.anomalies() {
+                        if let Some(anomalies) = line.anomalies(pars) {
                             num_anomalies += 1;
                             csv.add_line(anomalies.report_stats_line(po))
                         }
@@ -236,7 +240,7 @@ impl Stitched {
     }
 
     /// Add the anomalies on the Process/Operation-level to the 'csv'.
-    fn add_call_chain_anomalies(&self, csv: &mut CsvFileBuffer) -> usize {
+    fn add_call_chain_anomalies(&self, csv: &mut CsvFileBuffer, pars: &AnomalyParameters) -> usize {
         let mut num_anomalies = 0;
 
         let metrics: Vec<_> = CALL_CHAIN_REPORT_ITEMS
@@ -257,7 +261,7 @@ impl Stitched {
                         .iter()
                         .filter(|s| s.label[..] == **metric)
                         .for_each(|line| {
-                            if let Some(anomalies) = line.anomalies() {
+                            if let Some(anomalies) = line.anomalies(pars) {
                                 num_anomalies += 1;
                                 csv.add_line(anomalies.report_stats_line(cc_label))
                             }
@@ -276,7 +280,7 @@ impl Stitched {
     ///    3. The deviation for today is 2x higher than average L1-deviation
     /// The reporting happens per Measure and subsequently per BSP and the most important measures are handled first.
     /// On each line all three criteria are shown (with value and with a flag which values exceed the bound)
-    pub fn write_anomalies_csv(&self, path: &Path) -> usize {
+    pub fn write_anomalies_csv(&self, path: &Path, pars: &AnomalyParameters) -> usize {
         let mut csv = CsvFileBuffer::new();
 
         let mut num_anomalies = 0;
@@ -284,8 +288,8 @@ impl Stitched {
         csv.add_empty_lines(2);
         csv.add_toc(PROC_OPER_REPORT_ITEMS.0.len() + CALL_CHAIN_REPORT_ITEMS.0.len() + 2);
 
-        num_anomalies += self.add_process_operation_anomalies(&mut csv);
-        num_anomalies += self.add_call_chain_anomalies(&mut csv);
+        num_anomalies += self.add_process_operation_anomalies(&mut csv, pars);
+        num_anomalies += self.add_call_chain_anomalies(&mut csv, pars);
 
         if num_anomalies > 0 {
             csv.write_file(path);

@@ -16,5 +16,6 @@ mod stitched;
 mod stitched_line;
 mod stitched_set;
 
+pub use anomalies::AnomalyParameters;
 pub use stitch_list::StitchList;
 pub use stitched::Stitched;

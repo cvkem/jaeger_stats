@@ -1,6 +1,5 @@
-use super::anomalies::Anomalies;
+use super::anomalies::{Anomalies, AnomalyParameters};
 use crate::utils::{self, LinearRegression};
-use std::iter;
 
 const ST_DATA_LEN: usize = 5;
 const MIN_SL_LEN_FOR_ST_LINE: usize = 10;
@@ -53,8 +52,8 @@ impl StitchedLine {
         }
     }
 
-    pub fn anomalies(&self) -> Option<Anomalies> {
-        Anomalies::anomalies(&self)
+    pub fn anomalies(&self, pars: &AnomalyParameters) -> Option<Anomalies> {
+        Anomalies::anomalies(&self, pars)
     }
 
     pub fn calculate_avg(data: &Vec<Option<f64>>) -> Option<f64> {

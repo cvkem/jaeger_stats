@@ -2,6 +2,12 @@ use crate::utils;
 
 use super::stitched_line::StitchedLine;
 
+#[derive(Debug)]
+pub struct AnomalyParameters {
+    pub scaled_slope_bound: f64,    // default 0.05
+    pub scaled_st_slope_bound: f64, // default 0.05
+    pub l1_dev_bound: f64,          // default 2.0
+}
 pub struct Anomalies {
     pub scaled_slope: Option<f64>,
     pub st_scaled_slope: Option<f64>,
@@ -9,16 +15,24 @@ pub struct Anomalies {
 }
 
 impl Anomalies {
-    pub fn anomalies(line: &StitchedLine) -> Option<Anomalies> {
+    pub fn anomalies(line: &StitchedLine, pars: &AnomalyParameters) -> Option<Anomalies> {
         line.lin_reg.as_ref().and_then(|_lin_reg| {
-            let scaled_slope =
-                line.scaled_slope()
-                    .and_then(|sslope| if sslope > 0.05 { Some(sslope) } else { None });
-            let st_scaled_slope =
-                line.scaled_st_slope()
-                    .and_then(|sslope| if sslope > 0.05 { Some(sslope) } else { None });
+            let scaled_slope = line.scaled_slope().and_then(|sslope| {
+                if sslope > pars.scaled_slope_bound {
+                    Some(sslope)
+                } else {
+                    None
+                }
+            });
+            let st_scaled_slope = line.scaled_st_slope().and_then(|sslope| {
+                if sslope > pars.scaled_st_slope_bound {
+                    Some(sslope)
+                } else {
+                    None
+                }
+            });
             let l1_deviation = line.last_deviation_scaled().and_then(|l1_dev| {
-                if l1_dev > 2.0 {
+                if l1_dev > pars.l1_dev_bound {
                     Some(l1_dev)
                 } else {
                     None
