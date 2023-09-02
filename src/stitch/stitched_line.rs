@@ -1,8 +1,7 @@
 use super::anomalies::{Anomalies, AnomalyParameters};
 use crate::utils::{self, LinearRegression};
 
-const ST_DATA_LEN: usize = 5;
-const MIN_SL_LEN_FOR_ST_LINE: usize = 10;
+const MIN_POINTS_FOR_ST_MULTIPLIER: usize = 2;
 
 #[derive(Debug)]
 /// Used to represent a short time-interval and the linear regression on this short interval. This data is used to detect anomalies
@@ -23,13 +22,15 @@ pub struct StitchedLine {
 }
 
 impl StitchedLine {
-    pub fn new(label: String, data: Vec<Option<f64>>) -> Self {
+    /// compute a data-series (StitchedLine) including linear regression, the average of the data and possibly a short-term line for the last few datapoint.
+    /// The Short-Term line is used to detect anomalies. However, this is only computed if the full dataset significantly exceed the size of the ST
+    pub fn new(label: String, data: Vec<Option<f64>>, pars: &AnomalyParameters) -> Self {
         let lin_reg = LinearRegression::new(&data);
 
-        let st_line = if data.len() >= MIN_SL_LEN_FOR_ST_LINE {
+        let st_line = if data.len() >= MIN_POINTS_FOR_ST_MULTIPLIER * pars.st_num_points {
             let st_data: Vec<_> = data
                 .iter()
-                .skip(data.len() - ST_DATA_LEN)
+                .skip(data.len() - pars.st_num_points)
                 .copied()
                 .collect();
             // Only if the Lineair regression is possible a ShortTermStitchedLine is returne
@@ -65,20 +66,29 @@ impl StitchedLine {
         }
     }
 
+    /// Compute a scaled slope by moving the average value to 0.5.
+    /// This will scale down the slope as if data stems from the interval [0,1], provided data has a symetric distribution.
     pub fn scaled_slope(&self) -> Option<f64> {
         self.data_avg.and_then(|avg| {
             if avg.abs() > 1e-100 {
-                self.lin_reg.as_ref().map(|lin_reg| lin_reg.slope / avg)
+                self.lin_reg
+                    .as_ref()
+                    .map(|lin_reg| lin_reg.slope / (2.0 * avg))
             } else {
                 None
             }
         })
     }
 
+    /// Compute a scaled slope on the short term data by moving the average value to 0.5.
+    /// This will scale down the slope as if data stems from the interval [0,1], provided data has a symetric distribution.
+    /// The average of the full dataset is used for the scaling, and not the average of the short-term daata.
     pub fn scaled_st_slope(&self) -> Option<f64> {
         self.data_avg.and_then(|avg| {
             if avg.abs() > 1e-100 {
-                self.st_line.as_ref().map(|stl| stl.lin_reg.slope / avg)
+                self.st_line
+                    .as_ref()
+                    .map(|stl| stl.lin_reg.slope / (2.0 * avg))
             } else {
                 None
             }

@@ -16,6 +16,12 @@ use super::{
 };
 use std::{mem, path::Path};
 
+#[derive(Debug)]
+pub struct StitchParameters {
+    pub drop_count: usize,
+    pub anomaly_pars: AnomalyParameters,
+}
+
 #[derive(Default)]
 pub struct Stitched {
     /// the list of input-files (one per analysis) that are used. This list also
@@ -31,7 +37,7 @@ impl Stitched {
     ///    1. `stitched_tables::BASIC_REPORT_ITEMS`: Some basic statistics for this dataset.
     ///    2. `stitched_tables::PROC_OPER_REPORT_ITEMS`:  A report on the level of Process/Operation.
     ///    3. `stitched_tables::CALL_CHAIN_REPORT_ITEMS`:  A detailed report where we compute separate statistics for each call-chain (call-path) that lead to a specific Process/Operation.
-    pub fn build(mut stitch_list: StitchList, drop_count: usize) -> Self {
+    pub fn build(mut stitch_list: StitchList, pars: &StitchParameters) -> Self {
         let sources = mem::take(&mut stitch_list.lines);
         let mut stitched = Self {
             sources,
@@ -41,13 +47,19 @@ impl Stitched {
         // this method reads the data in the original format, so data contains one column (StatsRec) per dataset
         let mut data = stitch_list.read_data();
 
-        let num_dropped = DataSeries(&mut data).drop_low_volume_traces(drop_count);
-        println!("Based on drop_count={drop_count} we have dropped {num_dropped} Processes over all datasets.");
+        let num_dropped = DataSeries(&mut data).drop_low_volume_traces(pars.drop_count);
+        println!(
+            "Based on drop_count={} we have dropped {num_dropped} Processes over all datasets.",
+            pars.drop_count
+        );
 
         // add the basic report items as defined in stitch_tables::BASIC_REPORT_ITEMS.
-        BASIC_REPORT_ITEMS
-            .iter()
-            .for_each(|sr| stitched.basic.0.push(sr.extract_stitched_line(&data)));
+        BASIC_REPORT_ITEMS.iter().for_each(|sr| {
+            stitched
+                .basic
+                .0
+                .push(sr.extract_stitched_line(&data, &pars.anomaly_pars))
+        });
 
         POReportItems::get_keys(&data)
             .into_iter()
@@ -56,7 +68,7 @@ impl Stitched {
                 let stitched_set = PROC_OPER_REPORT_ITEMS
                     .0
                     .iter()
-                    .map(|por| por.extract_stitched_line(&key_data))
+                    .map(|por| por.extract_stitched_line(&key_data, &pars.anomaly_pars))
                     .collect();
                 stitched
                     .process_operation
@@ -73,7 +85,7 @@ impl Stitched {
                         let stitched_set = CALL_CHAIN_REPORT_ITEMS
                             .0
                             .iter()
-                            .map(|por| por.extract_stitched_line(&key_data))
+                            .map(|por| por.extract_stitched_line(&key_data, &pars.anomaly_pars))
                             .collect();
                         (cc_key.to_string(), StitchedSet(stitched_set))
                     })
