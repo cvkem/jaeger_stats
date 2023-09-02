@@ -17,5 +17,5 @@ pub use utils::{
     set_comma_float, set_tz_offset_minutes, string_hash, write_report,
 };
 
-pub use stitch::{StitchList, Stitched};
+pub use stitch::{AnomalyParameters, StitchList, Stitched};
 pub use trace_analysis::analyze_file_or_folder;

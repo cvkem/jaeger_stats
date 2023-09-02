@@ -1,5 +1,5 @@
 use clap::Parser;
-use jaeger_stats::{set_comma_float, StitchList, Stitched};
+use jaeger_stats::{set_comma_float, AnomalyParameters, StitchList, Stitched};
 use std::path::Path;
 
 /// Stitching results of different runs of trace_analysis into a single CSV for visualization in Excel
@@ -21,6 +21,15 @@ struct Args {
 
     #[arg(short, long, default_value_t = 0)]
     drop_count: usize,
+
+    #[arg(long, default_value_t = 0.05)]
+    scaled_slope_bound: f64,
+
+    #[arg(long, default_value_t = 0.05)]
+    scaled_st_slope_bound: f64,
+
+    #[arg(long, default_value_t = 2.0)]
+    l1_dev_bound: f64,
 }
 
 fn main() {
@@ -40,7 +49,20 @@ fn main() {
     println!("Stitched output written to: '{}'", path.display());
 
     let path = Path::new(&args.anomalies);
-    let num_anomalies = stitched.write_anomalies_csv(path);
+
+    let anomaly_pars = {
+        let scaled_slope_bound = args.scaled_slope_bound;
+        let scaled_st_slope_bound = args.scaled_st_slope_bound;
+        let l1_dev_bound = args.l1_dev_bound;
+        AnomalyParameters {
+            scaled_slope_bound,
+            scaled_st_slope_bound,
+            l1_dev_bound,
+        }
+    };
+
+    println!("Using anomaly parameters: {anomaly_pars:?}");
+    let num_anomalies = stitched.write_anomalies_csv(path, &anomaly_pars);
     if num_anomalies > 0 {
         println!(
             "Detected {num_anomalies}.\n\tFor further information check file '{}'",
