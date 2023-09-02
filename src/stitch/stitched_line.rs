@@ -54,31 +54,7 @@ impl StitchedLine {
     }
 
     pub fn anomalies(&self) -> Option<Anomalies> {
-        self.lin_reg.as_ref().and_then(|_lin_reg| {
-            let slope =
-                self.scaled_slope()
-                    .and_then(|sslope| if sslope > 0.05 { Some(sslope) } else { None });
-            let st_slope =
-                self.scaled_st_slope()
-                    .and_then(|sslope| if sslope > 0.05 { Some(sslope) } else { None });
-            let l1_deviation = self.last_deviation_scaled().and_then(|l1_dev| {
-                if l1_dev > 2.0 {
-                    Some(l1_dev)
-                } else {
-                    None
-                }
-            });
-
-            if slope.is_some() || st_slope.is_some() || l1_deviation.is_some() {
-                Some(Anomalies {
-                    slope,
-                    st_slope,
-                    l1_deviation,
-                })
-            } else {
-                None
-            }
-        })
+        Anomalies::anomalies(&self)
     }
 
     pub fn calculate_avg(data: &Vec<Option<f64>>) -> Option<f64> {
@@ -138,7 +114,7 @@ impl StitchedLine {
             })
             .collect::<Vec<_>>()
             .join("; ");
-        format!("label; {columns}; ; ; slope; y_intercept; R_squared; L1_deviatipn, scaled_slope, last_deviation")
+        format!("label; {columns}; ; ; slope; y_intercept; R_squared; L1_deviation, scaled_slope, last_deviation")
     }
 
     /// Show the current line as a string in the csv-format with a ';' separator

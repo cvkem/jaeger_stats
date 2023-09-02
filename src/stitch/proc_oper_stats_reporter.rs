@@ -1,9 +1,4 @@
-use crate::{
-    stats::ProcOperStatsValue,
-    stats::StatsRec,
-    //rate::set_show_rate_output,
-    utils::LinearRegression,
-};
+use crate::{stats::ProcOperStatsValue, stats::StatsRec};
 use std::collections::HashSet;
 
 use super::{key::Key, stitched_line::StitchedLine};

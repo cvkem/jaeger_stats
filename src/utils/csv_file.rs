@@ -18,13 +18,13 @@ impl CsvFileBuffer {
     }
 
     /// Adding empty lines to the buffer
-    pub fn add_empty_lines(&mut self, num: u32) {
+    pub fn add_empty_lines(&mut self, num: usize) {
         (0..num).for_each(|_| self.buffer.push(String::new())) // empty lines translate to newlines
     }
 
     /// add a table of contents and result 'max_entries'  space
-    pub fn add_toc(&mut self, max_entries: u32) {
-        self.start_toc = self.buffer.len();
+    pub fn add_toc(&mut self, max_entries: usize) {
+        self.start_toc = self.num_lines();
         self.toc_index = 1; // entry 0 is for the title
         self.buffer
             .push("Table of Contents of this file (starting rows of sections):".to_owned());
@@ -36,7 +36,7 @@ impl CsvFileBuffer {
         self.add_empty_lines(2);
         self.buffer.push(format!("## {title}"));
         self.buffer[self.start_toc + self.toc_index] =
-            format!("{:3} @ row {}: {title}", self.toc_index, self.buffer.len());
+            format!("{:3} @ row {}: {title}", self.toc_index, self.num_lines());
         self.toc_index += 1;
     }
 

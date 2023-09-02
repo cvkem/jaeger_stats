@@ -2,7 +2,6 @@ use super::stitched_line::StitchedLine;
 use crate::{
     stats::call_chain::CChainStatsKey,
     stats::{call_chain::CChainStatsValue, StatsRec},
-    utils::LinearRegression,
 };
 
 use std::{cmp::Ordering, collections::HashMap};
@@ -17,7 +16,7 @@ type CCData<'a> = Vec<Option<ProcessorInput<'a>>>;
 /// TODO: as this is a copy of the POReportItem, including all code we should move this to generics
 ///   only the Processor-type and thus the input data are different.
 pub struct CCReportItem {
-    label: &'static str,
+    pub label: &'static str,
     processor: Processor,
 }
 
