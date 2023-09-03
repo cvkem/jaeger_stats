@@ -1,6 +1,6 @@
 [package]
 name = "jaeger_stats"
-version = "0.2.0"
+version = "0.2.1"
 about = "Parsing and analyzing Jaeger traces to extract statistics and call-chains"
 author = "Cees van Kemenade"
 edition = "2021"
