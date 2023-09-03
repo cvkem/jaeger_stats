@@ -122,3 +122,19 @@ pub struct JaegerTrace {
     pub offset: i32,
     pub errors: Option<Vec<JaegerError>>,
 }
+
+impl JaegerTrace {
+    /// Build a JaegerTrace with a single JaegerItem in it (so a single TraceId)
+    pub fn new(ji: JaegerItem) -> Self {
+        let mut data = Vec::with_capacity(1);
+        data.push(ji);
+
+        JaegerTrace {
+            data,
+            total: 0,
+            limit: 0,
+            offset: 0,
+            errors: None,
+        }
+    }
+}

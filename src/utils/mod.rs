@@ -5,6 +5,7 @@ mod counted;
 mod csv_file;
 mod datetime;
 mod file;
+mod fs;
 mod hash;
 mod linear_reg;
 mod rate;
@@ -22,6 +23,7 @@ pub use self::{
         set_tz_offset_minutes,
     },
     file::{extend_create_folder, read_lines, write_string_to_file},
+    fs::canonicalize_path,
     hash::{hash, string_hash},
     linear_reg::LinearRegression,
     rate::{calc_rate, set_show_rate_output},

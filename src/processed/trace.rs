@@ -58,9 +58,10 @@ impl Trace {
     }
 }
 
-pub fn extract_traces(jt: &JaegerTrace) -> Vec<Trace> {
+/// Transform a raw JaegerTrace to a vector of Traces. A single JaegerTrace file can contain many traces, and these will be split out.
+pub fn extract_traces(jt: JaegerTrace) -> Vec<Trace> {
     let num_traces = jt.data.len();
-    (0..num_traces).map(|idx| Trace::new(jt, idx)).collect()
+    (0..num_traces).map(|idx| Trace::new(&jt, idx)).collect()
 }
 
 fn find_full_duration(ji: &JaegerItem) -> (i64, i64) {

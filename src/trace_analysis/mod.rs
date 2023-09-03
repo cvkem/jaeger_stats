@@ -1,8 +1,12 @@
-use crate::stats::{self as crate_stats};
+use crate::{
+    processed, raw,
+    stats::{self as crate_stats},
+    utils,
+};
+
 use std::path::{Path, PathBuf};
 
 mod dedup;
-mod read;
 mod stats;
 mod write;
 
@@ -11,7 +15,8 @@ mod write;
 ///
 /// /// TODO: a cleaner solution would be based on a chain of iteratos as this:
 ///    1. Improves readibility code (at least at top level)
-///    2. Would make the system less memory intensive as it will become a streaming pipeline which consumes intermediate data as it is prodced.
+///    2. Would make the system less memory intensive as it will become a streaming pipeline which consumes intermediate data as it is produced.
+///    3. Would make injection of the processed::extract_traces unnecessary (now needed to process at the bottom of the tree)
 /// The challenging part is the stats module where we partition data over two streams.
 ///  
 pub fn analyze_file_or_folder(
@@ -22,17 +27,10 @@ pub fn analyze_file_or_folder(
     output_ext: &str,
 ) -> PathBuf {
     // Read raw jaeger-traces and process them to clean traces.
-    let (traces, num_files, folder) = read::read_process_file_or_folder(path);
+    let (traces, num_files, folder) =
+        raw::read_process_file_or_folder(path, processed::extract_traces);
 
-    let folder = if folder == Path::new("") {
-        Path::new(".")
-    } else {
-        folder
-    };
-    let folder = folder
-        .to_path_buf()
-        .canonicalize()
-        .expect("Failed to make canonical path. Path probably does not exist!");
+    let folder = utils::canonicalize_path(folder);
     println!("The folder is '{}'", folder.as_path().display());
 
     // When joining traces from multiple files we can have duplicates. These should be removed to prevent incorrect statistics

@@ -1,11 +1,13 @@
 # jaeger_stats
-Parse Jaeger-json files in order to collect trace statistics
+The jaeger_stats is a library project focussed on handling and analyzing jaeger-traces. Jaeger-traces provide very detailled information. This is very useful for a detailled issue analysis. Hoevever this can also be a very useful source of information on how processes run in a complex microservices landscape and to gain insights how the landscape and the pressure on the individual service evolve over time.
+
+This Jaeger_stats also contains a few tools (executables) build on top of the library to show-case how the tooling can be used, or even to use the tooling.
 
 ## How to run an analysis
 You can run the tool on a single Jaeger-trace via the command:
 
 ```
-trace_analysis  <data_folder>  -c <data_folder>/CallChain
+trace_analysis  <data_folder> 
 ```
 
 Here data_folder can be an absolute or a relative path, however the expansion of '~'  to a home-folder is not supported. The path-encoding needs to match the conventions of your system (Windows or Linux/Unix/Mac). 
@@ -13,12 +15,12 @@ Here data_folder can be an absolute or a relative path, however the expansion of
 The tool will analyse all read all json-file in the folder (assuming these are valid Jaeger-trace files) and will process these files and compute statistics. Each json file can contains one or more traces. Output will be generated in the next folders:
 * <data_folder>/Traces: contains a single file for each trace. This file is name <trace_id>.txt and contains fairly concise textual representation of the jaeger-trace
 * <data_folder>/Stats: contains file with the statistics over traces. The most important one is 'Stats/cummulative_trace_stats.csv' which contains statistics over all traces. However, you will also see a number of other files such as 'Stats/gateway_POST__services_orders_update.csv' which contains the statistics over the subset of traces originating from the end-point 'gateway/POST:/services/orders/update/'. Next to each of the .csv files we will save a .json file with the same based that contains the full dataset (csv-files are a sub-set for reading in excel. The full files are used for later post-processing, for example by the 'stitch' tool)
-* <data_folder>/CallChain: This folder contains a text-files such as for example 'Stats/gateway_POST__services_orders_update.cchain' which contains a list of all call-chains that originate at the API-gateway endpoint 'gateway/POST:/services/orders/update/'. So each line in this cchain-file represents a unique series of process (microservices) that appears in the input-traces. These Cchain files give an impression of the complexity of the processing, and these files also serve a purpose in the correction of incomplete traces, which is the topic of a separate section.
-* report.txt: a structured log-file showing a summary and detail information on the analysis process.
+* <data_folder>/CallChain: This folder contains a text-files such as for example 'Stats/gateway_POST__services_orders_update.cchain' which contains a list of all call-chains that originate at the API-gateway endpoint 'gateway/POST:/services/orders/update/'. So each line in this cchain-file represents a unique series of process (microservices) that appears in the input-traces. These Cchain files give an impression of the complexity of the processing, and these files also serve a purpose in the correction of incomplete traces, which is the topic of a separate section. Via configuration it is possble to move this 'CallChain' folder to another location such that this folder can be shared between different data_folders.
+* report.txt: a structured log-file showing a summary and detail information on the analysis process. 
 
 Traces will be deduplicated before analysis based on the 'trace_id'  so if the folder contains files that overlap in traces they contain this overlap is removed.
 
-When you run the commandd with flag `--help` you see:
+When you run the trace_analysis with flag `--help` you see:
 ```
 $ trace_analysis --help
 Parsing and analyzing Jaeger traces
@@ -29,18 +31,30 @@ Arguments:
   <INPUT>  
 
 Options:
-      --caching-process <CACHING_PROCESS>      
-  -c, --call-chain-folder <CALL_CHAIN_FOLDER>  [default: /home/ceesvk/CallChain/]
-  -t, --timezone-minutes <TIMEZONE_MINUTES>    [default: 120]
-  -f, --comma-float                            
-  -h, --help                                   Print help
-  -V, --version                                Print version
+      --caching-process <CACHING_PROCESS>
+          
+  -c, --call-chain-folder <CALL_CHAIN_FOLDER>
+          The default source for call-chain information is a sub-folder'CallChain' located in the current folder [default: CallChain/]
+  -z, --timezone-minutes <TIMEZONE_MINUTES>
+          [default: 120]
+  -f, --comma-float
+          
+  -t, --trace-output
+          
+  -o, --output-ext <OUTPUT_EXT>
+          The output-extension determines the output-types are 'json' and 'bincode' (which is also used as the file-extension) [default: json]
+  -h, --help
+          Print help
+  -V, --version
+          Print version
 ```
 The options are:
 * --caching-process: a comma separated list of processes that apply caching of results. This information os relevant as the call-chains that contain these services are called less often as the downstream data migh be cached. If you know the cache-hit-rates you are able to correct the leaf nodes to compute the expected number of calls when the cache is turned off (or flushed). It is also possible to acctually compute the cache-hit ratios by comparing the traffic on the 'path/cached_service' vs 'path/cached_service *LEAF*', where the version marked with  '*LEAF*' are the the calls that do not have any downstream processing This can happens for example when a cache-hits removes the need for downstream analysis. However, this be care-ful this also occures if the service does not do down-stream calls for other reasons, such as incorrect or empty parameters.
-* --call-chain-folder: The folder containing files used to correct incomplete call-chains 
-* --timezone-minutes: The offset in minutes for the current timezone relative to UTC. The default value is 120 minutes which corresponds to AMS-timezone
-* -- comma-float: In CSV files floating point values are using a comma as separator instead of the '.' to allow the file to be read in an Excel. The default value is 'true' (using )
+* --call-chain-folder (-c): The folder containing files used to correct incomplete call-chains
+* --timezone-minutes (-z): The offset in minutes for the current timezone relative to UTC. The default value is 120 minutes which corresponds to AMS-timezone
+* -- comma-float (-f): In CSV files floating point values are using a comma as separator instead of the '.' to allow the file to be read in an Excel. The default value is 'true'
+* --trace_output (-t): a boolean to signal whether the '<data_folder>/Traces' should be filled with traces. The default is 'false' as these traces can be volumeous data.
+* --output-ext: If the output-ext is set to 'json' (default) which means that the output is written to a json-file. The alternative is 'bincode'. Writing 'bincode' files is faster, but the format is not human readible.
 
 ## Contents of the files with statistics
 The statistics files, such as 'Stats/cummulative_trace_stats.csv' use the ';' as the column separator. This file falls apart in four sections:
@@ -77,6 +91,19 @@ Method 2.2 allows you to select 1000 traces or more. However, the output a singl
 
 
 ## Using stitch-tool to merges results of different runs 
+The stitch tool is used to take a series of trace_analysis outputs and stitch them together to a single time-series analysis. The inputs are defined in a file 'input.stitch'.
+
+The collected (time-series) output is written to a file 'stitch.csv' (default) which can easily read into Microsof Excel.
+The output contains (fine-grained) metrics-data as a time-series for all:
+* process/operation combinations
+* call-chains (call paths), with is basically an additional level of details as most process/operations can be reached over multiple call-chains.
+Each time-series is amended with a linear regression analysis for that time-series.
+
+Next to the detailled output a file is generated that shows the anomalies (outliers) that have been detected.
+
+
+When you run the 'stitch' with flag `--help` you see:
+
 ```
 $ stitch -h`
 Stitching results of different runs of trace_analysis into a single CSV for visualization in Excel
@@ -84,12 +111,19 @@ Stitching results of different runs of trace_analysis into a single CSV for visu
 Usage: stitch [OPTIONS]
 
 Options:
-  -s, --stitch-list <STITCH_LIST>  [default: input.stitch]
-  -o, --output <OUTPUT>            [default: stitched.csv]
-  -c, --comma-float                
-  -h, --help                       Print help
-  -V, --version                    Print version
+  -s, --stitch-list <STITCH_LIST>                      [default: input.stitch]
+  -o, --output <OUTPUT>                                [default: stitched.csv]
+  -a, --anomalies <ANOMALIES>                          [default: anomalies.csv]
+  -c, --comma-float                                    
+  -d, --drop-count <DROP_COUNT>                        [default: 0]
+      --scaled-slope-bound <SCALED_SLOPE_BOUND>        [default: 0.05]
+      --st-num-points <ST_NUM_POINTS>                  [default: 5]
+      --scaled-st-slope-bound <SCALED_ST_SLOPE_BOUND>  [default: 0.05]
+      --l1-dev-bound <L1_DEV_BOUND>                    [default: 2]
+  -h, --help                                           Print help
+  -V, --version                                        Print version
 ```
+
 The options are:
 * --stitch_list: a file that shows the paths for all result.json files that need to be stitched together. All text after a '#' is considered comments. Empty lines are ignored (including lines that start with a comment) and lines that start with a % will show up as an empty column in the analysis (used to temporarily exclude a missing file or file containing outliers). Text after the '%' is ignored. All relative paths in the stitch-list are expected to start in the folder that contains the 'input.stitch' file, such that you can move the complete folder of the 'input.stitch' to a different location.   
 * --output: The output-file in CSV-format that contains the data stitched together. Each column in this file represents a single input-file from 'input.stitch'. Each statistic is a separate line and the second column represents the name of the statistic. 
@@ -108,8 +142,40 @@ An example of an input-file ('input.stitch') is:
 
 Beware that ALL files in the 'input.stitch' should exist and should be valid input files, otherwise the 'stitch' program will terminate with no output. 
 
+## Extracting traces with the show_traces tool
+When extracting datasets via Curl or other tools the Jaeger system returns up to 1000 traces in a single file. This file is in UTF-16-LE encoding instead of UTF-8 and is a JSON-file in a compact (minimized) format. Thus it is difficult to read these files, or to extract data out of them. For this purpose we proved the show_traces tool. It reads all jaeger-traces in a folder and then outputs these traces in a single file per trace in the folder 'Jaeger'. If are only interested in a few specific files you can provide the trace-ids of these files as a comma-separate list.
 
-## How to build trace_analysis
+When you run the show_traces with flag `--help` you see:
+```
+Show the Jaeger-traces, or a selection of jaeger-traces, as Pretty-printed JSON in UTF-8 format
+
+Usage: show_traces [OPTIONS] <INPUT>
+
+Arguments:
+  <INPUT>  
+
+Options:
+  -t, --trace-ids <TRACE_IDS>                The default sources is the current folder [default: ]
+  -z, --timezone-minutes <TIMEZONE_MINUTES>  [default: 120]
+  -h, --help                                 Print help
+  -V, --version                              Print version
+```
+
+## How to install the Jaeger_stats tools
+the Jaeger_stats tooling is deployed to pypi.org as a Python project via an automated Github CI/CD pipeline.
+Thus the tools can be installed easily on Windows, Mac and Linux via the next command:
+
+```
+pip install jaeger_stats
+```
+If you need pre-releases of the tool you need to use:
+```
+pip install --pre --force-reinstall jaeger_stats
+```
+
+
+## How to build trace_analysis (in Rust)
+
 The tool is include in the examples folder and can be build via the command:
 
 ```
