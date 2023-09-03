@@ -13,7 +13,7 @@ struct Args {
     #[arg(long)]
     caching_process: Option<String>,
 
-    /// The default sources is the current folder
+    /// The default source for call-chain information is a sub-folder'CallChain' located in the current folder
     #[arg(short, long, default_value_t = String::from("CallChain/"))]
     call_chain_folder: String,
 
