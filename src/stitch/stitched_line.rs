@@ -127,9 +127,10 @@ impl StitchedLine {
     }
 
     /// Show the current line as a string in the csv-format with a ';' separator
-    pub fn to_csv_string(&self, header: &str, idx: usize) -> String {
+    pub fn to_csv_string(&self, prefixes: &[&str]) -> String {
         // Produce the CSV_output
         let values = utils::floats_ref_to_string(&self.data, "; ");
+        let header = prefixes.join("; ");
 
         if let Some(lr) = &self.lin_reg {
             format!(
