@@ -1,3 +1,5 @@
+use serde_json::map::Iter;
+
 use super::stitched_line::StitchedLine;
 use std::iter;
 
@@ -26,7 +28,11 @@ impl StitchedSet {
                 .first()
                 .map(|sl| sl.label.to_uppercase())
                 .unwrap_or("NO DATA".to_owned());
-            iter::once(count_label).chain(headers).collect()
+            [count_label, "NUM_FILLED".to_string()]
+                .to_vec()
+                .into_iter()
+                .chain(headers)
+                .collect()
         } else {
             headers.collect()
         }
@@ -46,31 +52,30 @@ impl StitchedSet {
         self.0.iter().map(|sl| sl.data_avg).collect()
     }
 
-    pub fn summary_slopes(&self) -> Vec<Option<f64>> {
-        // NOTE: here we assume first line always is a count
+    fn prefix_with_counts(&self, data: impl Iterator<Item = Option<f64>>) -> Vec<Option<f64>> {
+        // NOTE: here we assume first line always is a count-metric
         let count = self.0.first().and_then(|data| data.data_avg);
-        iter::once(count)
-            .chain(
-                self.0
-                    .iter()
-                    .map(|sl| sl.lin_reg.as_ref().map(|lr| lr.slope)),
-            )
-            .collect()
+        let num_filled_columns = self
+            .0
+            .first()
+            .and_then(|data| Some(data.num_filled_columns as f64));
+        let prefix = [count, num_filled_columns].to_vec();
+        prefix.into_iter().chain(data).collect()
+    }
+
+    pub fn summary_slopes(&self) -> Vec<Option<f64>> {
+        self.prefix_with_counts(
+            self.0
+                .iter()
+                .map(|sl| sl.lin_reg.as_ref().map(|lr| lr.slope)),
+        )
     }
 
     pub fn summary_last_deviation_scaled(&self) -> Vec<Option<f64>> {
-        // NOTE: here we assume first line always is a count
-        let count = self.0.first().and_then(|data| data.data_avg);
-        iter::once(count)
-            .chain(self.0.iter().map(|sl| sl.last_deviation_scaled()))
-            .collect()
+        self.prefix_with_counts(self.0.iter().map(|sl| sl.last_deviation_scaled()))
     }
 
     pub fn summary_scaled_slopes(&self) -> Vec<Option<f64>> {
-        // NOTE: here we assume first line always is a count
-        let count = self.0.first().and_then(|sl| sl.data_avg);
-        iter::once(count)
-            .chain(self.0.iter().map(|sl| sl.scaled_slope()))
-            .collect()
+        self.prefix_with_counts(self.0.iter().map(|sl| sl.scaled_slope()))
     }
 }
