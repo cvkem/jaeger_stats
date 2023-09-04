@@ -16,6 +16,7 @@ pub struct ShortTermStitchedLine {
 pub struct StitchedLine {
     pub label: String,
     pub data: Vec<Option<f64>>,
+    pub num_filled_columns: u32,
     pub data_avg: Option<f64>,
     pub lin_reg: Option<LinearRegression>,
     pub st_line: Option<ShortTermStitchedLine>,
@@ -43,10 +44,14 @@ impl StitchedLine {
         };
 
         let data_avg = Self::calculate_avg(&data);
+        let num_filled_columns = data
+            .iter()
+            .fold(0, |cnt, val| if val.is_some() { cnt + 1 } else { cnt });
 
         Self {
             label,
             data,
+            num_filled_columns,
             data_avg,
             lin_reg,
             st_line,
@@ -123,7 +128,7 @@ impl StitchedLine {
             })
             .collect::<Vec<_>>()
             .join("; ");
-        format!("label; {columns}; ; ; slope; y_intercept; R_squared; L1_deviation, scaled_slope, last_deviation")
+        format!("label; num_col; {columns}; ; ; slope; y_intercept; R_squared; L1_deviation, scaled_slope, last_deviation")
     }
 
     /// Show the current line as a string in the csv-format with a ';' separator
@@ -134,8 +139,9 @@ impl StitchedLine {
 
         if let Some(lr) = &self.lin_reg {
             format!(
-                "{header}; {}; {values}; ; ; {}; {}; {}; {}; {}; {}",
+                "{header}; {}; {}; {values}; ; ; {}; {}; {}; {}; {}; {}",
                 self.label,
+                self.num_filled_columns,
                 utils::format_float(lr.slope),
                 utils::format_float(lr.y_intercept),
                 utils::format_float(lr.R_squared),
