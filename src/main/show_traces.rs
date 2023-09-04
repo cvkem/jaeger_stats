@@ -17,7 +17,6 @@ struct Args {
     // /// The default source for call-chain information is a sub-folder'CallChain' located in the current folder
     // #[arg(short, long, default_value_t = String::from("CallChain/"))]
     // call_chain_folder: String,
-
     #[arg(short = 'z', long, default_value_t = 2*60)]
     timezone_minutes: i64,
 }

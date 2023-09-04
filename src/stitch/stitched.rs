@@ -112,7 +112,8 @@ impl Stitched {
     }
 
     /// A full data-header is used when showing a time-series followed by the Linear-regression parameters of that time-series.
-    pub fn full_data_header(&self, table_type: &str) -> String {
+    pub fn full_data_header(&self, table_type: &[&str]) -> String {
+        let table_type = table_type.join("; ");
         let col_headers =
             if self.process_operation.is_empty() || self.process_operation[0].1 .0.is_empty() {
                 "NO DATA".to_owned()
@@ -178,14 +179,14 @@ impl Stitched {
             });
 
         csv.add_section("Basic statistics per input file");
-        csv.add_line(self.full_data_header("Input-files"));
-        csv.append(&mut self.basic.csv_output(""));
+        csv.add_line(self.full_data_header(&["Input-files"]));
+        csv.append(&mut self.basic.csv_output(&[""]));
 
         csv.add_section("Statistics per BSP/operation combination:");
-        csv.add_line(self.full_data_header("BSP/operation"));
+        csv.add_line(self.full_data_header(&["BSP/operation"]));
         self.process_operation
             .iter()
-            .for_each(|(label, stitched_set)| csv.append(&mut stitched_set.csv_output(label)));
+            .for_each(|(label, stitched_set)| csv.append(&mut stitched_set.csv_output(&[&label])));
 
         csv.add_section(
             "Summary_statistics call-chain decending on count and grouped by BSP/operation",
@@ -203,12 +204,10 @@ impl Stitched {
         });
 
         csv.add_section("Statistics per call-chain (path from the external end-point to the actual BSP/operation (detailled information):");
-        csv.add_line(self.full_data_header("Full call-chain"));
+        csv.add_line(self.full_data_header(&["Full call-chain", "Process/Oper"]));
         self.call_chain.iter().for_each(|(po_label, call_chains)| {
-            csv.add_empty_lines(1);
-            csv.add_line(self.full_data_header(&format!("PROC_OPER: {po_label}")));
             call_chains.iter().for_each(|(cc_label, stitched_set)| {
-                csv.append(&mut stitched_set.csv_output(cc_label))
+                csv.append(&mut stitched_set.csv_output(&[&cc_label, &po_label]))
             });
         });
 

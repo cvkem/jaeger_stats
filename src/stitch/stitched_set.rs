@@ -7,11 +7,10 @@ use std::iter;
 pub struct StitchedSet(pub Vec<StitchedLine>);
 
 impl StitchedSet {
-    pub fn csv_output(&self, header: &str) -> Vec<String> {
+    pub fn csv_output(&self, prefixes: &[&str]) -> Vec<String> {
         self.0
             .iter()
-            .enumerate()
-            .map(|(idx, line)| line.to_csv_string(header, idx))
+            .map(|line| line.to_csv_string(prefixes))
             .collect()
     }
 
