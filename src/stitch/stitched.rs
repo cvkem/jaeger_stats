@@ -99,7 +99,7 @@ impl Stitched {
     /// Generate a header for a summary line showing as all metrics over a single statistic.
     /// When the statistic is 'Average' we already have a 'Count' column. However, when reporting over another Statistic an (average) Count column is prefixed to
     /// indicate the reliability of the computed statistic.
-    pub fn summary_header(&self, table_type: &str, extra_count: bool) -> String {
+    pub fn summary_header(&self, table_type: &[&str], extra_count: bool) -> String {
         let col_headers = if self.process_operation.is_empty() {
             "NO DATA".to_owned()
         } else {
@@ -108,7 +108,7 @@ impl Stitched {
                 .summary_header(extra_count)
                 .join("; ")
         };
-        format!("{table_type}; {}", col_headers)
+        format!("{}; {}", table_type.join("; "), col_headers)
     }
 
     /// A full data-header is used when showing a time-series followed by the Linear-regression parameters of that time-series.
@@ -134,8 +134,8 @@ impl Stitched {
         csv.add_section("List of stitched data-files (numbered) and comments (unnumbered):");
         csv.append(&mut self.sources.csv_output());
 
-        csv.add_section("Summary_statistics per BSP-operation");
-        csv.add_line(self.summary_header("BSP/operation", false));
+        csv.add_section("Summary_statistics per Process/Operation");
+        csv.add_line(self.summary_header(&["Process/Operation"], false));
         self.process_operation
             .iter()
             .for_each(|(label, stitched_set)| {
@@ -145,8 +145,8 @@ impl Stitched {
                 ))
             });
 
-        csv.add_section("Slope summary per BSP-operation");
-        csv.add_line(self.summary_header("BSP/operation", true));
+        csv.add_section("Slope summary per Process/Operation");
+        csv.add_line(self.summary_header(&["Process/Operation"], true));
         self.process_operation
             .iter()
             .for_each(|(label, stitched_set)| {
@@ -156,8 +156,8 @@ impl Stitched {
                 ))
             });
 
-        csv.add_section("Scaled Slope summary per BSP-operation");
-        csv.add_line(self.summary_header("BSP/operation", true));
+        csv.add_section("Scaled Slope summary per Process/Operation");
+        csv.add_line(self.summary_header(&["Process/Operation"], true));
         self.process_operation
             .iter()
             .for_each(|(label, stitched_set)| {
@@ -167,8 +167,8 @@ impl Stitched {
                 ))
             });
 
-        csv.add_section("Last-deviation-scaled summary per BSP-operation");
-        csv.add_line(self.summary_header("BSP/operation", true));
+        csv.add_section("Last-deviation-scaled summary per Process/Operation");
+        csv.add_line(self.summary_header(&["Process/Operation"], true));
         self.process_operation
             .iter()
             .for_each(|(label, stitched_set)| {
@@ -182,29 +182,27 @@ impl Stitched {
         csv.add_line(self.full_data_header(&["Input-files"]));
         csv.append(&mut self.basic.csv_output(&[""]));
 
-        csv.add_section("Statistics per BSP/operation combination:");
-        csv.add_line(self.full_data_header(&["BSP/operation"]));
+        csv.add_section("Statistics per Process/Operation combination:");
+        csv.add_line(self.full_data_header(&["Process/Operation"]));
         self.process_operation
             .iter()
             .for_each(|(label, stitched_set)| csv.append(&mut stitched_set.csv_output(&[&label])));
 
         csv.add_section(
-            "Summary_statistics call-chain decending on count and grouped by BSP/operation",
+            "Summary_statistics call-chain decending on count and grouped by Process/Operation",
         );
-        csv.add_line(self.summary_header("BSP/operation", false));
+        csv.add_line(self.summary_header(&["Full Call-chain (path)", "Process/Operation"], false));
         self.call_chain.iter().for_each(|(po_label, call_chains)| {
-            csv.add_empty_lines(1);
-            csv.add_line(self.summary_header(&format!("PROC_OPER: {po_label}"), false));
             call_chains.iter().for_each(|(cc_label, stitched_set)| {
                 csv.add_line(format!(
-                    "{cc_label}; {}",
+                    "{cc_label}; {po_label}; {}",
                     utils::floats_to_string(stitched_set.summary_avg(), " ;")
                 ))
             });
         });
 
-        csv.add_section("Statistics per call-chain (path from the external end-point to the actual BSP/operation (detailled information):");
-        csv.add_line(self.full_data_header(&["Full call-chain", "Process/Oper"]));
+        csv.add_section("Statistics per call-chain (path from the external end-point to the actual Process/Operation (detailled information):");
+        csv.add_line(self.full_data_header(&["Full call-chain (path)", "Final Process/Oper"]));
         self.call_chain.iter().for_each(|(po_label, call_chains)| {
             call_chains.iter().for_each(|(cc_label, stitched_set)| {
                 csv.append(&mut stitched_set.csv_output(&[&cc_label, &po_label]))
@@ -289,7 +287,7 @@ impl Stitched {
     ///    1. Overall slope more than 1,05 (more than 5% increase per day)
     ///    2. Short term slope significant higher than the average slope over the full dataset (velocity of increase is ramping up)
     ///    3. The deviation for today is 2x higher than average L1-deviation
-    /// The reporting happens per Measure and subsequently per BSP and the most important measures are handled first.
+    /// The reporting happens per Measure and subsequently per Process and the most important measures are handled first.
     /// On each line all three criteria are shown (with value and with a flag which values exceed the bound)
     pub fn write_anomalies_csv(&self, path: &Path, pars: &AnomalyParameters) -> usize {
         let mut csv = CsvFileBuffer::new();
