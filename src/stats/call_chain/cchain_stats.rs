@@ -43,6 +43,16 @@ impl CChainStatsKey {
         call_chain_key(&self.call_chain, &self.caching_process, self.is_leaf)
     }
 
+    /// Prefer a key based on the inbound process-calls only, so Outbound and Unknown are skipped
+    pub fn inbound_call_chain_key(&self) -> String {
+        self.call_chain
+            .iter()
+            .filter(|call| call.call_direction == CallDirection::Inbound)
+            .map(|call| call.get_process_method())
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
     /// Get the (external) end-point which is the start this call-chain
     pub fn get_endpoint(&self) -> String {
         self.call_chain
