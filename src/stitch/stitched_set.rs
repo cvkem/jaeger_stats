@@ -38,15 +38,15 @@ impl StitchedSet {
         }
     }
 
-    /// Header for the full data-report over a single metric (a specific StitchedLine) in this StitchedSet
-    /// A StitchedLine is a time-series of the data and a linear-regression over that data, so this header contains a column for each time-slice and a few extra columns for the lineair regression.
-    pub fn full_data_header(&self) -> String {
-        if self.0.is_empty() {
-            "NO DATA".to_owned()
-        } else {
-            self.0[0].headers()
-        }
-    }
+    // /// Header for the full data-report over a single metric (a specific StitchedLine) in this StitchedSet
+    // /// A StitchedLine is a time-series of the data and a linear-regression over that data, so this header contains a column for each time-slice and a few extra columns for the lineair regression.
+    // pub fn full_data_header(&self) -> String {
+    //     if self.0.is_empty() {
+    //         "NO DATA".to_owned()
+    //     } else {
+    //         self.0[0].headers()
+    //     }
+    // }
 
     pub fn summary_avg(&self) -> Vec<Option<f64>> {
         self.0.iter().map(|sl| sl.data_avg).collect()

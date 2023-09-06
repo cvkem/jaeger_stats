@@ -22,13 +22,20 @@ pub struct StitchParameters {
     pub anomaly_pars: AnomalyParameters,
 }
 
+pub struct CallChainData {
+    pub full_key: String,
+    pub inboud_process_key: String,
+    pub data: StitchedSet,
+}
 #[derive(Default)]
 pub struct Stitched {
     /// the list of input-files (one per analysis) that are used. This list also
     pub sources: StitchSources,
     pub basic: StitchedSet,
     pub process_operation: Vec<(String, StitchedSet)>,
-    pub call_chain: Vec<(String, Vec<(String, StitchedSet)>)>,
+    ///  call-chain is keyed by the Process/Oper and the values is a series of call-chains that end in this process/Oper
+    /// The values is a Vector call-chains represeented by(String, String, Stitched
+    pub call_chain: Vec<(String, Vec<CallChainData>)>,
 }
 
 impl Stitched {
@@ -87,7 +94,11 @@ impl Stitched {
                             .iter()
                             .map(|por| por.extract_stitched_line(&key_data, &pars.anomaly_pars))
                             .collect();
-                        (cc_key.to_string(), StitchedSet(stitched_set))
+                        CallChainData {
+                            full_key: cc_key.to_string(),
+                            inboud_process_key: cc_key.inbound_call_chain_key(),
+                            data: StitchedSet(stitched_set),
+                        }
                     })
                     .collect();
                 stitched.call_chain.push((proc_oper, call_chains))
@@ -191,21 +202,39 @@ impl Stitched {
         csv.add_section(
             "Summary_statistics call-chain decending on count and grouped by Process/Operation",
         );
-        csv.add_line(self.summary_header(&["Full Call-chain (path)", "Process/Operation"], false));
+        csv.add_line(self.summary_header(
+            &[
+                "Full Call-chain (path)",
+                "Process/Operation",
+                "Inbound_chain",
+            ],
+            false,
+        ));
         self.call_chain.iter().for_each(|(po_label, call_chains)| {
-            call_chains.iter().for_each(|(cc_label, stitched_set)| {
+            call_chains.iter().for_each(|ccd| {
                 csv.add_line(format!(
-                    "{cc_label}; {po_label}; {}",
-                    utils::floats_to_string(stitched_set.summary_avg(), " ;")
+                    "{}; {}; {}; {}",
+                    ccd.full_key,
+                    po_label,
+                    ccd.inboud_process_key,
+                    utils::floats_to_string(ccd.data.summary_avg(), " ;")
                 ))
             });
         });
 
         csv.add_section("Statistics per call-chain (path from the external end-point to the actual Process/Operation (detailled information):");
-        csv.add_line(self.full_data_header(&["Full call-chain (path)", "Final Process/Oper"]));
+        csv.add_line(self.full_data_header(&[
+            "Full call-chain (path)",
+            "Final Process/Oper",
+            "Inbound_chain",
+        ]));
         self.call_chain.iter().for_each(|(po_label, call_chains)| {
-            call_chains.iter().for_each(|(cc_label, stitched_set)| {
-                csv.append(&mut stitched_set.csv_output(&[&cc_label, &po_label]))
+            call_chains.iter().for_each(|ccd| {
+                csv.append(&mut ccd.data.csv_output(&[
+                    &ccd.full_key,
+                    &po_label,
+                    &ccd.inboud_process_key,
+                ]))
             });
         });
 
@@ -238,7 +267,7 @@ impl Stitched {
                     .for_each(|line| {
                         if let Some(anomalies) = line.anomalies(pars) {
                             num_anomalies += 1;
-                            csv.add_line(anomalies.report_stats_line(po))
+                            csv.add_line(anomalies.report_stats_line(po, ""))
                         }
                     })
             });
@@ -264,15 +293,18 @@ impl Stitched {
                 csv.add_empty_lines(1);
                 csv.add_line(format!("PROC_OPER: {po_label}"));
                 csv.add_line(Anomalies::report_stats_line_header_str().to_owned());
-                call_chains.iter().for_each(|(cc_label, stitched_set)| {
-                    stitched_set
+                call_chains.iter().for_each(|ccd| {
+                    ccd.data
                         .0
                         .iter()
                         .filter(|s| s.label[..] == **metric)
                         .for_each(|line| {
                             if let Some(anomalies) = line.anomalies(pars) {
                                 num_anomalies += 1;
-                                csv.add_line(anomalies.report_stats_line(cc_label))
+                                csv.add_line(
+                                    anomalies
+                                        .report_stats_line(&ccd.full_key, &ccd.inboud_process_key),
+                                )
                             }
                         })
                 })

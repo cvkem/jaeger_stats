@@ -57,9 +57,13 @@ impl Anomalies {
         "Process; Scaled_slope; Short-term scaled_slope; L1-deviation"
     }
 
-    pub fn report_stats_line(&self, po: &str) -> String {
+    pub fn report_stats_line(&self, key: &str, extra_key: &str) -> String {
         let data = [self.scaled_slope, self.st_scaled_slope, self.l1_deviation].to_vec();
 
-        format!("{po};{}", utils::floats_to_string(data, "; "))
+        format!(
+            "{key}; {}; {}",
+            utils::floats_to_string(data, "; "),
+            extra_key
+        )
     }
 }

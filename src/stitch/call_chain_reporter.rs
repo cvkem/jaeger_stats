@@ -56,7 +56,6 @@ impl CCReportItems {
                 (Vec::<CCKey>::new(), String::new()),
                 |(mut acc, curr_po), (proc_oper, cck, _)| {
                     if proc_oper == curr_po {
-                        //acc[acc.len()-1].1.push(cck);   // needs to be split out to two lines to satisfy borrow-checker
                         let len = acc.len();
                         acc[len - 1].1.push(cck);
                         (acc, curr_po)
@@ -81,15 +80,15 @@ impl CCReportItems {
                     st.call_chain.iter().for_each(|(cc_key, cc_val)| {
                         // checks
                         let cc_key_clone = cc_key.clone();
-                        if *cc_key != cc_key_clone {
-                            println!("Failed to clone for '{cc_key:#?}'.")
-                        };
+                        // if *cc_key != cc_key_clone {
+                        //     println!("Failed to clone for '{cc_key:#?}'.")
+                        // };
                         let process = cc_key_clone.get_leaf_process();
-                        if *proc_key != process {
-                            println!(
-                                "Mismatch between '{proc_key}' and extracted proces '{process}'"
-                            )
-                        }
+                        // if *proc_key != process {
+                        //     println!(
+                        //         "Mismatch between '{proc_key}' and extracted proces '{process}'"
+                        //     )
+                        // }
                         keys.entry(cc_key_clone)
                             .and_modify(|v| *v += cc_val.count)
                             .or_insert(cc_val.count);
@@ -110,7 +109,7 @@ impl CCReportItems {
         data: &'a [Option<StatsRec>],
         cc_key: &'a CChainStatsKey,
     ) -> CCData<'a> {
-        // We only need to search in the subset that belongs to this process as that pare will contain all records for this call-chain.
+        // We only need to search in the subset that belongs to this process as that sub-set will contain all records for this call-chain.
         let process = cc_key.get_leaf_process();
 
         // a ref to the extract the three values that are needed for the analysis being:

@@ -128,7 +128,7 @@ impl StitchedLine {
             })
             .collect::<Vec<_>>()
             .join("; ");
-        format!("label; num_col; {columns}; ; ; slope; y_intercept; R_squared; L1_deviation, scaled_slope, last_deviation")
+        format!("label; NUM_FILLED; {columns}; ; ; slope; y_intercept; R_squared; L1_deviation, scaled_slope, last_deviation")
     }
 
     /// Show the current line as a string in the csv-format with a ';' separator
@@ -150,7 +150,10 @@ impl StitchedLine {
                 utils::format_float_opt(self.last_deviation_scaled()),
             )
         } else {
-            format!("{header}; {}; {values}; ; ; ; ; ;", self.label,)
+            format!(
+                "{header}; {}; {}; {values}; ; ; ; ; ;",
+                self.label, self.num_filled_columns
+            )
         }
     }
 }
