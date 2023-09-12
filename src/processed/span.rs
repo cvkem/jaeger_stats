@@ -20,6 +20,14 @@ pub fn set_max_log_msg_length(val: usize) {
 }
 
 #[derive(Debug, Default)]
+pub enum Position {
+    Root,
+    Parent(usize),
+    #[default]
+    MissingParent,
+}
+
+#[derive(Debug, Default)]
 pub struct Span {
     // Process should be a reference, but that complicates things:
     //    - default is not possible
@@ -28,7 +36,7 @@ pub struct Span {
     //pub struct Span<'a> {
     //    pub process: &'a Process,
     pub process: Option<Process>,
-    pub parent: Option<usize>,
+    pub position: Position,
     pub is_leaf: bool,
     pub rooted: bool, // does this span trace back to the real root? (default = false)
     pub span_id: String,
@@ -56,7 +64,7 @@ pub struct Span {
 
 impl Span {
     fn new(js: &JaegerSpan, proc_map: &ProcessMap) -> Self {
-        let parent = None;
+        let position = Default::default();
         let span_id = js.spanID.to_owned();
         let (operation_name, full_operation_name) = unified_operation_name(&js.operationName);
 
@@ -64,7 +72,7 @@ impl Span {
         let duration_micros = js.duration;
         let process = proc_map.get(&js.processID).map(|proc| proc.to_owned());
         let mut span = Span {
-            parent,
+            position,
             span_id,
             operation_name,
             full_operation_name,
@@ -149,24 +157,10 @@ impl Span {
     // }
 }
 
-pub type Spans = Vec<Span>;
-
-pub struct SpansExt<'a>(pub &'a Spans);
-
-impl<'a> SpansExt<'a> {
-    pub fn chain_apply_forward<T>(&self, idx: usize, process: &dyn Fn(&Span) -> T) -> Vec<T> {
-        //        let chain_apply_forward_aux = |
-        let span = &self.0[idx];
-        // find the root and allocate vector
-        let mut result = match span.parent {
-            None => Vec::new(),
-            Some(idx) => self.chain_apply_forward(idx, process),
-        };
-        let ret = process(span);
-        result.push(ret);
-        //        result.push(process(span));
-        result
-    }
+#[derive(Debug)]
+pub struct Spans {
+    pub items: Vec<Span>,
+    pub root_idx: usize,
 }
 
 #[derive(Debug)]
@@ -176,33 +170,20 @@ pub struct Log {
     pub msg: String,
 }
 
-/// mark_leafs sets the is_leaf value of each span.
-fn mark_leafs(spans: &mut Spans) {
-    let mut is_leaf = Vec::with_capacity(spans.len());
-    (0..spans.len()).for_each(|_| is_leaf.push(true));
-    spans.iter().for_each(|span| match span.parent {
-        None => (),
-        Some(par) => is_leaf[par] = false,
-    });
-
-    iter::zip(spans, is_leaf).for_each(|(span, is_leaf)| span.is_leaf = is_leaf);
-}
-
 /// add_parents adds parent-links to spans based on the information in Vec<JaegerSpan>
-fn add_parents(spans: &mut Spans, jspans: &Vec<JaegerSpan>) -> Vec<String> {
-    let iter = iter::zip(spans, jspans);
-
+fn add_parents(spans: &mut Vec<Span>, jspans: &Vec<JaegerSpan>) -> Vec<String> {
     let mut missing_span_ids = Vec::new();
 
-    iter.for_each(|(span, jspan)| {
+    iter::zip(spans, jspans).for_each(|(span, jspan)| {
         match jspan.references.len() {
-            0 => (), // this is the root
+            0 => span.position = Position::Root, // this is a root
+            1 if jspan.references[0].spanID == jspan.spanID => span.position = Position::Root, // this is a root as it has a self-reference, i.e. references.spanID == spanID.
             1 => {
                 let parentID = &jspan.references[0].spanID;
                 let mut parent_found = false;
                 for (idx, js) in jspans.iter().enumerate() {
                     if js.spanID[..] == parentID[..] {
-                        span.parent = Some(idx);
+                        span.position = Position::Parent(idx);
                         parent_found = true;
                         break;
                     }
@@ -217,48 +198,110 @@ fn add_parents(spans: &mut Spans, jspans: &Vec<JaegerSpan>) -> Vec<String> {
     missing_span_ids
 }
 
-/// mark all spans that are connected to the root.
-fn mark_rooted(spans: &mut Spans) {
-    if spans[0].parent.is_some() {
-        println!(
-            "Could not find root at index=0, as it has parent {}",
-            spans[0].parent.unwrap()
-        );
-        return;
-    }
-    spans[0].rooted = true;
+impl Spans {
+    /// mark_leafs sets the is_leaf value of each span.
+    /// A leaf-span is a span that can not be reached from any other span.
+    fn mark_leafs(&mut self) {
+        let mut is_leaf = Vec::with_capacity(self.items.len());
+        // Default assumption is that all spans are leafs.
+        (0..self.items.len()).for_each(|_| is_leaf.push(true));
+        // However, spans that are reacheabe via another span are not a leaf.
+        self.items.iter().for_each(|span| match span.position {
+            Position::Root | Position::MissingParent => (),
+            Position::Parent(par) => is_leaf[par] = false,
+        });
 
-    fn mark_root_path(spans: &mut Spans, idx: usize) -> bool {
-        if spans[idx].rooted {
+        // And finaly update the is_leaf value of all spans
+        iter::zip(self.items.iter_mut(), is_leaf)
+            .for_each(|(span, is_leaf)| span.is_leaf = is_leaf);
+    }
+
+    /// Auxiliary furnction for self.mark_rooted()
+    fn mark_root_path_aux(&mut self, idx: usize) -> bool {
+        if self.items[idx].rooted {
             true
-        } else if let Some(parent) = spans[idx].parent {
-            let rooted = mark_root_path(spans, parent);
-            spans[idx].rooted = rooted;
-            rooted
         } else {
-            false
+            match self.items[idx].position {
+                Position::Parent(parent) => {
+                    let rooted = self.mark_root_path_aux(parent);
+                    self.items[idx].rooted = rooted;
+                    rooted
+                }
+                Position::Root => {
+                    self.items[idx].rooted = true;
+                    true
+                }
+                Position::MissingParent => false,
+            }
         }
     }
 
-    (0..spans.len()).for_each(|idx| {
-        mark_root_path(spans, idx);
-    });
-}
+    /// Mark all spans that are connected to the root with rooted=true.
+    fn mark_rooted(&mut self) {
+        // TODO next line is not needed as it is handled already.
+        self.items[self.root_idx].rooted = true;
 
-/// build the list of spans (including parent links and proces-mapping)
-pub fn build_spans(item: &JaegerItem) -> (Spans, Vec<String>) {
-    let proc_map = build_process_map(item);
+        (0..self.items.len()).for_each(|idx| {
+            self.mark_root_path_aux(idx);
+        });
+    }
 
-    let mut spans: Vec<_> = item
-        .spans
-        .iter()
-        .map(|jspan| Span::new(jspan, &proc_map))
-        .collect();
+    /// build the list of spans (including parent links and proces-mapping)
+    pub fn build_spans(item: &JaegerItem) -> (Spans, Vec<String>) {
+        let proc_map = build_process_map(item);
 
-    let missing_span_ids = add_parents(&mut spans, &item.spans);
-    mark_leafs(&mut spans);
+        let mut spans: Vec<_> = item
+            .spans
+            .iter()
+            .map(|jspan| Span::new(jspan, &proc_map))
+            .collect();
 
-    mark_rooted(&mut spans);
+        let missing_span_ids = add_parents(&mut spans, &item.spans);
 
-    (spans, missing_span_ids)
+        let roots: Vec<_> = spans
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, span)| match span.position {
+                Position::Root => Some(idx),
+                _ => None,
+            })
+            .collect();
+        let mut spans = if roots.len() == 1 {
+            Spans {
+                items: spans,
+                root_idx: *roots.first().unwrap(),
+            }
+        } else {
+            panic!(
+                "Found a trace with {} roots (expected exactly 1 root)",
+                roots.len()
+            )
+        };
+
+        spans.mark_leafs();
+
+        spans.mark_rooted();
+
+        (spans, missing_span_ids)
+    }
+
+    /// chain_apply_forward is used to run over a call-chain and apply the 'process' to each span in order to get a Vec<T>
+    pub fn chain_apply_forward<T>(&self, idx: usize, process: &dyn Fn(&Span) -> T) -> Vec<T> {
+        //        let chain_apply_forward_aux = |
+        assert!(
+            idx < self.items.len(),
+            "Provided index exceeds the available spans"
+        );
+        let span = &self.items[idx];
+        // find the root and allocate vector
+        let mut result = match span.position {
+            Position::Root => Vec::new(),
+            Position::MissingParent => Vec::new(), // we chousl carry a flag rooted=false along. However, for current use-case not (yet) needed.
+            Position::Parent(idx) => self.chain_apply_forward(idx, process),
+        };
+        let ret = process(span);
+        result.push(ret);
+        //        result.push(process(span));
+        result
+    }
 }

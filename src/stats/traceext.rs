@@ -59,6 +59,8 @@ impl TraceExt {
             .expect("Failed to write trace (.txt) to file");
     }
 
+    /// fix_cchains tries to repair the call-chains by looking up call-chains observed in the past from complete traces.
+    /// TODO: correct for root-chains and non-rooted chains as we should have that infomation
     pub fn fix_cchains(&mut self, cchain_cache: &mut CChainEndPointCache) {
         utils::report(
             Chapter::Details,

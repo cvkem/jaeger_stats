@@ -76,14 +76,14 @@ impl CCReportItems {
         let mut keys = HashMap::new(); // Computing all possible keys over the different datasets that need to be stitched.
         data.iter().for_each(|stats_rec| {
             if let Some(stats_rec) = stats_rec {
-                stats_rec.stats.iter().for_each(|(proc_key, st)| {
+                stats_rec.stats.iter().for_each(|(_proc_key, st)| {
                     st.call_chain.iter().for_each(|(cc_key, cc_val)| {
                         // checks
                         let cc_key_clone = cc_key.clone();
                         // if *cc_key != cc_key_clone {
                         //     println!("Failed to clone for '{cc_key:#?}'.")
                         // };
-                        let process = cc_key_clone.get_leaf_process();
+                        //let process = cc_key_clone.get_leaf_process();
                         // if *proc_key != process {
                         //     println!(
                         //         "Mismatch between '{proc_key}' and extracted proces '{process}'"

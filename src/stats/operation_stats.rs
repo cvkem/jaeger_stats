@@ -7,7 +7,10 @@ use super::{
     file::OperationStatsJson,
     proc_oper_stats::{ProcOperStats, ProcOperStatsValue},
 };
-use crate::{processed::Span, utils};
+use crate::{
+    processed::{Span, Spans},
+    utils,
+};
 
 #[derive(Debug, Default)]
 pub struct OperationStats {
@@ -53,7 +56,7 @@ impl OperationStats {
         &mut self,
         idx: usize,
         span: &Span,
-        spans: &Vec<Span>,
+        spans: &Spans,
         caching_process: &Vec<String>,
     ) {
         match &span.span_kind {
@@ -101,6 +104,7 @@ impl OperationStats {
         let depth = call_chain.len();
         let looped = get_duplicates(&call_chain);
         let is_leaf = span.is_leaf;
+        //TODO: if get_call_chain returned whether it is rooted we do not need 'span.rooted'. However span.rooted is also used in filtering of reported spans.
         let rooted = span.rooted;
         let cc_not_http_ok = if http_not_ok_vec.is_empty() { 0 } else { 1 };
         let cc_with_error_log = if error_logs_vec.is_empty() { 0 } else { 1 };

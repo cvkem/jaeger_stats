@@ -80,7 +80,10 @@ pub fn process_and_fix_traces(
         .for_each(|(k, traces)| {
             let mut csv_file = stats_folder.clone();
             csv_file.push(format!("{k}.csv"));
+            // The traces that are have 'missing_trace_ids' are the traces that are incomplete, and thus seem to have multiple roots due to the fact
+            // that some spans without a parent actually were spans refering a missing span (and not a real root)
             let (traces, mut part_traces): (Vec<_>, Vec<_>) = traces.into_iter().partition(|tr| tr.trace.missing_span_ids.is_empty());
+            //TODO: we can produce the call-chains over incomplete traces too if we only include the rooted paths
             let mut cumm_stats = if !traces.is_empty() {
                 let cumm_stats = create_trace_statistics(&traces.iter().collect::<Vec<_>>(), &caching_processes, num_files);
                 // extract call-chains

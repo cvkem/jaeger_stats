@@ -1,7 +1,4 @@
-use serde_json::map::Iter;
-
 use super::stitched_line::StitchedLine;
-use std::iter;
 
 /// A StitchedSet is a vector of StitchedLine items.
 /// Each StitchedLine represents a metric and carries a label that represents that data. The contents of the StitchedLine is a time-series of the data and a linear-regression over that data.
