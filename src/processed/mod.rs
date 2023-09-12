@@ -5,6 +5,6 @@ mod trace;
 mod unify_operation;
 
 pub use self::{
-    span::{set_max_log_msg_length, Span, Spans, SpansExt},
+    span::{set_max_log_msg_length, Span, Spans},
     trace::{extract_traces, Trace},
 };

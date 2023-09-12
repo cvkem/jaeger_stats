@@ -1,4 +1,4 @@
-use crate::processed::{Span, Spans, SpansExt};
+use crate::processed::{Span, Spans};
 
 ///  returns a tuple with the number of none-http-ok and the number of spans with error-lines
 pub fn get_span_error_information(span: &Span) -> (Vec<i16>, Vec<String>) {
@@ -22,7 +22,7 @@ pub fn get_span_error_information(span: &Span) -> (Vec<i16>, Vec<String>) {
 
 /// get the error information over a full call-chaing
 pub fn get_cchain_error_information(idx: usize, spans: &Spans) -> (Vec<i16>, Vec<String>) {
-    let zipped = SpansExt(spans).chain_apply_forward(idx, &get_span_error_information);
+    let zipped = spans.chain_apply_forward(idx, &get_span_error_information);
     let (http_codes, logs): (Vec<Vec<i16>>, Vec<Vec<String>>) = zipped.into_iter().unzip();
     let http_codes = http_codes.into_iter().flatten().collect();
     let logs = logs.into_iter().flatten().collect();

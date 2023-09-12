@@ -108,7 +108,7 @@ impl StatsRec {
 
         self.trace_id.push(trace.trace_id.to_owned());
         self.root_call.push(trace.root_call.to_owned());
-        self.num_spans.push(trace.spans.len());
+        self.num_spans.push(trace.spans.items.len());
         self.start_dt.push(trace.start_dt);
         self.end_dt.push(trace.end_dt);
         self.duration_micros.push(trace.duration_micros);
@@ -119,6 +119,7 @@ impl StatsRec {
         // keep track of the proces/operation combinations used at least once in this process
         let mut proc_oper_used = HashSet::new();
         spans
+            .items
             .iter()
             .enumerate()
             .filter(|(_, span)| {
@@ -138,7 +139,7 @@ impl StatsRec {
                 let proc = proc.to_owned();
 
                 let update_stat = |stat: &mut OperationStats| {
-                    stat.update(idx, span, spans, &self.caching_process);
+                    stat.update(idx, span, &spans, &self.caching_process);
                 };
 
                 // This is the actual insert or update baed on the 'update_stats'.
@@ -333,7 +334,7 @@ pub fn chained_stats(trace: &Trace) -> HashMap<String, u32> {
     let spans = &trace.spans;
 
     let mut stats = HashMap::new();
-    spans.iter().enumerate().for_each(|(idx, span)| {
+    spans.items.iter().enumerate().for_each(|(idx, span)| {
         let proc = span.get_process_str();
         let parents_str = get_call_chain(idx, spans)
             .into_iter()

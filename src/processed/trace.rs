@@ -1,4 +1,4 @@
-use super::span::{build_spans, Spans};
+use super::span::Spans;
 use crate::{
     micros_to_datetime,
     raw::{JaegerItem, JaegerTrace},
@@ -23,13 +23,10 @@ impl Trace {
     pub fn new(jt: &JaegerTrace, idx: usize) -> Self {
         let item = &jt.data[idx];
         let trace_id = item.traceID.to_owned();
-        //println!(" Found trace: {}", item.traceID);
 
-        let (spans, missing_span_ids) = build_spans(item);
+        let (spans, missing_span_ids) = Spans::build_spans(item);
 
         let root_call = get_root_call(&spans);
-
-        //    let proc_map = build_process_map(item);
 
         let (start_dt, end_dt) = find_full_duration(item);
         let duration_micros = end_dt - start_dt;
@@ -88,38 +85,19 @@ fn find_full_duration(ji: &JaegerItem) -> (i64, i64) {
 /// get_response_duration finds the duration it takes for the root-span to return a response.
 /// We iterate over the spans as these have a clear parent-span, while taking the value from the corresponding JaegerItem.
 fn get_response_duration(spans: &Spans, ji: &JaegerItem) -> i64 {
-    // compute start-time based on start_time of earliest span
-    let Some(time_to_respond_micros) = iter::zip(spans, &ji.spans)
-        .find_map(|(span, jspan)| {
-            match span.parent {
-                None => Some(jspan.duration),
-                Some(_) => None
-            }
-        })
-    else {
-            panic!("Could not find the response duration");
-        };
+    let root_idx = spans.root_idx;
 
-    time_to_respond_micros
+    if ji.spans.len() <= root_idx {
+        panic!(
+            "index {root_idx} does not exist in JaegerItems array with length {}",
+            ji.spans.len()
+        );
+    }
+    ji.spans[root_idx].duration
 }
 
 /// get_root_call finds the process and method that is the root-method of the trace.
 fn get_root_call(spans: &Spans) -> String {
-    // compute start-time based on start_time of earliest span
-    let Some(root_call) = spans
-        .iter()
-        .find_map(|span| {
-            match span.parent {
-                None => {
-                    let proc = span.get_process_str().to_owned();
-                    Some(proc + "/" + &span.operation_name)
-                },
-                _ => None
-            }
-        })
-    else {
-        panic!("Could not find an root-span");
-    };
-
-    root_call
+    let root = &spans.items[spans.root_idx];
+    format!("{}/{}", root.get_process_str(), root.operation_name)
 }
