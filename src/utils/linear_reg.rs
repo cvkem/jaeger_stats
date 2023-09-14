@@ -14,6 +14,7 @@ pub struct LinearRegression {
     pub y_intercept: f64,
     pub R_squared: f64,
     pub L1_deviation: f64,
+    pub avg_growth_per_period: Option<f64>,
 }
 
 impl LinearRegression {
@@ -28,11 +29,22 @@ impl LinearRegression {
 
             let R_squared = get_R_squared(&data, &avg_xy, slope, y_intercept);
             let L1_deviation = get_L1_deviation(&data, slope, y_intercept);
+
+            let avg_growth_per_period = {
+                let start = y_intercept + slope;
+                let end = y_intercept + slope * (data.len() as f64);
+                if start > 1e-10 {
+                    Some((end - start) / start)
+                } else {
+                    None
+                }
+            };
             Some(Self {
                 slope,
                 y_intercept,
                 R_squared,
                 L1_deviation,
+                avg_growth_per_period,
             })
         }
     }

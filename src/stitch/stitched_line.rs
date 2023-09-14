@@ -71,6 +71,13 @@ impl StitchedLine {
         }
     }
 
+    /// Compute the growth per time-interval
+    pub fn periodic_growth(&self) -> Option<f64> {
+        self.lin_reg
+            .as_ref()
+            .and_then(|lr| lr.avg_growth_per_period)
+    }
+
     /// Compute a scaled slope by moving the average value to 0.5.
     /// This will scale down the slope as if data stems from the interval [0,1], provided data has a symetric distribution.
     pub fn scaled_slope(&self) -> Option<f64> {
@@ -128,7 +135,7 @@ impl StitchedLine {
             })
             .collect::<Vec<_>>()
             .join("; ");
-        format!("label; NUM_FILLED; {columns}; ; ; slope; y_intercept; R_squared; L1_deviation, scaled_slope, last_deviation")
+        format!("label; NUM_FILLED; {columns}; ; ; slope; y_intercept; R_squared; L1_deviation, scaled_slope, last_deviation, periodic_growth")
     }
 
     /// Show the current line as a string in the csv-format with a ';' separator
@@ -139,7 +146,7 @@ impl StitchedLine {
 
         if let Some(lr) = &self.lin_reg {
             format!(
-                "{header}; {}; {}; {values}; ; ; {}; {}; {}; {}; {}; {}",
+                "{header}; {}; {}; {values}; ; ; {}; {}; {}; {}; {}; {}; {}",
                 self.label,
                 self.num_filled_columns,
                 utils::format_float(lr.slope),
@@ -148,6 +155,7 @@ impl StitchedLine {
                 utils::format_float(lr.L1_deviation),
                 utils::format_float_opt(self.scaled_slope()),
                 utils::format_float_opt(self.last_deviation_scaled()),
+                utils::format_float_opt(self.periodic_growth()),
             )
         } else {
             format!(

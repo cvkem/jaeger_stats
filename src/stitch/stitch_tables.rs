@@ -24,10 +24,10 @@ lazy_static! {
             TimeStats(&stats_rec.duration_micros).get_avg_millis()
         )),
         SRReportItem::new("median_duration_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_median_millis()),
-        SRReportItem::new("median_p75_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.75)),
-        SRReportItem::new("median_p90_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.90)),
-        SRReportItem::new("median_p95_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.95)),
-        SRReportItem::new("median_p99_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.99)),
+        SRReportItem::new("p75_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.75)),
+        SRReportItem::new("p90_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.90)),
+        SRReportItem::new("p95_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.95)),
+        SRReportItem::new("p99_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.99)),
         SRReportItem::new("max_duration_millis", |stats_rec| Some(
             TimeStats(&stats_rec.duration_micros).get_max_millis()
         ))
@@ -46,10 +46,10 @@ lazy_static! {
         POReportItem::new("min_millis", |&(pov, _, _)| Some(pov.get_min_millis())),
         POReportItem::new("avg_duration_millis", |&(pov, _, _)| Some(pov.get_avg_millis())),
         POReportItem::new("median_duration_millis", |&(pov, _, _)| pov.get_median_millis()),
-        POReportItem::new("median_p75_millis", |&(pov, _, _)| pov.get_p_millis(0.75)),
-        POReportItem::new("median_p90_millis", |&(pov, _, _)| pov.get_p_millis(0.90)),
-        POReportItem::new("median_p95_millis", |&(pov, _, _)| pov.get_p_millis(0.95)),
-        POReportItem::new("median_p99_millis", |&(pov, _, _)| pov.get_p_millis(0.99)),
+        POReportItem::new("p75_millis", |&(pov, _, _)| pov.get_p_millis(0.75)),
+        POReportItem::new("p90_millis", |&(pov, _, _)| pov.get_p_millis(0.90)),
+        POReportItem::new("p95_millis", |&(pov, _, _)| pov.get_p_millis(0.95)),
+        POReportItem::new("p99_millis", |&(pov, _, _)| pov.get_p_millis(0.99)),
         POReportItem::new("max_millis", |&(pov, _, _)| Some(pov.get_max_millis())),
         POReportItem::new("frac_not_http_ok", |&(pov, _, _)| Some(
             pov.get_frac_not_http_ok()
@@ -72,10 +72,10 @@ lazy_static! {
         CCReportItem::new("min_millis", |&(ccv, _, _)| Some(ccv.get_min_millis())),
         CCReportItem::new("avg_duration_millis", |&(ccv, _, _)| Some(ccv.get_avg_millis())),
         CCReportItem::new("median_duration_millis", |&(ccv, _, _)| ccv.get_median_millis()),
-        CCReportItem::new("median_p75_millis", |&(ccv, _, _)| ccv.get_p_millis(0.75)),
-        CCReportItem::new("median_p90_millis", |&(ccv, _, _)| ccv.get_p_millis(0.90)),
-        CCReportItem::new("median_p95_millis", |&(ccv, _, _)| ccv.get_p_millis(0.95)),
-        CCReportItem::new("median_p99_millis", |&(ccv, _, _)| ccv.get_p_millis(0.99)),
+        CCReportItem::new("p75_millis", |&(ccv, _, _)| ccv.get_p_millis(0.75)),
+        CCReportItem::new("p90_millis", |&(ccv, _, _)| ccv.get_p_millis(0.90)),
+        CCReportItem::new("p95_millis", |&(ccv, _, _)| ccv.get_p_millis(0.95)),
+        CCReportItem::new("p99_millis", |&(ccv, _, _)| ccv.get_p_millis(0.99)),
         CCReportItem::new("max_millis", |&(ccv, _, _)| Some(ccv.get_max_millis())),
         CCReportItem::new("frac_not_http_ok", |&(ccv, _, _)| Some(
             ccv.get_frac_not_http_ok()
