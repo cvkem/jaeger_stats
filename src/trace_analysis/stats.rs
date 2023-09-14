@@ -117,7 +117,7 @@ pub fn process_and_fix_traces(
         });
 
     println!();
-    utils::report(Chapter::Summary, format!("Processed {total_traces} traces covering {num_end_points} end-points  (on average {:.1} trace per end-point).", total_traces as f64/num_end_points as f64));
+    utils::report(Chapter::Summary, format!("Processed {total_traces} traces covering {num_end_points} end-points  (on average {:.1} traces per end-point).", total_traces as f64/num_end_points as f64));
     utils::report(
         Chapter::Summary,
         format!(
