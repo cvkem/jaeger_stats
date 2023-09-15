@@ -6,6 +6,7 @@ use super::{
 use crate::{
     micros_to_datetime,
     raw::{JaegerItem, JaegerLog, JaegerSpan, JaegerTags},
+    utils,
 };
 
 use chrono::NaiveDateTime;
@@ -272,10 +273,23 @@ impl Spans {
                 root_idx: *roots.first().unwrap(),
             }
         } else {
-            panic!(
-                "Found a trace with {} roots (expected exactly 1 root)",
-                roots.len()
-            )
+            let issue = format!(
+                "Found a trace '{}'with {} roots (expected exactly 1 root)\n\tfull trace has {} spans.",
+                item.traceID,
+                roots.len(),
+                item.spans.len(),
+            );
+            utils::report(crate::utils::Chapter::Issues, issue.clone());
+            utils::report(
+                crate::utils::Chapter::Details,
+                format!("ISSUE: {}\n\t{item:#?}", issue),
+            );
+
+            println!("\n\tCopy to console:\n\t{}", issue);
+            Spans {
+                items: spans,
+                root_idx: 0, // assume a default
+            }
         };
 
         spans.mark_leafs();
