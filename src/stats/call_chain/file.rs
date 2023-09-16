@@ -1,5 +1,5 @@
 use super::{
-    call::Call, call_chain::CallChain, cchain_cache::EndPointCChain, cchain_stats::CChainStatsKey,
+    call::Call, call_chain::CallChain, cchain_cache::EndPointCChains, cchain_stats::CChainStatsKey,
 };
 use crate::utils::read_lines;
 use std::{error::Error, path::Path};
@@ -25,8 +25,8 @@ pub fn call_chain_key(call_chain: &CallChain, caching_process: &str, is_leaf: bo
 }
 
 /// read a cchain-file and parse it
-pub fn read_cchain_file(path: &Path) -> Result<EndPointCChain, Box<dyn Error>> {
-    Ok(read_lines(path)?
+pub fn read_cchain_file(path: &Path) -> Result<EndPointCChains, Box<dyn Error>> {
+    let epcc = read_lines(path)?
         .filter_map(|l| {
             let l = l.unwrap();
             let l = l.trim();
@@ -36,7 +36,8 @@ pub fn read_cchain_file(path: &Path) -> Result<EndPointCChain, Box<dyn Error>> {
                 Some(CChainStatsKey::parse(l).unwrap())
             }
         })
-        .collect())
+        .collect();
+    Ok(EndPointCChains::new(epcc))
 }
 
 /// the label shows whether cached processes are in the call-chain and if so returns a suffix to represent it.

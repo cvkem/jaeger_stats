@@ -1,6 +1,7 @@
 use super::{
     call::{Call, CallDirection},
     call_chain::CallChain,
+    cchain_cache::EndPointCChains,
     file::{call_chain_key, LEAF_LABEL},
 };
 use crate::{
@@ -124,9 +125,10 @@ impl CChainStatsKey {
     }
 
     /// try to remap a non-rooted call-chain based on expected call chains and return whether the remapping succeeded.
-    pub fn remap_callchain(&mut self, expected_cc: &[CChainStatsKey]) -> bool {
+    pub fn remap_callchain(&mut self, expected_cc: &EndPointCChains) -> bool {
         let cc_len = self.call_chain.len();
         let matches: Vec<_> = expected_cc
+            .chains
             .iter()
             .filter(|ecc| {
                 let ecc_len = ecc.call_chain.len();

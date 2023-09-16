@@ -2,14 +2,44 @@ use super::{
     cchain_stats::CChainStatsKey,
     file::{cchain_filename, read_cchain_file},
 };
-use std::{collections::HashMap, path::PathBuf};
+use crate::utils;
+
+use std::{collections::HashMap, mem, path::PathBuf};
 
 /// An end-point has a set of call-chains that originate from this endpoint (each represented by a CChainStatsKey)
-pub type EndPointCChain = Vec<CChainStatsKey>;
+//pub type EndPointCChain = Vec<CChainStatsKey>;
+pub struct EndPointCChains {
+    dirty: bool,
+    pub chains: Vec<CChainStatsKey>,
+}
+
+impl EndPointCChains {
+    pub fn new(chains: Vec<CChainStatsKey>) -> Self {
+        let dirty = false;
+        Self { dirty, chains }
+    }
+
+    pub fn is_dirty(&self) -> bool {
+        self.dirty
+    }
+
+    pub fn write_call_chain(&self, mut cchain_file_base: PathBuf, k: &str) {
+        // extract call-chains and write to file
+        cchain_file_base.push(cchain_filename(k));
+        let file_name = cchain_file_base.to_str().unwrap();
+        let cchain_str = self
+            .chains
+            .iter()
+            .map(|cc| cc.call_chain_key())
+            .collect::<Vec<_>>()
+            .join("\n");
+        utils::write_string_to_file(file_name, cchain_str).expect("Failed to write cchain-files.");
+    }
+}
 
 pub struct CChainEndPointCache {
     path: PathBuf,
-    cache: HashMap<String, Option<EndPointCChain>>,
+    cache: HashMap<String, Option<EndPointCChains>>,
 }
 
 impl CChainEndPointCache {
@@ -21,69 +51,47 @@ impl CChainEndPointCache {
         }
     }
 
-    // pub fn get_cchain_key(&mut self, key: &str) -> Option<&EndPointCChain> {
-    //     // {
-    //     //     if let Some(cchain_key) = self.cache.get(key) {
-    //     //         return Some(cchain_key)
-    //     //     };
-    //     // }
-    //     // self.load_cchain_key(key)
-    //     let cchain_key = self.cache.get(key);
-    //     match cchain_key {
-    //         Some(cck) => {
-    //             println!("Hello");
-    //             Some(cck)   // when returning the value the code fails. if I return None everything is fine
-    //         },
-    //         None =>  self.load_cchain_key(key)
-
-    //     }
-
-    // }
-
-    pub fn get_cchain_key(&mut self, key: &str) -> Option<&EndPointCChain> {
-        self.cache
-            .entry(key.to_string())
-            .or_insert_with(|| {
-                //                self.load_cchain_key(key)
-                let mut path = self.path.clone();
-                path.push(cchain_filename(key));
-                if path.is_file() {
-                    match read_cchain_file(&path) {
-                        Ok(cchain_key) => Some(cchain_key),
-                        Err(err) => {
-                            println!("Loading of entry '{key}' failed with error: {err:?}");
-                            None
-                        }
+    /// internatal function that returns a mutable reference
+    fn get_cchain_key_aux(&mut self, key: &str) -> &mut Option<EndPointCChains> {
+        self.cache.entry(key.to_string()).or_insert_with(|| {
+            let mut path = self.path.clone();
+            path.push(cchain_filename(key));
+            if path.is_file() {
+                match read_cchain_file(&path) {
+                    Ok(cchain_key) => Some(cchain_key),
+                    Err(err) => {
+                        println!("Loading of entry '{key}' failed with error: {err:?}");
+                        None
                     }
-                } else {
-                    println!(
-                        "Could not find '{}' so no call-chain available",
-                        path.display()
-                    );
-                    None
                 }
-            })
-            .as_ref()
+            } else {
+                println!(
+                    "Could not find '{}' so no call-chain available",
+                    path.display()
+                );
+                None
+            }
+        })
     }
 
-    /// the entry should be loaded from file, added to the cache and returned
-    fn load_cchain_key(&mut self, key: &str) -> Option<EndPointCChain> {
-        let mut path = self.path.clone();
-        path.push(cchain_filename(key));
-        if path.is_file() {
-            match read_cchain_file(&path) {
-                Ok(cchain_key) => Some(cchain_key),
-                Err(err) => {
-                    println!("Loading of entry '{key}' failed with error: {err:?}");
-                    None
+    /// extract a refernce to an EndPointCChains
+    pub fn get_cchain_key(&mut self, key: &str) -> Option<&EndPointCChains> {
+        self.get_cchain_key_aux(key).as_ref()
+    }
+}
+
+impl Drop for CChainEndPointCache {
+    /// write all dirty cache entries to a file
+    fn drop(&mut self) {
+        mem::take(&mut self.cache)
+            .into_iter()
+            .for_each(|(k, v)| match v {
+                Some(v) => {
+                    if v.is_dirty() {
+                        v.write_call_chain(self.path.clone(), &k);
+                    }
                 }
-            }
-        } else {
-            println!(
-                "Could not find '{}' so no call-chain available",
-                path.display()
-            );
-            None
-        }
+                None => (),
+            });
     }
 }
