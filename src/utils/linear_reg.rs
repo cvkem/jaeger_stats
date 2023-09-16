@@ -33,9 +33,10 @@ impl LinearRegression {
             let avg_growth_per_period = {
                 let start = y_intercept + slope;
                 let end = y_intercept + slope * (data.len() as f64);
-                if start > 1e-10 {
+                if start.abs() > 1e-10 {
                     Some((end - start) / start)
                 } else {
+                    println!("Growth does not exist for start={start} and end={end} with y_intercept={y_intercept} and slope={slope}");
                     None
                 }
             };

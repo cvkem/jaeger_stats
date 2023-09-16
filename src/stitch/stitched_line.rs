@@ -135,7 +135,7 @@ impl StitchedLine {
             })
             .collect::<Vec<_>>()
             .join("; ");
-        format!("label; NUM_FILLED; {columns}; ; ; slope; y_intercept; R_squared; L1_deviation, scaled_slope, last_deviation, periodic_growth")
+        format!("label; NUM_FILLED; {columns}; ; ; slope; y_intercept; R_squared; L1_deviation; scaled_slope; last_deviation; periodic_growth")
     }
 
     /// Show the current line as a string in the csv-format with a ';' separator

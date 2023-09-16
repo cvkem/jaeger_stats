@@ -65,7 +65,7 @@ impl TraceExt {
         utils::report(
             Chapter::Details,
             format!(
-                "Trace: {} does have {}",
+                "Trace: {} does have {} missing spans",
                 self.base_name,
                 self.trace.missing_span_ids.len()
             ),
@@ -80,7 +80,7 @@ impl TraceExt {
 
                 if !non_rooted.is_empty() {
                     let depths: Vec<_> = non_rooted.iter().map(|(_k,v)| v.depth).collect();
-                    utils::report(Chapter::Details, format!("For key '{key}'  found {} non-rooted out of {} traces at depths {depths:?}", non_rooted.len(), non_rooted.len() + rooted.len()));
+                    utils::report(Chapter::Details, format!("For key '{key}'  found {} non-rooted out of {} traces with call-chain depths {depths:?}", non_rooted.len(), non_rooted.len() + rooted.len()));
                 }
 
                 // fix the non-rooted paths by a rewrite of the key
