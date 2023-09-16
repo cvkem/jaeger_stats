@@ -28,8 +28,7 @@ fn create_trace_statistics(
 
 /// fix all traces, while maintaining a cache of call-chains needed for correction, to avoid rereading and parsing the same data
 fn fix_traces(cchain_cache: &mut CChainEndPointCache, traces: &mut [TraceExt]) {
-
-//    let mut cchain_cache = CChainEndPointCache::new(cc_path.to_path_buf());
+    //    let mut cchain_cache = CChainEndPointCache::new(cc_path.to_path_buf());
 
     // amend/fix traces
     traces.iter_mut().for_each(|tr| {
@@ -57,9 +56,20 @@ fn write_cumulative_trace_stats(
 }
 
 
-fn write_end_point_stats(
+/// Statistics are written per endpoint to the 'Stats' folder, and incomplete traces are corrected (when possible)
+/// This involves a multistep process:
+///  1. Split traces per end-point such that processing is per endpoint
+///  2. For each endpoint:
+///    2a. Split traces in two sets, i.e. the complete traces (with a single root defined) and the incomplete traces
+///    2b. For complete traces compute the statistics
+///    2c. Extract the call-chains form the these statistics and update (initialize) the callChainCache (known call-chains from file are possibly updated with newly discovered information)
+///    2d. Use the information from the call-chain-cache to fix the incomplete traces
+///    2e. Amend the statistics computed under 2b with the information from the incomplete but corrected traces.
+///    2f. Write the statistics to a end-point specific statistics file
+///    2g. Collect all traces again for computation of the full-statistics over all end-points AFTER correction of missing spans.
+fn write_end_point_stats_and_correct_incomplete(
     stats_folder: &PathBuf,
-    traces: Vec<TraceExt>,  // moving data in and extracting later to prevent the need to copy data. Really needed??
+    traces: Vec<TraceExt>, // moving data in and extracting later to prevent the need to copy data. Really needed??
     cchain_cache: &mut CChainEndPointCache,
     caching_processes: &[String],
     num_files: i32,
@@ -80,7 +90,6 @@ fn write_end_point_stats(
     let mut incomplete_traces = 0;
     let mut all_traces = Vec::new();
 
-
     traces_by_endpoint.into_iter()
     .for_each(|(k, traces)| {
         let mut csv_file = stats_folder.clone();
@@ -92,12 +101,7 @@ fn write_end_point_stats(
         let mut cumm_stats = if !traces.is_empty() {
             let cumm_stats = create_trace_statistics(&traces.iter().collect::<Vec<_>>(), &caching_processes, num_files, false);
 
-            // extract call-chains and write to file
-            //TODO this should be taken out of here and handled via the cache to update/extend the list of known call-chains.
-            let mut cchain_file = cchain_folder.clone();
-            cchain_file.push(cchain_filename(&k));
-            let cchain_str = cumm_stats.call_chain_str();
-            utils::write_string_to_file(cchain_file.to_str().unwrap(), cchain_str).expect("Failed to write cchain-files.");
+            cchain_cache.create_update_entry(&k, cumm_stats.call_chain_keys());
 
             cumm_stats
         } else {
@@ -122,7 +126,6 @@ fn write_end_point_stats(
         // and add these to the statistics
         part_traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );
 
-        
         stats::write_stats_to_csv_file(csv_file.to_str().unwrap(), &cumm_stats);
         file::write_stats(csv_file.to_str().unwrap(), cumm_stats, output_ext);
 
@@ -164,7 +167,7 @@ pub fn process_and_fix_traces(
             cc_path_full
         } else {
             utils::extend_create_folder(&folder, cc_path)
-                }
+        }
     };
     let cchain_folder = cc_path.to_path_buf();
     // utils::report(
@@ -173,13 +176,16 @@ pub fn process_and_fix_traces(
     // );
     utils::report(
         Chapter::Details,
-        format!("Translates to (full) cchain_folder = {}", cchain_folder.display()),
+        format!(
+            "Translates to (full) cchain_folder = {}",
+            cchain_folder.display()
+        ),
     );
 
     let cchain_folder_clone = cchain_folder.clone(); //temporary
     let mut cchain_cache = CChainEndPointCache::new(cchain_folder);
 
-    let (all_traces, num_end_points, incomplete_traces) = write_end_point_stats(
+    let (all_traces, num_end_points, incomplete_traces) = write_end_point_stats_and_correct_incomplete(
         &stats_folder,
         traces,
         &mut cchain_cache,
@@ -187,7 +193,7 @@ pub fn process_and_fix_traces(
         num_files,
         output_ext,
         false,
-        &cchain_folder_clone
+        &cchain_folder_clone,
     );
 
     let mut csv_file = stats_folder.clone();

@@ -1,5 +1,5 @@
 use super::{
-    call_chain::{call_chain_key, get_call_chain, CChainStatsValue},
+    call_chain::{call_chain_key, get_call_chain, CChainStatsKey, CChainStatsValue},
     file::StatsRecJson,
     operation_stats::OperationStats,
     proc_oper_stats::ProcOperStatsValue,
@@ -90,14 +90,22 @@ impl StatsRec {
     }
 
     /// Calculate the contents of the call-chain-file
-    pub fn call_chain_str(&self) -> String {
-        let tmp: Vec<_> = self
-            .stats
+    pub fn call_chain_keys(&self) -> Vec<CChainStatsKey> {
+        self.stats
             .values()
-            .flat_map(|stat| stat.call_chain.keys().map(|psk| psk.call_chain_key()))
-            .collect();
-        tmp.join("\n")
+            .flat_map(|stat| stat.call_chain.keys().map(|psk| psk.clone()))
+            .collect()
     }
+
+    // /// Calculate the contents of the call-chain-file
+    // pub fn call_chain_str(&self) -> String {
+    //     let tmp: Vec<_> = self
+    //         .stats
+    //         .values()
+    //         .flat_map(|stat| stat.call_chain.keys().map(|psk| psk.call_chain_key()))
+    //         .collect();
+    //     tmp.join("\n")
+    // }
 
     /// extend the statistics of this StatsRec with the spans of a provided trace.
     /// The rooted_spans_only parameter determined the filtering. When set to true only spans that trace back to root are included in the analysis (parameter always false in current code)
