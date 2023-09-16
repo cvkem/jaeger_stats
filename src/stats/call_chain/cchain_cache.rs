@@ -19,6 +19,23 @@ impl EndPointCChains {
         Self { dirty, chains }
     }
 
+    pub fn new_dirty(chains: Vec<CChainStatsKey>) -> Option<Self> {
+        let dirty = true;
+        Some(Self { dirty, chains })
+    }
+
+    /// udpate the entry with the provided chains. If updates are needed set dirty-flag to false
+    pub fn update_chains(&mut self, check_chains: Vec<CChainStatsKey>) {
+        let new_entries: Vec<_> = check_chains
+            .into_iter()
+            .filter(|check_key| self.chains.iter().any(|curr_key| *curr_key == *check_key))
+            .collect();
+        if !new_entries.is_empty() {
+            self.chains.extend(new_entries);
+            self.dirty = true;
+        }
+    }
+
     pub fn is_dirty(&self) -> bool {
         self.dirty
     }
@@ -60,14 +77,20 @@ impl CChainEndPointCache {
                 match read_cchain_file(&path) {
                     Ok(cchain_key) => Some(cchain_key),
                     Err(err) => {
-                        println!("Loading of entry '{key}' failed with error: {err:?}");
+                        utils::report(
+                            utils::Chapter::Issues,
+                            format!("Loading of entry '{key}' failed with error: {err:?}"),
+                        );
                         None
                     }
                 }
             } else {
-                println!(
-                    "Could not find '{}' so no call-chain available",
-                    path.display()
+                utils::report(
+                    utils::Chapter::Details,
+                    format!(
+                        "Could not find '{}' so no call-chain available",
+                        path.display()
+                    ),
                 );
                 None
             }
@@ -77,6 +100,18 @@ impl CChainEndPointCache {
     /// extract a refernce to an EndPointCChains
     pub fn get_cchain_key(&mut self, key: &str) -> Option<&EndPointCChains> {
         self.get_cchain_key_aux(key).as_ref()
+    }
+
+    /// Create a new entry of update an existing entry with the provided cchains
+    pub fn create_update_entry(&mut self, key: &str, cchains: Vec<CChainStatsKey>) {
+        match self.get_cchain_key_aux(key) {
+            Some(entry) => entry.update_chains(cchains),
+            None => {
+                _ = self
+                    .cache
+                    .insert(key.to_string(), EndPointCChains::new_dirty(cchains));
+            }
+        }
     }
 }
 
