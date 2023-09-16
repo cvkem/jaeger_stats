@@ -4,7 +4,7 @@ use crate::{
     raw::{JaegerItem, JaegerTrace},
 };
 use chrono::NaiveDateTime;
-use std::{ffi::OsString, iter, path::Path};
+use std::{ffi::OsString, path::Path};
 
 #[derive(Debug)]
 pub struct Trace {
