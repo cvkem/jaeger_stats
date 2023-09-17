@@ -1,7 +1,7 @@
 use super::span::Spans;
 use crate::{
     micros_to_datetime,
-    raw::{JaegerItem, JaegerTrace},
+    raw::{JaegerItem, JaegerTrace, FILE_TRACKER},
 };
 use chrono::NaiveDateTime;
 use std::{ffi::OsString, path::Path};
@@ -9,6 +9,7 @@ use std::{ffi::OsString, path::Path};
 #[derive(Debug)]
 pub struct Trace {
     pub trace_id: String,
+    pub source_file_id: usize,
     pub root_call: String,
     pub start_dt: NaiveDateTime,
     pub end_dt: NaiveDateTime,
@@ -20,7 +21,7 @@ pub struct Trace {
 
 impl Trace {
     /// build a Trace based upon a JaegerTrace
-    pub fn new(jt: &JaegerTrace, idx: usize) -> Self {
+    pub fn new(jt: &JaegerTrace, idx: usize, source_file_id: usize) -> Self {
         let item = &jt.data[idx];
         let trace_id = item.traceID.to_owned();
 
@@ -37,6 +38,7 @@ impl Trace {
 
         Self {
             trace_id,
+            source_file_id,
             root_call,
             start_dt,
             end_dt,
@@ -55,10 +57,21 @@ impl Trace {
     }
 }
 
+//  returning a closure does not work, as this Fn-closure can not be cloned or copied (for some reason), and that is needed to pass it into another FnMut closure.
+// /// Transform a raw JaegerTrace to a vector of Traces. A single JaegerTrace file can contain many traces, and these will be split out.
+// pub fn extract_traces(source_file_id: u32) -> Box<dyn Fn(JaegerTrace) -> Vec<Trace>> {
+//     Box::new(move |jt| {
+//         let num_traces = jt.data.len();
+//         (0..num_traces).map(|idx| Trace::new(&jt, idx, source_file_id)).collect()
+//     })
+// }
+
 /// Transform a raw JaegerTrace to a vector of Traces. A single JaegerTrace file can contain many traces, and these will be split out.
 pub fn extract_traces(jt: JaegerTrace) -> Vec<Trace> {
     let num_traces = jt.data.len();
-    (0..num_traces).map(|idx| Trace::new(&jt, idx)).collect()
+    (0..num_traces)
+        .map(|idx| Trace::new(&jt, idx, FILE_TRACKER.lock().unwrap().get_last_idx()))
+        .collect()
 }
 
 fn find_full_duration(ji: &JaegerItem) -> (i64, i64) {

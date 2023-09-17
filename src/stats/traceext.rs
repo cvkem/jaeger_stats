@@ -31,10 +31,10 @@ pub struct TraceExt {
 }
 
 impl TraceExt {
-    pub fn new(trace: Trace, folder: &Path, caching_processes: &[String], num_files: i32) -> Self {
+    pub fn new(trace: Trace, folder: &Path, caching_processes: &[String]) -> Self {
         let base_name = trace.base_name(folder);
 
-        let mut stats = StatsRec::new(caching_processes, num_files);
+        let mut stats = StatsRec::new(caching_processes, 1); // collects statistics over single trace, so 1 file
         stats.extend_statistics(&trace, false);
 
         Self {
@@ -124,10 +124,10 @@ impl TraceExt {
     }
 }
 
+/// Wrap all traces as a TraceExt to have some additional information available.
 pub fn build_trace_ext(
     traces: Vec<Trace>,
     folder: &Path,
-    num_files: i32,
     caching_processes: &[String],
 ) -> Vec<TraceExt> {
     // create a traces folder
@@ -135,6 +135,6 @@ pub fn build_trace_ext(
 
     traces
         .into_iter()
-        .map(|trace| TraceExt::new(trace, &trace_folder, caching_processes, num_files))
+        .map(|trace| TraceExt::new(trace, &trace_folder, caching_processes))
         .collect::<Vec<_>>()
 }

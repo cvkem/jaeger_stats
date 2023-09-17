@@ -1,17 +1,29 @@
 //! Reading raw json-formatted Jaeger-traces from file
 use super::JaegerTrace;
 use crate::{
-    raw,
+    raw::{self, FILE_TRACKER},
     utils::{self, Chapter},
 };
 use std::{error::Error, ffi::OsStr, fs, path::Path};
 
+// this fails as this type is not Clone (even though it is an Fn). Clone is needed to call is within an FnMut that is passed to filter_map in read_trace_folder
+//type JaegerTraceProcessor<T> = Box<dyn Fn(JaegerTrace) -> Vec<T>>;
+type JaegerTraceProcessor<T> = fn(JaegerTrace) -> Vec<T>;
+
 /// read a single file and process it to get clean Tcaecs. Returns a set of traces, or an error
+/// TODO: extend to keep track of a file-label
 fn read_trace_file<T>(
     input_file: &Path,
-    process_traces: fn(JaegerTrace) -> Vec<T>,
+    process_traces: JaegerTraceProcessor<T>,
 ) -> Result<Vec<T>, Box<dyn Error>> {
     println!("Reading a Jaeger-trace from '{}'", input_file.display());
+
+    // Add the file to the list, such that it's index is available from the FileTracker
+    FILE_TRACKER
+        .lock()
+        .unwrap()
+        .add_file(input_file.to_string_lossy().to_string());
+
     let jt = raw::read_jaeger_trace_file(input_file).unwrap();
 
     Ok(process_traces(jt))
@@ -19,9 +31,10 @@ fn read_trace_file<T>(
 
 fn read_trace_folder<T>(
     folder: &Path,
-    process_traces: fn(JaegerTrace) -> Vec<T>,
+    process_traces: JaegerTraceProcessor<T>,
 ) -> Result<(Vec<T>, i32), Box<dyn Error>> {
     let mut num_files = 0;
+
     let traces = fs::read_dir(folder)
         .expect("Failed to read directory")
         .filter_map(|entry| {
@@ -50,7 +63,7 @@ fn read_trace_folder<T>(
 ///Check whether path is a file or folder and read all traces.
 pub fn read_process_file_or_folder<T>(
     path: &Path,
-    process_traces: fn(JaegerTrace) -> Vec<T>,
+    process_traces: JaegerTraceProcessor<T>,
 ) -> (Vec<T>, i32, &Path) {
     utils::report(
         Chapter::Summary,
