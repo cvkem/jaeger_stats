@@ -187,7 +187,7 @@ impl StatsRec {
                     stat.update(idx, span, &spans, &self.caching_processes);
                 };
 
-                // This is the actual insert or update baed on the 'update_stats'.
+                // This is the actual insert or update based on the 'update_stats'.
                 self.stats
                     .entry(proc)
                     .and_modify(update_stat)
@@ -214,7 +214,7 @@ impl StatsRec {
         });
     }
 
-    pub fn to_csv_string(&self, num_files: i32) -> String {
+    pub fn to_csv_string(&self) -> String {
         let mut s = Vec::new();
         let num_traces: i64 = self.trace_id.len().try_into().unwrap();
 
@@ -255,6 +255,11 @@ impl StatsRec {
                     "root_calls:; {:?}",
                     root_call_list(&self.trace_id, &self.root_call)
                 ));
+                s.push(format!("num_files:; {}", self.num_files));
+                s.push(format!("num_endpoints:; {}", self.num_endpoints));
+                s.push(format!("init_num_incomplete_traces:; {}", self.init_num_incomplete_traces));
+                s.push(format!("num_fixes:; {}", self.num_fixes));
+                s.push(format!("num_incomplete_after_fixes:; {}", self.num_incomplete_after_fixes));
                 s.push(format!("start_dt; {:?}", self.start_dt));
                 s.push(format!("end_dt:; {:?}", self.end_dt));
                 s.push(format!(
@@ -302,7 +307,7 @@ impl StatsRec {
         s.push(ProcOperStatsValue::report_stats_line_header_str().to_owned());
         data.iter().for_each(|(k, stat)| {
             stat.operation.0.iter().for_each(|(method, meth_stat)| {
-                let line = meth_stat.report_stats_line(k, method, num_traces, num_files);
+                let line = meth_stat.report_stats_line(k, method, num_traces, self.num_files);
                 s.push(line);
             })
         });
@@ -324,7 +329,7 @@ impl StatsRec {
             .collect::<Vec<_>>();
         ps_data.sort_by(|a, b| a.0.cmp(b.0));
         ps_data.into_iter().for_each(|(ps_key, key, cchain_stats)| {
-            s.push(cchain_stats.report_stats_line(&key, ps_key, num_traces, num_files))
+            s.push(cchain_stats.report_stats_line(&key, ps_key, num_traces, self.num_files))
         });
         s.push("\n".to_owned());
 
