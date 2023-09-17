@@ -12,6 +12,33 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// deterimine the cchain folder based upon cc_path if this is an absolute path. If cc_path is a relative path it will be located as a sub-folder of 'folder'.
+fn get_cchain_folder(folder: &PathBuf, cc_path: &str) -> PathBuf {
+    // Cchain-folder for input and output are set to the same folder.
+    utils::report(Chapter::Details, format!("Input for cc_path = {cc_path}"));
+    let cc_path = {
+        let cc_path_full = Path::new(cc_path).to_path_buf();
+        if cc_path_full.is_absolute() {
+            cc_path_full
+        } else {
+            utils::extend_create_folder(&folder, cc_path)
+        }
+    };
+    let cchain_folder = cc_path.to_path_buf();
+    // utils::report(
+    //     Chapter::Details,
+    //     format!("Translates to full cc_path = {}", cc_path.display()),
+    // );
+    utils::report(
+        Chapter::Details,
+        format!(
+            "Translates to (full) cchain_folder = {}",
+            cchain_folder.display()
+        ),
+    );
+    cchain_folder    
+}
+
 /// create the statistics over all traces using the caching_processes
 fn create_trace_statistics(
     traces: &[&TraceExt],
@@ -26,16 +53,17 @@ fn create_trace_statistics(
     cumm_stats
 }
 
-/// fix all traces, while maintaining a cache of call-chains needed for correction, to avoid rereading and parsing the same data
-fn fix_traces(cchain_cache: &mut CChainEndPointCache, traces: &mut [TraceExt]) {
-    //    let mut cchain_cache = CChainEndPointCache::new(cc_path.to_path_buf());
-
+/// Try to fix all incomplete traces, while maintaining a cache of call-chains needed for correction, to avoid rereading and parsing the same data
+fn fix_traces(cchain_cache: &mut CChainEndPointCache, traces: &mut [TraceExt]) -> usize {
+    let mut num_fixes = 0;
     // amend/fix traces
     traces.iter_mut().for_each(|tr| {
         if !tr.trace.missing_span_ids.is_empty() {
-            tr.fix_cchains(cchain_cache)
+            num_fixes += tr.fix_cchains(cchain_cache)
         }
     });
+
+    num_fixes
 }
 
 /// write a file showing the statistics over all traces.
@@ -47,7 +75,6 @@ fn write_cumulative_trace_stats(
     output_ext: &str,
     rooted_spans_only: bool,
 ) {
-    //println!("Writing to file: {:?}", csv_file);
     let traces: Vec<_> = traces.iter().collect(); // switch to references
     let cumm_stats =
         create_trace_statistics(&traces, &caching_processes, num_files, rooted_spans_only);
@@ -67,6 +94,11 @@ fn write_cumulative_trace_stats(
 ///    2e. Amend the statistics computed under 2b with the information from the incomplete but corrected traces.
 ///    2f. Write the statistics to a end-point specific statistics file
 ///    2g. Collect all traces again for computation of the full-statistics over all end-points AFTER correction of missing spans.
+///   The return value of this function is a tuple containign:
+///     * the full set of traces
+///     * the number of end-points that appaer in these traces
+///     * the number of incomplete traces
+///     * the number of fixes applied to these incomplete traces (beware that some traces have multiple issues, and not all incomplete traces have been resolved)
 fn write_end_point_stats_and_correct_incomplete(
     stats_folder: &PathBuf,
     traces: Vec<TraceExt>, // moving data in and extracting later to prevent the need to copy data. Really needed??
@@ -75,8 +107,8 @@ fn write_end_point_stats_and_correct_incomplete(
     num_files: i32,
     output_ext: &str,
     rooted_spans_only: bool,
-    cchain_folder: &PathBuf, // temporary var (TODO: move to caches)
-) -> (Vec<TraceExt>, usize, usize) {
+//    cchain_folder: &PathBuf, // temporary var (TODO: move to caches)
+) -> (Vec<TraceExt>, usize, usize, usize) {
     let mut traces_by_endpoint = HashMap::new();
     traces.into_iter().for_each(|trace| {
         let k = trace.get_endpoint_key();
@@ -87,7 +119,9 @@ fn write_end_point_stats_and_correct_incomplete(
     });
     // extract call_chain and statistics per call-chain
     let num_end_points = traces_by_endpoint.len();
-    let mut incomplete_traces = 0;
+
+    let mut num_fixes = 0;
+    let mut incomplete_traces_read = 0;
     let mut all_traces = Vec::new();
 
     traces_by_endpoint.into_iter()
@@ -110,7 +144,7 @@ fn write_end_point_stats_and_correct_incomplete(
         };
 
         let part_trace_len = part_traces.len();
-        incomplete_traces += part_trace_len;
+        incomplete_traces_read += part_trace_len;
         if !part_traces.is_empty() {
             let trace_len = traces.len();
             let tot_trace = trace_len + part_trace_len;
@@ -121,7 +155,7 @@ fn write_end_point_stats_and_correct_incomplete(
         all_traces.extend(traces);
 
         // amend/fix traces
-        fix_traces(cchain_cache, &mut part_traces);
+        num_fixes += fix_traces(cchain_cache, &mut part_traces);
 
         // and add these to the statistics
         part_traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, false) );
@@ -131,7 +165,7 @@ fn write_end_point_stats_and_correct_incomplete(
 
         all_traces.extend(part_traces);
     });
-    (all_traces, num_end_points, incomplete_traces)
+    (all_traces, num_end_points, incomplete_traces_read, num_fixes)
 }
 
 /// process a vector of traces
@@ -159,33 +193,9 @@ pub fn process_and_fix_traces(
         false,
     );
 
-    // Cchain-folder for input and output are set to the same folder.
-    utils::report(Chapter::Details, format!("Input for cc_path = {cc_path}"));
-    let cc_path = {
-        let cc_path_full = Path::new(cc_path).to_path_buf();
-        if cc_path_full.is_absolute() {
-            cc_path_full
-        } else {
-            utils::extend_create_folder(&folder, cc_path)
-        }
-    };
-    let cchain_folder = cc_path.to_path_buf();
-    // utils::report(
-    //     Chapter::Details,
-    //     format!("Translates to full cc_path = {}", cc_path.display()),
-    // );
-    utils::report(
-        Chapter::Details,
-        format!(
-            "Translates to (full) cchain_folder = {}",
-            cchain_folder.display()
-        ),
-    );
+    let mut cchain_cache = CChainEndPointCache::new(get_cchain_folder(&folder, cc_path));
 
-    let cchain_folder_clone = cchain_folder.clone(); //temporary
-    let mut cchain_cache = CChainEndPointCache::new(cchain_folder);
-
-    let (all_traces, num_end_points, incomplete_traces) = write_end_point_stats_and_correct_incomplete(
+    let (all_traces, num_end_points, incomplete_traces, num_fixes) = write_end_point_stats_and_correct_incomplete(
         &stats_folder,
         traces,
         &mut cchain_cache,
@@ -193,7 +203,7 @@ pub fn process_and_fix_traces(
         num_files,
         output_ext,
         false,
-        &cchain_folder_clone,
+//        &cchain_folder_clone,
     );
 
     let mut csv_file = stats_folder.clone();
