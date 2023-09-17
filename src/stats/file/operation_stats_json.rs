@@ -45,11 +45,19 @@ pub struct StatsRecJson {
     pub root_call: Vec<String>,
     pub num_spans: Vec<usize>,
     pub num_files: i32,
+    /// number of endpoint included
+    pub num_endpoints: usize,
+    /// number of initial incomplete traces (before corrections)
+    pub init_num_incomplete_traces: usize,
+    /// number of fixes applied
+    pub num_fixes: usize,
+    /// number of incomplete traces after application of the fixes
+    pub num_incomplete_after_fixes: usize,
     pub start_dt: Vec<i64>,
     pub end_dt: Vec<i64>,
     pub duration_micros: Vec<i64>,
     pub time_to_respond_micros: Vec<i64>,
-    pub caching_process: Vec<String>,
+    pub caching_processes: Vec<String>,
     pub stats: HashMap<String, OperationStatsJson>, // hashmap base on the leaf process (as that is the initial level of reporting)
 }
 
@@ -63,6 +71,10 @@ impl From<StatsRec> for StatsRecJson {
             root_call: sr.root_call,
             num_spans: sr.num_spans,
             num_files: sr.num_files,
+            num_endpoints: sr.num_endpoints,
+            init_num_incomplete_traces: sr.init_num_incomplete_traces,
+            num_fixes: sr.num_fixes,
+            num_incomplete_after_fixes: sr.num_incomplete_after_fixes,
             start_dt: sr
                 .start_dt
                 .into_iter()
@@ -75,7 +87,7 @@ impl From<StatsRec> for StatsRecJson {
                 .collect(),
             duration_micros: sr.duration_micros,
             time_to_respond_micros: sr.time_to_respond_micros,
-            caching_process: sr.caching_process,
+            caching_processes: sr.caching_processes,
             stats,
         }
     }

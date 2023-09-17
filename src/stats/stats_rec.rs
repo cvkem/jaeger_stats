@@ -12,6 +12,7 @@ use std::{
     collections::{HashMap, HashSet},
     error::Error,
     ffi::OsString,
+    mem,
 };
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
@@ -20,7 +21,20 @@ pub struct Version {
     pub minor: u16,
 }
 
-pub struct BasicStatsRec {}
+#[derive(Default, Clone)]
+pub struct BasicStatsRec {
+    pub num_files: i32, // i32 is more convenient for compuations than an usize
+    /// number of endpoint included
+    pub num_endpoints: usize,
+    /// number of initial incomplete traces (before corrections)
+    pub init_num_incomplete_traces: usize,
+    /// number of fixes applied
+    pub num_fixes: usize,
+    /// number of incomplete traces after application of the fixes
+    pub num_incomplete_after_fixes: usize,
+    /// List of processes that perform caching, which is an input parameter to this analysis
+    pub caching_processes: Vec<String>,
+}
 
 impl Default for Version {
     fn default() -> Self {
@@ -41,6 +55,14 @@ pub struct StatsRec {
     pub num_spans: Vec<usize>,
     /// The number of input-files used to collect this set of traces. This number is eeded when computing the rate of requests as we need to correct for possible gaps between files
     pub num_files: i32, // i32 is more convenient for compuations than an usize
+    /// number of endpoint included
+    pub num_endpoints: usize,
+    /// number of initial incomplete traces (before corrections)
+    pub init_num_incomplete_traces: usize,
+    /// number of fixes applied
+    pub num_fixes: usize,
+    /// number of incomplete traces after application of the fixes
+    pub num_incomplete_after_fixes: usize,
     /// Start date-time per trace in a Naive format as the encoding in the source-files is based on Epoch-micros and does not contain time-zone information
     pub start_dt: Vec<NaiveDateTime>,
     /// End date-time for each trace
@@ -50,7 +72,7 @@ pub struct StatsRec {
     /// The Time_to_respond_micros measures when a response is returned, as a some background computation, or writing of data might happen after this time.
     pub time_to_respond_micros: Vec<i64>,
     /// List of processes that perform caching, which is an input parameter to this analysis
-    pub caching_process: Vec<String>,
+    pub caching_processes: Vec<String>,
     /// Statistis per leaf-process (end-point of the chain of processes)
     pub stats: HashMap<String, OperationStats>, // hashmap based on the leaf process (as that is the initial level of reporting)
 }
@@ -65,23 +87,35 @@ impl From<StatsRecJson> for StatsRec {
             root_call: srj.root_call,
             num_spans: srj.num_spans,
             num_files: srj.num_files,
+            num_endpoints: srj.num_endpoints,
+            init_num_incomplete_traces: srj.init_num_incomplete_traces,
+            num_fixes: srj.num_fixes,
+            num_incomplete_after_fixes: srj.num_incomplete_after_fixes,
             start_dt: srj.start_dt.into_iter().map(micros_to_datetime).collect(),
             end_dt: srj.end_dt.into_iter().map(micros_to_datetime).collect(),
             duration_micros: srj.duration_micros,
             time_to_respond_micros: srj.time_to_respond_micros,
-            caching_process: srj.caching_process,
+            caching_processes: srj.caching_processes,
             stats,
         }
     }
 }
 
 impl StatsRec {
-    pub fn new(caching_process: &[String], num_files: usize) -> Self {
-        let caching_process = caching_process.to_owned();
-        let num_files = num_files.try_into().unwrap();
+    pub fn new(mut bsr: BasicStatsRec) -> Self {
+        let caching_process = mem::take(&mut bsr.caching_processes);
+        let num_files = bsr.num_files;
+        let num_endpoints = bsr.num_endpoints;
+        let init_num_incomplete_traces = bsr.init_num_incomplete_traces;
+        let num_fixes = bsr.num_fixes;
+        let num_incomplete_after_fixes = bsr.num_incomplete_after_fixes;
         StatsRec {
-            caching_process,
+            caching_processes: caching_process,
             num_files,
+            num_endpoints,
+            init_num_incomplete_traces,
+            num_fixes,
+            num_incomplete_after_fixes,
             ..Default::default()
         }
     }
@@ -150,7 +184,7 @@ impl StatsRec {
                 let proc = proc.to_owned();
 
                 let update_stat = |stat: &mut OperationStats| {
-                    stat.update(idx, span, &spans, &self.caching_process);
+                    stat.update(idx, span, &spans, &self.caching_processes);
                 };
 
                 // This is the actual insert or update baed on the 'update_stats'.

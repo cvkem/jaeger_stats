@@ -1,6 +1,6 @@
 use crate::{
     processed, raw,
-    stats::{self as crate_stats},
+    stats::{self as crate_stats, BasicStatsRec, TraceExtVec},
     utils,
 };
 
@@ -30,6 +30,12 @@ pub fn analyze_file_or_folder(
     let (traces, num_files, folder) =
         raw::read_process_file_or_folder(path, processed::extract_traces);
 
+    let mut bsr = BasicStatsRec {
+        num_files,
+        caching_processes,
+        ..Default::default()
+    };
+
     let folder = utils::canonicalize_path(folder);
     println!(
         "The folder is '{}'.  Read {num_files} files.",
@@ -40,19 +46,15 @@ pub fn analyze_file_or_folder(
     let traces = dedup::deduplicate(traces);
 
     // Translate to Extended traces and write the traces to a JSON file
-    let traces = crate_stats::build_trace_ext(traces, &folder, &caching_processes);
+    let traces = crate_stats::build_trace_ext(traces, &folder, &bsr);
     // write the traces
+
+    bsr.init_num_incomplete_traces = TraceExtVec(&traces[..]).init_num_incomplete_traces();
 
     if trace_output {
         traces.iter().for_each(|trace| trace.write_trace());
     }
 
-    stats::process_and_fix_traces(
-        folder.clone(),
-        traces,
-        caching_processes,
-        cc_path,
-        output_ext,
-    );
+    stats::process_and_fix_traces(folder.clone(), traces, bsr, cc_path, output_ext);
     folder
 }
