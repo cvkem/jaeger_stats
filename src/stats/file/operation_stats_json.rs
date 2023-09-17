@@ -44,7 +44,7 @@ pub struct StatsRecJson {
     pub trace_id: Vec<String>,
     pub root_call: Vec<String>,
     pub num_spans: Vec<usize>,
-    pub num_files: i32, // Not compatible with version 0.1 which did not have this field. Skipped backward compatbility
+    pub num_files: i32,
     pub start_dt: Vec<i64>,
     pub end_dt: Vec<i64>,
     pub duration_micros: Vec<i64>,

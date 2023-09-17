@@ -20,6 +20,8 @@ pub struct Version {
     pub minor: u16,
 }
 
+pub struct BasicStatsRec {}
+
 impl Default for Version {
     fn default() -> Self {
         Version { major: 0, minor: 2 }
@@ -38,7 +40,7 @@ pub struct StatsRec {
     /// The total number of spans per trace
     pub num_spans: Vec<usize>,
     /// The number of input-files used to collect this set of traces. This number is eeded when computing the rate of requests as we need to correct for possible gaps between files
-    pub num_files: i32,
+    pub num_files: i32, // i32 is more convenient for compuations than an usize
     /// Start date-time per trace in a Naive format as the encoding in the source-files is based on Epoch-micros and does not contain time-zone information
     pub start_dt: Vec<NaiveDateTime>,
     /// End date-time for each trace
@@ -62,7 +64,7 @@ impl From<StatsRecJson> for StatsRec {
             trace_id: srj.trace_id,
             root_call: srj.root_call,
             num_spans: srj.num_spans,
-            num_files: srj.num_files, // Was optional for backward compatibiliy
+            num_files: srj.num_files,
             start_dt: srj.start_dt.into_iter().map(micros_to_datetime).collect(),
             end_dt: srj.end_dt.into_iter().map(micros_to_datetime).collect(),
             duration_micros: srj.duration_micros,
@@ -74,8 +76,9 @@ impl From<StatsRecJson> for StatsRec {
 }
 
 impl StatsRec {
-    pub fn new(caching_process: &[String], num_files: i32) -> Self {
+    pub fn new(caching_process: &[String], num_files: usize) -> Self {
         let caching_process = caching_process.to_owned();
+        let num_files = num_files.try_into().unwrap();
         StatsRec {
             caching_process,
             num_files,

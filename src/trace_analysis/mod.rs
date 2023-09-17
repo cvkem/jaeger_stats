@@ -31,13 +31,16 @@ pub fn analyze_file_or_folder(
         raw::read_process_file_or_folder(path, processed::extract_traces);
 
     let folder = utils::canonicalize_path(folder);
-    println!("The folder is '{}'", folder.as_path().display());
+    println!(
+        "The folder is '{}'.  Read {num_files} files.",
+        folder.as_path().display()
+    );
 
     // When joining traces from multiple files we can have duplicates. These should be removed to prevent incorrect statistics
     let traces = dedup::deduplicate(traces);
 
     // Translate to Extended traces and write the traces to a JSON file
-    let traces = crate_stats::build_trace_ext(traces, &folder, num_files, &caching_processes);
+    let traces = crate_stats::build_trace_ext(traces, &folder, &caching_processes);
     // write the traces
 
     if trace_output {
@@ -49,7 +52,6 @@ pub fn analyze_file_or_folder(
         traces,
         caching_processes,
         cc_path,
-        num_files,
         output_ext,
     );
     folder
