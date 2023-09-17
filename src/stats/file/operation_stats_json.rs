@@ -33,7 +33,7 @@ impl From<OperationStats> for OperationStatsJson {
             num_received_calls: st.num_received_calls,
             num_outbound_calls: st.num_outbound_calls,
             num_unknown_calls: st.num_unknown_calls,
-            call_chain: st.call_chain.into_iter().collect(),
+            call_chain: st.call_chain.0.into_iter().collect(),
         }
     }
 }

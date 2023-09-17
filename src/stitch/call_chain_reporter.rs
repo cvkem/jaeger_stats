@@ -77,7 +77,7 @@ impl CCReportItems {
         data.iter().for_each(|stats_rec| {
             if let Some(stats_rec) = stats_rec {
                 stats_rec.stats.iter().for_each(|(_proc_key, st)| {
-                    st.call_chain.iter().for_each(|(cc_key, cc_val)| {
+                    st.call_chain.0.iter().for_each(|(cc_key, cc_val)| {
                         // checks
                         let cc_key_clone = cc_key.clone();
                         // if *cc_key != cc_key_clone {
@@ -121,6 +121,7 @@ impl CCReportItems {
                 stats_rec.as_ref().and_then(|stats_rec| {
                     stats_rec.stats.get(&process).and_then(|st| {
                         st.call_chain
+                            .0
                             .get(cc_key)
                             .map(|oper| (oper, stats_rec.num_files, stats_rec.trace_id.len()))
                     })

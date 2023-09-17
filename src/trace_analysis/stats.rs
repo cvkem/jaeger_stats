@@ -173,6 +173,7 @@ fn write_end_point_stats_and_correct_incomplete(
     bsr.num_fixes = num_fixes;
     bsr.num_incomplete_after_fixes = incomplete_traces_read; //TODO: to be computed. This estimate is too low.
 
+    /// TODO: return the cummulated corrected call-chains
     (all_traces, bsr)
 }
 

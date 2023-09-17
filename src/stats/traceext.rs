@@ -15,7 +15,7 @@ use std::{
     path::Path,
 };
 
-use super::stats_rec::BasicStatsRec;
+use super::{call_chain::CChainStats, stats_rec::BasicStatsRec};
 
 /// Collect statistics as a string and write it to a textfile in CSV format
 pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec) {
@@ -86,7 +86,7 @@ impl TraceExt {
             let new_stats: HashMap<_, _> = mem::take(&mut self.stats_rec.stats)
             .into_iter()
             .map(|(key, mut stats)| {
-                let (rooted, mut non_rooted): (Vec<_>, Vec<_>) = stats.call_chain
+                let (rooted, mut non_rooted): (Vec<_>, Vec<_>) = stats.call_chain.0
                     .into_iter()
                     .partition(|(_k2, v2)| v2.rooted);
 
@@ -121,7 +121,7 @@ impl TraceExt {
                             .or_insert(v_new);
                         cc
                     });
-                stats.call_chain = new_call_chain;
+                stats.call_chain = CChainStats( new_call_chain );
                 (key, stats)
             })
             .collect();
