@@ -157,7 +157,7 @@ fn write_end_point_stats_and_correct_incomplete(
         cumm_stats.init_num_incomplete_traces = incomplete_traces_read;
         cumm_stats.num_endpoints = 1;
         cumm_stats.num_fixes = ep_num_fixes;
-        cumm_stats.num_incomplete_after_fixes = incomplete_traces_read - ep_num_fixes;  //TODO: to be computed. This estimate is too low.
+        cumm_stats.num_incomplete_after_fixes = incomplete_traces_read;  //TODO: to be computed. This estimate is too low.
 
         // and add these to the statistics
         part_traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, rooted_spans_only) );
@@ -171,7 +171,7 @@ fn write_end_point_stats_and_correct_incomplete(
     bsr.num_files = TraceExtVec(&all_traces[..]).num_files().try_into().unwrap();
     bsr.num_endpoints = num_end_points;
     bsr.num_fixes = num_fixes;
-    bsr.num_incomplete_after_fixes = incomplete_traces_read - num_fixes; //TODO: to be computed. This estimate is too low.
+    bsr.num_incomplete_after_fixes = incomplete_traces_read; //TODO: to be computed. This estimate is too low.
 
     (all_traces, bsr)
 }
@@ -180,7 +180,7 @@ fn write_end_point_stats_and_correct_incomplete(
 pub fn process_and_fix_traces(
     folder: PathBuf,
     traces: Vec<TraceExt>,
-    mut bsr: BasicStatsRec,
+    bsr: BasicStatsRec,
     cc_path: &str,
     output_ext: &str,
 ) {
