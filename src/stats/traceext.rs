@@ -61,7 +61,9 @@ impl TraceExt {
 
     /// fix_cchains tries to repair the call-chains by looking up call-chains observed in the past from complete traces.
     /// TODO: correct for root-chains and non-rooted chains as we should have that infomation
-    pub fn fix_cchains(&mut self, cchain_cache: &mut CChainEndPointCache) {
+    pub fn fix_cchains(&mut self, cchain_cache: &mut CChainEndPointCache) -> usize {
+        let mut num_fixes = 0;
+
         utils::report(
             Chapter::Details,
             format!(
@@ -89,12 +91,13 @@ impl TraceExt {
                     .for_each(|(k, v)| {
                         if k.remap_callchain(expect_cc) {
                             assert!(!v.rooted);  // should be false
+                            num_fixes += 1;
                             v.rooted = true;
                         } else {
                             fix_failed += 1;
                         }});
                 if fix_failed > 0 {
-                    utils::report(Chapter::Details, format!("Failed to fix {fix_failed} chains out of {} non-rooted chains.", non_rooted.len()));
+                    utils::report(Chapter::Details, format!("Failed to fix {fix_failed} chains out of {} non-rooted chains. ({num_fixes} fixes applied succesful)", non_rooted.len()));
                 }
 
                 let new_call_chain = rooted.into_iter()
@@ -115,7 +118,9 @@ impl TraceExt {
             self.stats_rec.stats = new_stats;
         } else {
             println!("Could not find a call-chain for {}", self.trace.root_call);
-        }
+        };
+
+        num_fixes
     }
 }
 
