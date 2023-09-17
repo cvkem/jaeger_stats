@@ -130,7 +130,7 @@ impl StatsRec {
     pub fn call_chain_keys(&self) -> Vec<CChainStatsKey> {
         self.stats
             .values()
-            .flat_map(|stat| stat.call_chain.keys().map(|psk| psk.clone()))
+            .flat_map(|stat| stat.call_chain.0.keys().map(|psk| psk.clone()))
             .collect()
     }
 
@@ -257,9 +257,15 @@ impl StatsRec {
                 ));
                 s.push(format!("num_files:; {}", self.num_files));
                 s.push(format!("num_endpoints:; {}", self.num_endpoints));
-                s.push(format!("init_num_incomplete_traces:; {}", self.init_num_incomplete_traces));
+                s.push(format!(
+                    "init_num_incomplete_traces:; {}",
+                    self.init_num_incomplete_traces
+                ));
                 s.push(format!("num_fixes:; {}", self.num_fixes));
-                s.push(format!("num_incomplete_after_fixes:; {}", self.num_incomplete_after_fixes));
+                s.push(format!(
+                    "num_incomplete_after_fixes:; {}",
+                    self.num_incomplete_after_fixes
+                ));
                 s.push(format!("start_dt; {:?}", self.start_dt));
                 s.push(format!("end_dt:; {:?}", self.end_dt));
                 s.push(format!(
@@ -323,6 +329,7 @@ impl StatsRec {
             .into_iter()
             .flat_map(|(key, stat)| {
                 stat.call_chain
+                    .0
                     .iter()
                     .map(|(ps_key, cchain_stats)| (ps_key, key.to_owned(), cchain_stats))
             })
@@ -342,6 +349,7 @@ impl StatsRec {
             .values()
             .flat_map(|st| {
                 st.call_chain
+                    .0
                     .keys()
                     .map(|ps_key| call_chain_key(&ps_key.call_chain, "", ps_key.is_leaf))
                     .collect::<Vec<_>>()

@@ -37,13 +37,14 @@ impl OperationStats {
 
 impl From<OperationStatsJson> for OperationStats {
     fn from(stj: OperationStatsJson) -> Self {
+        let call_chain = CChainStats(stj.call_chain.into_iter().collect());
         Self {
             num_traces: stj.num_traces,
             num_received_calls: stj.num_received_calls,
             num_outbound_calls: stj.num_outbound_calls,
             num_unknown_calls: stj.num_unknown_calls,
             operation: stj.method,
-            call_chain: stj.call_chain.into_iter().collect(),
+            call_chain,
         }
     }
 }
@@ -125,6 +126,7 @@ impl OperationStats {
             ps.error_logs.add_items(error_logs_vec.clone());
         };
         self.call_chain
+            .0
             .entry(ps_key)
             // next part could be made more dry via an update-closure
             .and_modify(|ps| update_ps_val(ps))

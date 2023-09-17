@@ -306,6 +306,17 @@ impl CChainStatsValue {
 }
 
 /// the information is distributed over the key and the value (no duplication in value)
-pub type CChainStats = HashMap<CChainStatsKey, CChainStatsValue>;
+#[derive(Debug, Default)]
+pub struct CChainStats(pub HashMap<CChainStatsKey, CChainStatsValue>);
 //#[derive(Default, Debug, Serialize, Deserialize)]
 //pub struct CChainStats (pub HashMap<CChainStatsKey, CChainStatsValue>);
+
+impl CChainStats {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn merge(&mut self, to_merge: CChainStats) {
+        todo!()
+    }
+}
