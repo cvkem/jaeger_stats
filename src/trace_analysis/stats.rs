@@ -1,6 +1,8 @@
 //! Creating the statistics
 use crate::{
-    stats::{self, call_chain::CChainEndPointCache, file, StatsRec, TraceExt, TraceExtVec},
+    stats::{
+        self, call_chain::CChainEndPointCache, file, BasicStatsRec, StatsRec, TraceExt, TraceExtVec,
+    },
     utils::{self, Chapter},
 };
 use std::{
@@ -38,11 +40,10 @@ fn get_cchain_folder(folder: &PathBuf, cc_path: &str) -> PathBuf {
 /// create the statistics over all traces using the caching_processes
 fn create_trace_statistics(
     traces: &[&TraceExt],
-    caching_processes: &[String],
-    num_files: usize,
+    bsr: &BasicStatsRec,
     rooted_spans_only: bool,
 ) -> StatsRec {
-    let mut cumm_stats = StatsRec::new(caching_processes, num_files);
+    let mut cumm_stats = StatsRec::new(bsr.clone());
     traces
         .iter()
         .for_each(|tr| cumm_stats.extend_statistics(&tr.trace, rooted_spans_only));
@@ -66,15 +67,14 @@ fn fix_traces(cchain_cache: &mut CChainEndPointCache, traces: &mut [TraceExt]) -
 fn write_cumulative_trace_stats(
     csv_file: PathBuf,
     traces: &[TraceExt],
-    caching_processes: &[String],
+    bsr: &BasicStatsRec,
     output_ext: &str,
     rooted_spans_only: bool,
 ) {
     let num_files = TraceExtVec(&traces).num_files();
 
     let traces: Vec<_> = traces.iter().collect(); // switch to references
-    let cumm_stats =
-        create_trace_statistics(&traces, &caching_processes, num_files, rooted_spans_only);
+    let cumm_stats = create_trace_statistics(&traces, bsr, rooted_spans_only);
     stats::write_stats_to_csv_file(csv_file.to_str().unwrap(), &cumm_stats);
     file::write_stats(csv_file.to_str().unwrap(), cumm_stats, output_ext);
 }
@@ -99,13 +99,11 @@ fn write_end_point_stats_and_correct_incomplete(
     stats_folder: &PathBuf,
     traces: Vec<TraceExt>, // moving data in and extracting later to prevent the need to copy data. Really needed??
     cchain_cache: &mut CChainEndPointCache,
-    caching_processes: &[String],
+    mut bsr: BasicStatsRec,
     output_ext: &str,
     rooted_spans_only: bool,
     //    cchain_folder: &PathBuf, // temporary var (TODO: move to caches)
-) -> (Vec<TraceExt>, usize, usize, usize) {
-    let num_files = TraceExtVec(&traces).num_files();
-
+) -> (Vec<TraceExt>, BasicStatsRec) {
     let mut traces_by_endpoint = HashMap::new();
     traces.into_iter().for_each(|trace| {
         let k = trace.get_endpoint_key();
@@ -116,13 +114,13 @@ fn write_end_point_stats_and_correct_incomplete(
     });
     // extract call_chain and statistics per call-chain
     let num_end_points = traces_by_endpoint.len();
-
     let mut num_fixes = 0;
     let mut incomplete_traces_read = 0;
     let mut all_traces = Vec::new();
 
     traces_by_endpoint.into_iter()
     .for_each(|(k, traces)| {
+        let num_files = TraceExtVec(&traces).num_files();
         let mut csv_file = stats_folder.clone();
         csv_file.push(format!("{k}.csv"));
         // The traces that are have 'missing_trace_ids' are the traces that are incomplete, and thus seem to have multiple roots due to the fact
@@ -130,14 +128,14 @@ fn write_end_point_stats_and_correct_incomplete(
         let (traces, mut part_traces): (Vec<_>, Vec<_>) = traces.into_iter().partition(|tr| tr.trace.missing_span_ids.is_empty());
         //TODO: we can produce the call-chains over incomplete traces too if we only include the rooted paths
         let mut cumm_stats = if !traces.is_empty() {
-            let cumm_stats = create_trace_statistics(&traces.iter().collect::<Vec<_>>(), &caching_processes, num_files, false);
+            let cumm_stats = create_trace_statistics(&traces.iter().collect::<Vec<_>>(), &bsr, false);
 
             cchain_cache.create_update_entry(&k, cumm_stats.call_chain_keys());
 
             cumm_stats
         } else {
             println!("No complete traces, so we can not produce the call-chain file");
-            StatsRec::new(&caching_processes, num_files)
+            StatsRec::new(bsr.clone())
         };
 
         let part_trace_len = part_traces.len();
@@ -152,7 +150,14 @@ fn write_end_point_stats_and_correct_incomplete(
         all_traces.extend(traces);
 
         // amend/fix traces
-        num_fixes += fix_traces(cchain_cache, &mut part_traces);
+        let ep_num_fixes = fix_traces(cchain_cache, &mut part_traces);
+        num_fixes += ep_num_fixes;
+
+        cumm_stats.num_files = num_files.try_into().unwrap();
+        cumm_stats.init_num_incomplete_traces = incomplete_traces_read;
+        cumm_stats.num_endpoints = 1;
+        cumm_stats.num_fixes = ep_num_fixes;
+        cumm_stats.num_incomplete_after_fixes = incomplete_traces_read - ep_num_fixes;  //TODO: to be computed. This estimate is too low.
 
         // and add these to the statistics
         part_traces.iter().for_each(|tr| cumm_stats.extend_statistics(&tr.trace, rooted_spans_only) );
@@ -162,19 +167,20 @@ fn write_end_point_stats_and_correct_incomplete(
 
         all_traces.extend(part_traces);
     });
-    (
-        all_traces,
-        num_end_points,
-        incomplete_traces_read,
-        num_fixes,
-    )
+
+    bsr.num_files = TraceExtVec(&all_traces[..]).num_files().try_into().unwrap();
+    bsr.num_endpoints = num_end_points;
+    bsr.num_fixes = num_fixes;
+    bsr.num_incomplete_after_fixes = incomplete_traces_read - num_fixes; //TODO: to be computed. This estimate is too low.
+
+    (all_traces, bsr)
 }
 
 /// process a vector of traces
 pub fn process_and_fix_traces(
     folder: PathBuf,
     traces: Vec<TraceExt>,
-    caching_processes: Vec<String>,
+    mut bsr: BasicStatsRec,
     cc_path: &str,
     output_ext: &str,
 ) {
@@ -185,32 +191,33 @@ pub fn process_and_fix_traces(
     // TODO: consider whether this uncorrected version is needed.
     let mut csv_file = stats_folder.clone();
     csv_file.push("cummulative_trace_stats_uncorrected.csv");
-    write_cumulative_trace_stats(csv_file, &traces, &caching_processes, output_ext, false);
+    write_cumulative_trace_stats(csv_file, &traces, &bsr, output_ext, false);
 
     let mut cchain_cache = CChainEndPointCache::new(get_cchain_folder(&folder, cc_path));
 
-    let (all_traces, num_end_points, incomplete_traces, num_fixes) =
-        write_end_point_stats_and_correct_incomplete(
-            &stats_folder,
-            traces,
-            &mut cchain_cache,
-            &caching_processes,
-            output_ext,
-            false,
-            //        &cchain_folder_clone,
-        );
+    let (all_traces, bsr) = write_end_point_stats_and_correct_incomplete(
+        &stats_folder,
+        traces,
+        &mut cchain_cache,
+        bsr, // an updated version is returned as a return value
+        output_ext,
+        false,
+    );
 
     let mut csv_file = stats_folder.clone();
     csv_file.push("cummulative_trace_stats.csv");
-    write_cumulative_trace_stats(csv_file, &all_traces, &caching_processes, output_ext, false);
+    write_cumulative_trace_stats(csv_file, &all_traces, &bsr, output_ext, false);
 
     println!();
-    utils::report(Chapter::Summary, format!("Processed {total_traces} traces covering {num_end_points} end-points  (on average {:.1} traces per end-point).", total_traces as f64/num_end_points as f64));
+    utils::report(Chapter::Summary, format!("Processed {total_traces} traces covering {} end-points  (on average {:.1} traces per end-point).",
+        bsr.num_endpoints,
+        total_traces as f64/bsr.num_endpoints as f64));
     utils::report(
         Chapter::Summary,
         format!(
-            "Observed {incomplete_traces} incomplete traces, which is {:.1}% of the total",
-            100.0 * incomplete_traces as f64 / total_traces as f64
+            "Observed {} incomplete traces, which is {:.1}% of the total",
+            bsr.init_num_incomplete_traces,
+            100.0 * bsr.init_num_incomplete_traces as f64 / total_traces as f64
         ),
     );
 }

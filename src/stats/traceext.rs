@@ -15,6 +15,8 @@ use std::{
     path::Path,
 };
 
+use super::stats_rec::BasicStatsRec;
+
 /// Collect statistics as a string and write it to a textfile in CSV format
 pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec) {
     //println!("Now writing the trace statistics to {csv_file}");
@@ -31,10 +33,17 @@ pub struct TraceExt {
 }
 
 impl TraceExt {
-    pub fn new(trace: Trace, folder: &Path, caching_processes: &[String]) -> Self {
+    pub fn new(trace: Trace, folder: &Path, mut bsr: BasicStatsRec) -> Self {
         let base_name = trace.base_name(folder);
 
-        let mut stats = StatsRec::new(caching_processes, 1); // collects statistics over single trace, so 1 file
+        bsr.num_files = 1;
+        bsr.init_num_incomplete_traces = if trace.missing_span_ids.is_empty() {
+            0
+        } else {
+            1
+        };
+
+        let mut stats = StatsRec::new(bsr); // collects statistics over single trace, so 1 file
         stats.extend_statistics(&trace, false);
 
         Self {
@@ -125,16 +134,12 @@ impl TraceExt {
 }
 
 /// Wrap all traces as a TraceExt to have some additional information available.
-pub fn build_trace_ext(
-    traces: Vec<Trace>,
-    folder: &Path,
-    caching_processes: &[String],
-) -> Vec<TraceExt> {
+pub fn build_trace_ext(traces: Vec<Trace>, folder: &Path, bsr: &BasicStatsRec) -> Vec<TraceExt> {
     // create a traces folder
     let trace_folder = utils::extend_create_folder(folder, "Traces");
 
     traces
         .into_iter()
-        .map(|trace| TraceExt::new(trace, &trace_folder, caching_processes))
+        .map(|trace| TraceExt::new(trace, &trace_folder, bsr.clone()))
         .collect::<Vec<_>>()
 }
