@@ -20,7 +20,7 @@ use super::stats_rec::BasicStatsRec;
 /// Collect statistics as a string and write it to a textfile in CSV format
 pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec) {
     //println!("Now writing the trace statistics to {csv_file}");
-    let stats_csv_str = stats.to_csv_string(stats.num_files);
+    let stats_csv_str = stats.to_csv_string();
     if let Err(err) = utils::write_string_to_file(csv_file, stats_csv_str) {
         panic!("Writing to file '{csv_file}' failed with error: {err:?}");
     };
@@ -69,6 +69,7 @@ impl TraceExt {
     }
 
     /// fix_cchains tries to repair the call-chains by looking up call-chains observed in the past from complete traces.
+    /// Please note that this function only fixes the call-chain information, and does NOT repair the underlying trace (yet).
     /// TODO: correct for root-chains and non-rooted chains as we should have that infomation
     pub fn fix_cchains(&mut self, cchain_cache: &mut CChainEndPointCache) -> usize {
         let mut num_fixes = 0;
