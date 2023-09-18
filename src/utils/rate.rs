@@ -8,15 +8,18 @@ pub fn set_show_rate_output(val: bool) {
     *guard = val
 }
 
-// returns an average and a median rate (after dropping the outliers)
+/// When having too few points the rates will become unreliable
+const POINTS_NEEDED_FOR_RATE: i32 = 10;
+
+/// returns an average and a median rate (after dropping the outliers)
 pub fn calc_rate(data: &Vec<i64>, num_outliers: i32) -> Option<(f64, f64)> {
     assert!(num_outliers >= 0);
-    if data.len() as i32 - num_outliers - 2 < 0 {
+    if data.len() as i32 - num_outliers - 2 - POINTS_NEEDED_FOR_RATE < 0 {
         return None;
     }
     let mut data = data.clone();
     data.sort_unstable();
-    // comppute the gaps (moving from N to N-1 datapoints)
+    // compute the gaps (moving from N to N-1 datapoints)
     for i in 0..(data.len() - 1) {
         data[i] = data[i + 1] - data[i];
     }
@@ -29,7 +32,7 @@ pub fn calc_rate(data: &Vec<i64>, num_outliers: i32) -> Option<(f64, f64)> {
         println!("Show the sorted data before skipping the outliers!!");
         data.iter()
             .enumerate()
-            .for_each(|(idx, v)| println!("{idx}:  {v}    check:  {}", data[idx]));
+            .for_each(|(idx, v)| println!("{idx}: gap {v} micros"));
     }
 
     for _i in 0..num_outliers {
@@ -48,7 +51,7 @@ pub fn calc_rate(data: &Vec<i64>, num_outliers: i32) -> Option<(f64, f64)> {
     let med_rate = 1.0 / t_med;
 
     if *SHOW_OUTPUT.lock().unwrap() {
-        println!("  t_avg = {t_avg} ->  rate_avg={avg_rate} en t_med={t_med}  ->  med_rate {med_rate} voor  {} punten", data.len());
+        println!("  t_avg = {t_avg} ->  rate_avg={avg_rate} en t_med={t_med}  ->  med_rate {med_rate} voor  {} punten (after skipping {num_outliers} outliers).", data.len());
     }
 
     Some((avg_rate, med_rate))

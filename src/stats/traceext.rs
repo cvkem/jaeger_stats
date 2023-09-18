@@ -66,7 +66,6 @@ impl TraceExt {
         utils::write_string_to_file(&output_file, trace_str)
             .expect("Failed to write trace (.txt) to file");
     }
-
 }
 
 /// Wrap all traces as a TraceExt to have some additional information available.
