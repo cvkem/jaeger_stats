@@ -281,13 +281,7 @@ impl Spans {
                 roots.len(),
                 item.spans.len(),
             );
-            utils::report(crate::utils::Chapter::Issues, issue.clone());
-            utils::report(
-                crate::utils::Chapter::Details,
-                format!("ISSUE: {}\n\t{item:#?}", issue),
-            );
-
-            println!("\n\tCopy to console:\n\t{}", issue);
+            utils::report(crate::utils::Chapter::Issues, issue);
             Spans {
                 items: spans,
                 root_idx: None, // assume a default

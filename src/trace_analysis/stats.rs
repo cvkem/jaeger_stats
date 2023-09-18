@@ -60,20 +60,6 @@ fn write_cumulative_trace_stats(csv_file: PathBuf, cumm_stats: StatsRec, output_
     file::write_stats(csv_file.to_str().unwrap(), cumm_stats, output_ext);
 }
 
-//REMOVE
-// /// Try to fix all incomplete traces, while maintaining a cache of call-chains needed for correction, to avoid rereading and parsing the same data
-// fn fix_traces(cchain_cache: &mut CChainEndPointCache, traces: &mut [TraceExt]) -> usize {
-//     let mut num_fixes = 0;
-//     // amend/fix traces
-//     traces.iter_mut().for_each(|tr| {
-//         if !tr.trace.missing_span_ids.is_empty() {
-//             num_fixes += tr.fix_cchains(cchain_cache)
-//         }
-//     });
-
-//     num_fixes
-// }
-
 /// Statistics are written per endpoint to the 'Stats' folder, and incomplete traces are corrected (when possible)
 /// This involves a multistep process:
 ///  1. Split traces per end-point such that processing is per endpoint
