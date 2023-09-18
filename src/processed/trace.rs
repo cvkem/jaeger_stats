@@ -98,19 +98,25 @@ fn find_full_duration(ji: &JaegerItem) -> (i64, i64) {
 /// get_response_duration finds the duration it takes for the root-span to return a response.
 /// We iterate over the spans as these have a clear parent-span, while taking the value from the corresponding JaegerItem.
 fn get_response_duration(spans: &Spans, ji: &JaegerItem) -> i64 {
-    let root_idx = spans.root_idx;
-
-    if ji.spans.len() <= root_idx {
-        panic!(
-            "index {root_idx} does not exist in JaegerItems array with length {}",
-            ji.spans.len()
-        );
+    if let Some(root_idx) = spans.root_idx {
+        if ji.spans.len() <= root_idx {
+            panic!(
+                "index {root_idx} does not exist in JaegerItems array with length {}",
+                ji.spans.len()
+            );
+        }
+        ji.spans[root_idx].duration
+    } else {
+        ji.spans[0].duration // beter to find the maximal duration based on early start and last end time
     }
-    ji.spans[root_idx].duration
 }
 
 /// get_root_call finds the process and method that is the root-method of the trace.
 fn get_root_call(spans: &Spans) -> String {
-    let root = &spans.items[spans.root_idx];
-    format!("{}/{}", root.get_process_str(), root.operation_name)
+    if let Some(root_idx) = spans.root_idx {
+        let root = &spans.items[root_idx];
+        format!("{}/{}", root.get_process_str(), root.operation_name)
+    } else {
+        "_UNKNOWN_".to_string()
+    }
 }

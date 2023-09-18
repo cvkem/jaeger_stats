@@ -97,6 +97,9 @@ impl CChainEndPointCache {
         })
     }
 
+    pub fn str_to_cache_key(s: &str) -> String {
+        s.replace(&['/', '\\', ';', ':'][..], "_")
+    }
     /// extract a reference to an EndPointCChains
     pub fn get_cchain_key(&mut self, key: &str) -> Option<&EndPointCChains> {
         self.get_cchain_key_aux(key).as_ref()

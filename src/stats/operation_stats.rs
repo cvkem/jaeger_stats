@@ -59,6 +59,7 @@ impl OperationStats {
         span: &Span,
         spans: &Spans,
         caching_process: &Vec<String>,
+        root_call: &str,
     ) {
         match &span.span_kind {
             Some(kind) => match &kind[..] {
@@ -124,6 +125,9 @@ impl OperationStats {
             ps.cc_with_error_logs += cc_with_error_log;
             ps.http_not_ok.add_items(http_not_ok_vec.clone()); // clone needed as otherwise this will be an FnOnce while rust thinks it is used twicecargo
             ps.error_logs.add_items(error_logs_vec.clone());
+            if !rooted {
+                ps.expect_root.add_root(root_call)
+            }
         };
         self.call_chain
             .0

@@ -161,7 +161,7 @@ impl Span {
 #[derive(Debug)]
 pub struct Spans {
     pub items: Vec<Span>,
-    pub root_idx: usize,
+    pub root_idx: Option<usize>,
 }
 
 #[derive(Debug)]
@@ -240,11 +240,13 @@ impl Spans {
     /// Mark all spans that are connected to the root with rooted=true.
     fn mark_rooted(&mut self) {
         // TODO next line is not needed as it is handled already.
-        self.items[self.root_idx].rooted = true;
+        if let Some(root_idx) = self.root_idx {
+            self.items[root_idx].rooted = true;
 
-        (0..self.items.len()).for_each(|idx| {
-            self.mark_root_path_aux(idx);
-        });
+            (0..self.items.len()).for_each(|idx| {
+                self.mark_root_path_aux(idx);
+            });
+        }
     }
 
     /// build the list of spans (including parent links and proces-mapping)
@@ -270,7 +272,7 @@ impl Spans {
         let mut spans = if roots.len() == 1 {
             Spans {
                 items: spans,
-                root_idx: *roots.first().unwrap(),
+                root_idx: Some(*roots.first().unwrap()),
             }
         } else {
             let issue = format!(
@@ -288,7 +290,7 @@ impl Spans {
             println!("\n\tCopy to console:\n\t{}", issue);
             Spans {
                 items: spans,
-                root_idx: 0, // assume a default
+                root_idx: None, // assume a default
             }
         };
 
