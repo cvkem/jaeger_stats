@@ -3,17 +3,18 @@ use super::{
     proc_oper_stats_reporter::{POReportItem, POReportItems},
     stats_rec_reporter::SRReportItem,
 };
-use crate::utils::TimeStats;
+use crate::utils::{self, TimeStats};
 use lazy_static::lazy_static;
 
 lazy_static! {
     /// NOTE/TODO: the interface of StatsRec is different from the interface of ProcOperStats and CCStats
     pub static ref BASIC_REPORT_ITEMS: Vec<SRReportItem> = vec![
         SRReportItem::new("num_files", |stats_rec| Some(stats_rec.num_files as f64)),
-        SRReportItem::new("rate (req/sec)", |stats_rec| TimeStats(
-            &stats_rec.duration_micros
-        )
-        .get_avg_rate(stats_rec.num_files)),
+        SRReportItem::new("rate (req/sec)", |stats_rec| {
+            let dt: Vec<_> = stats_rec.start_dt.iter().map(|dt| utils::datetime_to_micros(*dt)).collect();
+            TimeStats(&dt)
+                .get_avg_rate(stats_rec.num_files)
+        }),
         SRReportItem::new("num_traces", |stats_rec| Some(
             stats_rec.trace_id.len() as f64
         )),
