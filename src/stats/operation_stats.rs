@@ -12,7 +12,7 @@ use crate::{
     utils,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct OperationStats {
     /// The Operation either inbound (when this process acts as a server) or outbound (when this process is the client that initiates the request)
     pub operation: ProcOperStats,

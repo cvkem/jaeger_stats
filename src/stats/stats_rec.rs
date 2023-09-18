@@ -42,7 +42,7 @@ impl Default for Version {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct StatsRec {
     /// version numbering to handle diversity of analyzed data-sets.
     /// Currently we do not have the code that handles or checks versions. So only present for post-mortem analysis or future usage.
