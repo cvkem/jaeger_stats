@@ -2,6 +2,7 @@ use super::{
     call::{Call, CallDirection},
     call_chain::CallChain,
     cchain_cache::EndPointCChains,
+    expected_roots::ExpectedRoots,
     file::{call_chain_key, LEAF_LABEL},
 };
 use crate::{
@@ -19,6 +20,7 @@ pub struct CChainStatsValue {
     pub start_dt_micros: Vec<i64>, // represented via start_dt.timestamp_micros()
     pub looped: Vec<String>,
     pub rooted: bool, //does this call-chain originate from the root of this trace.
+    pub expect_root: ExpectedRoots,
     pub cc_not_http_ok: i32, // count of the number of call chanis that has one of more HTTP-error(s) somewhere along the chain
     pub cc_with_error_logs: i32, // count of the number of call chanis that has one of more ERROR log-lines somewhere along the chain
     pub http_not_ok: Counted<i16>,
@@ -39,12 +41,12 @@ impl CChainStatsKey {
         &self.call_chain[self.call_chain.len() - 1].method
     }
 
-    /// get the endpoint-key of this Chain
-    pub fn get_endpoint_cache_key(&self) -> String {
-        self.get_endpoint()
-            // TODO: next replacement also occurs in TraceExt
-            .replace(&['/', '\\', ';', ':'][..], "_")
-    }
+    // /// get the endpoint-key of this Chain
+    // pub fn get_endpoint_cache_key(&self) -> String {
+    //     self.get_endpoint()
+    //         // TODO: next replacement also occurs in TraceExt
+    //         .replace(&['/', '\\', ';', ':'][..], "_")
+    // }
 
     /// Extract a textual key that represents the full call-chain, including labels for caching_process and is_leaf
     pub fn call_chain_key(&self) -> String {

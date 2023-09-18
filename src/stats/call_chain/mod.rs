@@ -3,6 +3,7 @@ mod call;
 mod call_chain;
 mod cchain_cache;
 mod cchain_stats;
+mod expected_roots;
 mod file;
 
 pub use self::{

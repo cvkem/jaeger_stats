@@ -190,7 +190,7 @@ impl StatsRec {
                 let proc = proc.to_owned();
 
                 let update_stat = |stat: &mut OperationStats| {
-                    stat.update(idx, span, &spans, &self.caching_processes);
+                    stat.update(idx, span, &spans, &self.caching_processes, &trace.root_call);
                 };
 
                 // This is the actual insert or update based on the 'update_stats'.
@@ -396,8 +396,11 @@ impl StatsRec {
                     let mut fix_failed = 0;
                     non_rooted.iter_mut()
                         .for_each(|(k, v)| {
-                            let cc_key = k.get_endpoint_cache_key();
-                            if let Some(expect_cc) = cchain_cache.get_cchain_key(&cc_key) {
+                            if let Some(expect_cc) = v
+                                .expect_root
+                                .get_frequent_end_point()
+                                .and_then(|end_point| cchain_cache.get_cchain_key(&CChainEndPointCache::str_to_cache_key(&end_point)))
+                            {
                                 if k.remap_callchain(expect_cc) {
                                     assert!(!v.rooted);  // should be false
                                     num_fixes += 1;
