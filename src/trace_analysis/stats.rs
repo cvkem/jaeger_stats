@@ -39,15 +39,25 @@ fn get_cchain_folder(folder: &PathBuf, cc_path: &str) -> PathBuf {
 
 /// create the statistics over all traces using the caching_processes
 fn create_trace_statistics(
-    traces: &[&TraceExt],
+    traces: &[TraceExt],
     bsr: &BasicStatsRec,
     rooted_spans_only: bool,
 ) -> StatsRec {
     let mut cumm_stats = StatsRec::new(bsr.clone());
+
+    let traces: Vec<_> = traces.iter().collect(); // switch to references
+
     traces
         .iter()
         .for_each(|tr| cumm_stats.extend_statistics(&tr.trace, rooted_spans_only));
     cumm_stats
+}
+
+/// write a file showing the statistics over all traces.
+fn write_cumulative_trace_stats(csv_file: PathBuf, cumm_stats: StatsRec, output_ext: &str) {
+    stats::write_stats_to_csv_file(csv_file.to_str().unwrap(), &cumm_stats);
+    // write the json or bin_code file based on output_ext
+    file::write_stats(csv_file.to_str().unwrap(), cumm_stats, output_ext);
 }
 
 /// Try to fix all incomplete traces, while maintaining a cache of call-chains needed for correction, to avoid rereading and parsing the same data
@@ -61,22 +71,6 @@ fn fix_traces(cchain_cache: &mut CChainEndPointCache, traces: &mut [TraceExt]) -
     });
 
     num_fixes
-}
-
-/// write a file showing the statistics over all traces.
-fn write_cumulative_trace_stats(
-    csv_file: PathBuf,
-    traces: &[TraceExt],
-    bsr: &BasicStatsRec,
-    output_ext: &str,
-    rooted_spans_only: bool,
-) {
-    let num_files = TraceExtVec(&traces).num_files();
-
-    let traces: Vec<_> = traces.iter().collect(); // switch to references
-    let cumm_stats = create_trace_statistics(&traces, bsr, rooted_spans_only);
-    stats::write_stats_to_csv_file(csv_file.to_str().unwrap(), &cumm_stats);
-    file::write_stats(csv_file.to_str().unwrap(), cumm_stats, output_ext);
 }
 
 /// Statistics are written per endpoint to the 'Stats' folder, and incomplete traces are corrected (when possible)
@@ -128,7 +122,9 @@ fn write_end_point_stats_and_correct_incomplete(
         let (traces, mut part_traces): (Vec<_>, Vec<_>) = traces.into_iter().partition(|tr| tr.trace.missing_span_ids.is_empty());
         //TODO: we can produce the call-chains over incomplete traces too if we only include the rooted paths
         let mut cumm_stats = if !traces.is_empty() {
-            let cumm_stats = create_trace_statistics(&traces.iter().collect::<Vec<_>>(), &bsr, false);
+//            let cumm_stats = create_trace_statistics(&traces.iter().collect::<Vec<_>>(), &bsr, false);
+            let cumm_stats = create_trace_statistics(&traces[..], &bsr, rooted_spans_only);
+
 
             cchain_cache.create_update_entry(&k, cumm_stats.call_chain_keys());
 
@@ -192,7 +188,8 @@ pub fn process_and_fix_traces(
     // TODO: consider whether this uncorrected version is needed.
     let mut csv_file = stats_folder.clone();
     csv_file.push("cummulative_trace_stats_uncorrected.csv");
-    write_cumulative_trace_stats(csv_file, &traces, &bsr, output_ext, false);
+    let cumm_stats = create_trace_statistics(&traces, &bsr, false);
+    write_cumulative_trace_stats(csv_file, cumm_stats.clone(), output_ext);
 
     let mut cchain_cache = CChainEndPointCache::new(get_cchain_folder(&folder, cc_path));
 
@@ -205,9 +202,10 @@ pub fn process_and_fix_traces(
         false,
     );
 
+    //TODO: update the record
     let mut csv_file = stats_folder.clone();
     csv_file.push("cummulative_trace_stats.csv");
-    write_cumulative_trace_stats(csv_file, &all_traces, &bsr, output_ext, false);
+    write_cumulative_trace_stats(csv_file, cumm_stats, output_ext);
 
     println!();
     utils::report(Chapter::Summary, format!("Processed {total_traces} traces covering {} end-points  (on average {:.1} traces per end-point).",

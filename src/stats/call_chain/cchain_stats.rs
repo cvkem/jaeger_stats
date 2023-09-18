@@ -11,7 +11,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, collections::HashMap, error::Error};
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct CChainStatsValue {
     pub count: usize,
     pub depth: usize,
@@ -306,7 +306,7 @@ impl CChainStatsValue {
 }
 
 /// the information is distributed over the key and the value (no duplication in value)
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct CChainStats(pub HashMap<CChainStatsKey, CChainStatsValue>);
 //#[derive(Default, Debug, Serialize, Deserialize)]
 //pub struct CChainStats (pub HashMap<CChainStatsKey, CChainStatsValue>);

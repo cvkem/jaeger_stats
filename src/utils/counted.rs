@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, hash::Hash};
 
 /// Maintain a counted list of occurances of Items of type T via a hashmap.
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
 pub struct Counted<T: Hash + Eq + PartialEq>(HashMap<T, usize>);
 
 impl<T: Hash + Eq + PartialEq> Counted<T> {

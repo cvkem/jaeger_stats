@@ -2,7 +2,7 @@ use crate::utils::{self, Counted, TimeStats};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct ProcOperStatsValue {
     pub count: usize,
     /// Duration in microseconds of this Proces/Operation. This includes the full span, so it also covers the waiting-time for (synchronous) downstream calls
@@ -119,5 +119,5 @@ impl ProcOperStatsValue {
 }
 
 /// the information is distributed over the key and the value (no duplication in value)
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct ProcOperStats(pub HashMap<String, ProcOperStatsValue>);
