@@ -39,6 +39,13 @@ impl CChainStatsKey {
         &self.call_chain[self.call_chain.len() - 1].method
     }
 
+    /// get the endpoint-key of this Chain
+    pub fn get_endpoint_cache_key(&self) -> String {
+        self.get_endpoint()
+            // TODO: next replacement also occurs in TraceExt
+            .replace(&['/', '\\', ';', ':'][..], "_")
+    }
+
     /// Extract a textual key that represents the full call-chain, including labels for caching_process and is_leaf
     pub fn call_chain_key(&self) -> String {
         call_chain_key(&self.call_chain, &self.caching_process, self.is_leaf)

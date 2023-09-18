@@ -97,7 +97,7 @@ impl CChainEndPointCache {
         })
     }
 
-    /// extract a refernce to an EndPointCChains
+    /// extract a reference to an EndPointCChains
     pub fn get_cchain_key(&mut self, key: &str) -> Option<&EndPointCChains> {
         self.get_cchain_key_aux(key).as_ref()
     }

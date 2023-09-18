@@ -1,10 +1,16 @@
 use super::{
-    call_chain::{call_chain_key, get_call_chain, CChainStatsKey, CChainStatsValue},
+    call_chain::{
+        call_chain_key, get_call_chain, CChainEndPointCache, CChainStats, CChainStatsKey,
+        CChainStatsValue,
+    },
     file::StatsRecJson,
     operation_stats::OperationStats,
     proc_oper_stats::ProcOperStatsValue,
 };
-use crate::{processed::Trace, utils::micros_to_datetime};
+use crate::{
+    processed::Trace,
+    utils::{self, micros_to_datetime, Chapter},
+};
 use serde::{Deserialize, Serialize};
 
 use chrono::NaiveDateTime;
@@ -369,23 +375,65 @@ impl StatsRec {
         cc_keys.sort_unstable();
         cc_keys
     }
+
+    pub fn fix_call_chain(&mut self, cchain_cache: &mut CChainEndPointCache) -> usize {
+        let mut num_fixes = 0;
+
+        //        if let Some(expect_cc) = cchain_cache.get_cchain_key(&self.get_endpoint_key()) {
+        let new_stats: HashMap<_, _> = mem::take(&mut self.stats)
+            .into_iter()
+            .map(|(key, mut stats)| {
+                    let (rooted, mut non_rooted): (Vec<_>, Vec<_>) = stats.call_chain.0
+                        .into_iter()
+                        .partition(|(_k2, v2)| v2.rooted);
+
+                    if !non_rooted.is_empty() {
+                        let depths: Vec<_> = non_rooted.iter().map(|(_k,v)| v.depth).collect();
+                        utils::report(Chapter::Details, format!("For key '{key}'  found {} non-rooted out of {} traces with call-chain depths {depths:?}", non_rooted.len(), non_rooted.len() + rooted.len()));
+                    }
+
+                    // fix the non-rooted paths by a rewrite of the key
+                    let mut fix_failed = 0;
+                    non_rooted.iter_mut()
+                        .for_each(|(k, v)| {
+                            let cc_key = k.get_endpoint_cache_key();
+                            if let Some(expect_cc) = cchain_cache.get_cchain_key(&cc_key) {
+                                if k.remap_callchain(expect_cc) {
+                                    assert!(!v.rooted);  // should be false
+                                    num_fixes += 1;
+                                    v.rooted = true;
+                                } else {
+                                    fix_failed += 1;
+                                }
+                            } else {
+                                println!("Failed to find call-chain");
+                                fix_failed += 1;
+                            }
+                    });
+                    if fix_failed > 0 {
+                        utils::report(Chapter::Details, format!("Failed to fix {fix_failed} chains out of {} non-rooted chains. ({num_fixes} fixes applied succesful)", non_rooted.len()));
+                    }
+
+                    let new_call_chain = rooted.into_iter()
+                        .chain(non_rooted.into_iter())
+                        .fold(HashMap::new(), |mut cc, (k, mut v_new)| {
+                            cc.entry(k)
+                                .and_modify(|v_curr: &mut CChainStatsValue| {
+                                    v_curr.count += v_new.count;
+                                    v_curr.duration_micros.append(&mut v_new.duration_micros);
+                                })
+                                .or_insert(v_new);
+                            cc
+                        });
+                    stats.call_chain = CChainStats( new_call_chain );
+                    (key, stats)
+            })
+            .collect();
+        self.stats = new_stats;
+
+        num_fixes
+    }
 }
-
-// /// Compute basic call statistics, which only looks at functions/operations and does not include the call path
-// pub fn basic_stats(trace: &Trace) -> HashMap<String, u32> {
-//     let spans = &trace.spans;
-
-//     let mut stats = HashMap::new();
-//     spans.iter().for_each(|span| {
-//         let proc = span.get_process_str();
-//         let proc_method = format!("{}/{}", proc, span.operation_name);
-//         stats
-//             .entry(proc_method)
-//             .and_modify(|counter| *counter += 1)
-//             .or_insert(1);
-//     });
-//     stats
-// }
 
 /// Compute basic call statistics, which only looks at functions/operations and does not include the call path
 pub fn chained_stats(trace: &Trace) -> HashMap<String, u32> {
