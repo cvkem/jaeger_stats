@@ -36,7 +36,6 @@ impl LinearRegression {
                 if start.abs() > 1e-10 {
                     Some((end - start) / start)
                 } else {
-                    println!("Growth does not exist for start={start} and end={end} with y_intercept={y_intercept} and slope={slope}");
                     None
                 }
             };

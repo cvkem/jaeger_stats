@@ -47,12 +47,16 @@ pub struct StatsRecJson {
     pub num_files: i32,
     /// number of endpoint included
     pub num_endpoints: usize,
-    /// number of initial incomplete traces (before corrections)
-    pub init_num_incomplete_traces: usize,
+    /// number of incomplete traces after application of the fixes
+    pub num_incomplete_traces: usize,
+    pub num_call_chains: usize,
+
+    // initial number of Call-chains that do not start at the root of the full trace
+    pub init_num_unrooted_cc: usize,
     /// number of fixes applied
     pub num_fixes: usize,
-    /// number of incomplete traces after application of the fixes
-    pub num_incomplete_after_fixes: usize,
+    // Number of Call-chains that do not start at the root of the full trace after fixes based on call-chains
+    pub num_unrooted_cc_after_fixes: usize,
     pub start_dt: Vec<i64>,
     pub end_dt: Vec<i64>,
     pub duration_micros: Vec<i64>,
@@ -72,9 +76,11 @@ impl From<StatsRec> for StatsRecJson {
             num_spans: sr.num_spans,
             num_files: sr.num_files,
             num_endpoints: sr.num_endpoints,
-            init_num_incomplete_traces: sr.init_num_incomplete_traces,
+            num_incomplete_traces: sr.num_incomplete_traces,
+            num_call_chains: sr.num_call_chains,
+            init_num_unrooted_cc: sr.init_num_unrooted_cc,
             num_fixes: sr.num_fixes,
-            num_incomplete_after_fixes: sr.num_incomplete_after_fixes,
+            num_unrooted_cc_after_fixes: sr.num_unrooted_cc_after_fixes,
             start_dt: sr
                 .start_dt
                 .into_iter()

@@ -46,10 +46,10 @@ pub fn analyze_file_or_folder(
     let traces = dedup::deduplicate(traces);
 
     // Translate to Extended traces and write the traces to a JSON file
-    let traces = crate_stats::build_trace_ext(traces, &folder, &bsr);
+    let traces = crate_stats::build_trace_ext(traces, &folder);
     // write the traces
 
-    bsr.init_num_incomplete_traces = TraceExtVec(&traces[..]).init_num_incomplete_traces();
+    bsr.num_incomplete_traces = TraceExtVec(&traces[..]).num_incomplete_traces();
 
     if trace_output {
         traces.iter().for_each(|trace| trace.write_trace());

@@ -19,9 +19,11 @@ lazy_static! {
             stats_rec.trace_id.len() as f64
         )),
         SRReportItem::new("num_endpoints", |stats_rec| Some(stats_rec.num_endpoints as f64)),
-        SRReportItem::new("init_num_incomplete_traces", |stats_rec| Some(stats_rec.init_num_incomplete_traces as f64)),
+        SRReportItem::new("num_incomplete_traces", |stats_rec| Some(stats_rec.num_incomplete_traces as f64)),
+        SRReportItem::new("num_call_chains", |stats_rec| Some(stats_rec.num_call_chains as f64)),
+        SRReportItem::new("init_num_unrooted_cc", |stats_rec| Some(stats_rec.init_num_unrooted_cc as f64)),
         SRReportItem::new("num_fixes", |stats_rec| Some(stats_rec.num_fixes as f64)),
-        SRReportItem::new("num_incomplete_after_fixes", |stats_rec| Some(stats_rec.num_incomplete_after_fixes as f64)),
+        SRReportItem::new("num_unrooted_cc_after_fixes", |stats_rec| Some(stats_rec.num_unrooted_cc_after_fixes as f64)),
         SRReportItem::new("min_duration_millis", |stats_rec| Some(
             TimeStats(&stats_rec.duration_micros).get_min_millis()
         )),

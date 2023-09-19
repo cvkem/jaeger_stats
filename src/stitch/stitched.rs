@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
+    string_hash,
     utils::{self, CsvFileBuffer},
     StitchList,
 };
@@ -205,6 +206,7 @@ impl Stitched {
         csv.add_line(self.summary_header(
             &[
                 "Full Call-chain (path)",
+                "cc_hash",
                 "Process/Operation",
                 "Inbound_chain",
             ],
@@ -213,8 +215,9 @@ impl Stitched {
         self.call_chain.iter().for_each(|(po_label, call_chains)| {
             call_chains.iter().for_each(|ccd| {
                 csv.add_line(format!(
-                    "{}; {}; {}; {}",
+                    "{}; {}; {}; {}; {}",
                     ccd.full_key,
+                    string_hash(&ccd.full_key),
                     po_label,
                     ccd.inboud_process_key,
                     utils::floats_to_string(ccd.data.summary_avg(), " ;")
@@ -225,6 +228,7 @@ impl Stitched {
         csv.add_section("Statistics per call-chain (path from the external end-point to the actual Process/Operation (detailled information):");
         csv.add_line(self.full_data_header(&[
             "Full call-chain (path)",
+            "cc_hash",
             "Final Process/Oper",
             "Inbound_chain",
         ]));
@@ -232,6 +236,7 @@ impl Stitched {
             call_chains.iter().for_each(|ccd| {
                 csv.append(&mut ccd.data.csv_output(&[
                     &ccd.full_key,
+                    &string_hash(&ccd.full_key),
                     &po_label,
                     &ccd.inboud_process_key,
                 ]))
