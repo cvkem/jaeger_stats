@@ -125,12 +125,12 @@ mod tests {
         let median = TimeStats(&input).get_median_millis();
         let p90 = TimeStats(&input).get_p_millis(0.9);
 
-        println!("avg={avg}  and median={median}   and p90={p90:?}");
+        println!("avg={avg}  and median={}   and p90={p90:?}", median.unwrap());
 
-        println!("avg={avg}  and median={median}");
+        println!("avg={avg}  and median={}", median.unwrap());
 
         assert!(match_floats(avg, 3.0));
-        assert!(match_floats(median, 2.0));
+        assert!(match_float_opts(median, Some(2.0)));
         assert!(p90.is_none());
     }
 
@@ -140,10 +140,10 @@ mod tests {
         let avg = TimeStats(&input).get_avg_millis();
         let median = TimeStats(&input).get_median_millis();
 
-        println!("avg={avg}  and median={median}");
+        println!("avg={avg}  and median={}", median.unwrap());
 
         assert!(match_floats(avg, 3.0));
-        assert!(match_floats(median, 2.5));
+        assert!(match_float_opts(median, Some(2.5)));
     }
 
     #[test]
@@ -152,10 +152,10 @@ mod tests {
         let avg = TimeStats(&input).get_avg_millis();
         let median = TimeStats(&input).get_median_millis();
 
-        println!("avg={avg}  and median={median}");
+        println!("avg={avg}  and median={}", median.unwrap());
 
         assert!(match_floats(avg, 3.0));
-        assert!(match_floats(median, 2.0));
+        assert!(match_float_opts(median, Some(2.0)));
     }
 
     #[test]
@@ -164,10 +164,10 @@ mod tests {
         let avg = TimeStats(&input).get_avg_millis();
         let median = TimeStats(&input).get_median_millis();
 
-        println!("avg={avg}  and median={median}");
+        println!("avg={avg}  and median={}", median.unwrap());
 
         assert!(match_floats(avg, 3.0));
-        assert!(match_floats(median, 2.5));
+        assert!(match_float_opts(median, Some(2.5)));
     }
 
     #[test]
@@ -179,10 +179,10 @@ mod tests {
         let median = TimeStats(&input).get_median_millis();
         let p90 = TimeStats(&input).get_p_millis(0.9);
 
-        println!("avg={avg}  and median={median}   and p90={p90:?}");
+        println!("avg={avg}  and median={}   and p90={p90:?}", median.unwrap());
 
         assert!(match_floats(avg, 5.5));
-        assert!(match_floats(median, 5.5));
+        assert!(match_float_opts(median, Some(5.5)));
         assert!(match_float_opts(p90, Some(9.0)));
     }
 
@@ -195,10 +195,10 @@ mod tests {
         let median = TimeStats(&input).get_median_millis();
         let p90 = TimeStats(&input).get_p_millis(0.9);
 
-        println!("avg={avg}  and median={median}   and p90={p90:?}");
+        println!("avg={avg}  and median={} and p90={p90:?}", median.unwrap());
 
         assert!(match_floats(avg, 6.0));
-        assert!(match_floats(median, 6.0));
+        assert!(match_float_opts(median, Some(6.0)));
         assert!(match_float_opts(p90, Some(10.0)));
     }
 }
