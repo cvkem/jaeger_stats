@@ -175,10 +175,10 @@ pub fn process_and_fix_traces(
     let mut csv_file = stats_folder.clone();
     csv_file.push("cummulative_trace_stats_uncorrected.csv");
     let mut cumm_stats = create_trace_statistics(&traces, &bsr, false);
-    let (total, num_unrooted) = cumm_stats.count_call_chains();
+    let (total_cc, num_unrooted) = cumm_stats.count_call_chains();
     bsr.init_num_unrooted_cc = num_unrooted;
     cumm_stats.init_num_unrooted_cc = num_unrooted;
-    cumm_stats.num_call_chains = total;
+    cumm_stats.num_call_chains = total_cc;
     write_cumulative_trace_stats(csv_file, cumm_stats.clone(), output_ext);
 
     let num_files: i32 = TraceExtVec(&traces[..]).num_files().try_into().unwrap();
@@ -193,23 +193,35 @@ pub fn process_and_fix_traces(
         output_ext,
         false,
     );
-
-    let num_fixes = cumm_stats.fix_call_chain(&mut cchain_cache); // mutable needed for internal reasons of CChain_cache
-
-    cumm_stats.num_files = num_files;
-    cumm_stats.num_endpoints = num_end_points;
     if cumm_stats.num_incomplete_traces != incomplete_traces_read {
         utils::report(
             Chapter::Issues,
             format!(
-                "The number of incomplete traces was {} but analysis per endpoint showed {}",
+                "The number of incomplete traces was {} but analysis per endpoint showed {} incomplete traces",
                 cumm_stats.num_incomplete_traces, incomplete_traces_read,
             ),
         )
     }
+
+    let num_fixes = cumm_stats.fix_call_chain(&mut cchain_cache); // mutable needed for internal reasons of CChain_cache
+
+    let (total_cc, num_unrooted) = cumm_stats.count_call_chains();
+    if cumm_stats.num_call_chains != total_cc {
+        utils::report(
+            Chapter::Issues,
+            format!(
+                "The number of call_chains was {} after analysis per endpoint (root-path) we have {}",
+                cumm_stats.num_call_chains, total_cc,
+            ),
+        )
+    }
+
+    cumm_stats.num_files = num_files;
+    cumm_stats.num_endpoints = num_end_points;
+    cumm_stats.num_unrooted_cc_after_fixes = num_unrooted;
     cumm_stats.num_fixes = num_fixes;
 
-    //TODO: update the record
+    // writing out the version with corrected call-chains.
     let mut csv_file = stats_folder.clone();
     csv_file.push("cummulative_trace_stats.csv");
     write_cumulative_trace_stats(csv_file, cumm_stats, output_ext);
