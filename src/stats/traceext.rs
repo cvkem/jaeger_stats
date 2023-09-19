@@ -32,23 +32,12 @@ pub struct TraceExt {
 }
 
 impl TraceExt {
-    pub fn new(trace: Trace, folder: &Path, mut bsr: BasicStatsRec) -> Self {
+    pub fn new(trace: Trace, folder: &Path) -> Self {
         let base_name = trace.base_name(folder);
-
-        bsr.num_files = 1;
-        bsr.init_num_incomplete_traces = if trace.missing_span_ids.is_empty() {
-            0
-        } else {
-            1
-        };
-
-        let mut stats = StatsRec::new(bsr); // collects statistics over single trace, so 1 file
-        stats.extend_statistics(&trace, false);
 
         Self {
             base_name: base_name.into_string().unwrap(),
             trace,
-            //           stats_rec: stats,
         }
     }
 
@@ -69,12 +58,12 @@ impl TraceExt {
 }
 
 /// Wrap all traces as a TraceExt to have some additional information available.
-pub fn build_trace_ext(traces: Vec<Trace>, folder: &Path, bsr: &BasicStatsRec) -> Vec<TraceExt> {
+pub fn build_trace_ext(traces: Vec<Trace>, folder: &Path) -> Vec<TraceExt> {
     // create a traces folder
     let trace_folder = utils::extend_create_folder(folder, "Traces");
 
     traces
         .into_iter()
-        .map(|trace| TraceExt::new(trace, &trace_folder, bsr.clone()))
+        .map(|trace| TraceExt::new(trace, &trace_folder))
         .collect::<Vec<_>>()
 }

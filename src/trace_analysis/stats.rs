@@ -106,7 +106,7 @@ fn write_end_point_stats_and_correct_incomplete(
         csv_file.push(format!("{k}.csv"));
         // The traces that are have 'missing_trace_ids' are the traces that are incomplete, and thus seem to have multiple roots due to the fact
         // that some spans without a parent actually were spans refering a missing span (and not a real root)
-        let (traces, mut part_traces): (Vec<_>, Vec<_>) = traces.into_iter().partition(|tr| tr.trace.missing_span_ids.is_empty());
+        let (traces, part_traces): (Vec<_>, Vec<_>) = traces.into_iter().partition(|tr| tr.trace.missing_span_ids.is_empty());
         //TODO: we can produce the call-chains over incomplete traces too if we only include the rooted paths
         let mut cumm_stats = if !traces.is_empty() {
             let cumm_stats = create_trace_statistics(&traces[..], &bsr, rooted_spans_only);
@@ -140,10 +140,14 @@ fn write_end_point_stats_and_correct_incomplete(
         num_fixes += ep_num_fixes;
 
         cumm_stats.num_files = num_files.try_into().unwrap();
-        cumm_stats.init_num_incomplete_traces = incomplete_traces_read;
+        cumm_stats.num_incomplete_traces = part_trace_len;
         cumm_stats.num_endpoints = 1;
-//        cumm_stats.num_fixes = ep_num_fixes;
-        cumm_stats.num_incomplete_after_fixes = incomplete_traces_read;  //TODO: to be computed. This estimate is too low.
+        cumm_stats.num_unrooted_cc_after_fixes = incomplete_traces_read;  //TODO: to be computed. This estimate is too low.
+
+        let (total, num_unrooted) = cumm_stats.count_call_chains();
+        cumm_stats.init_num_unrooted_cc = num_unrooted + num_fixes;
+        cumm_stats.num_call_chains = total;
+        cumm_stats.num_unrooted_cc_after_fixes = num_unrooted;
 
         write_cumulative_trace_stats(csv_file, cumm_stats, output_ext);
 
@@ -159,7 +163,7 @@ fn write_end_point_stats_and_correct_incomplete(
 pub fn process_and_fix_traces(
     folder: PathBuf,
     traces: Vec<TraceExt>,
-    bsr: BasicStatsRec,
+    mut bsr: BasicStatsRec,
     cc_path: &str,
     output_ext: &str,
 ) {
@@ -171,6 +175,10 @@ pub fn process_and_fix_traces(
     let mut csv_file = stats_folder.clone();
     csv_file.push("cummulative_trace_stats_uncorrected.csv");
     let mut cumm_stats = create_trace_statistics(&traces, &bsr, false);
+    let (total, num_unrooted) = cumm_stats.count_call_chains();
+    bsr.init_num_unrooted_cc = num_unrooted;
+    cumm_stats.init_num_unrooted_cc = num_unrooted;
+    cumm_stats.num_call_chains = total;
     write_cumulative_trace_stats(csv_file, cumm_stats.clone(), output_ext);
 
     let num_files: i32 = TraceExtVec(&traces[..]).num_files().try_into().unwrap();
@@ -190,9 +198,16 @@ pub fn process_and_fix_traces(
 
     cumm_stats.num_files = num_files;
     cumm_stats.num_endpoints = num_end_points;
-    cumm_stats.init_num_incomplete_traces = incomplete_traces_read;
+    if cumm_stats.num_incomplete_traces != incomplete_traces_read {
+        utils::report(
+            Chapter::Issues,
+            format!(
+                "The number of incomplete traces was {} but analysis per endpoint showed {}",
+                cumm_stats.num_incomplete_traces, incomplete_traces_read,
+            ),
+        )
+    }
     cumm_stats.num_fixes = num_fixes;
-    cumm_stats.num_incomplete_after_fixes = incomplete_traces_read; //TODO: to be computed. This estimate is too low.
 
     //TODO: update the record
     let mut csv_file = stats_folder.clone();
@@ -207,8 +222,8 @@ pub fn process_and_fix_traces(
         Chapter::Summary,
         format!(
             "Observed {} incomplete traces, which is {:.1}% of the total",
-            bsr.init_num_incomplete_traces,
-            100.0 * bsr.init_num_incomplete_traces as f64 / total_traces as f64
+            bsr.num_incomplete_traces,
+            100.0 * bsr.num_incomplete_traces as f64 / total_traces as f64
         ),
     );
 }

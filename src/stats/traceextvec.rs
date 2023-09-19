@@ -16,7 +16,7 @@ impl<'a> TraceExtVec<'a> {
     }
 
     /// count the number of traces that report missing spans
-    pub fn init_num_incomplete_traces(&self) -> usize {
+    pub fn num_incomplete_traces(&self) -> usize {
         self.0
             .iter()
             .filter(|tr| !tr.trace.missing_span_ids.is_empty())

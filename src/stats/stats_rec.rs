@@ -33,11 +33,13 @@ pub struct BasicStatsRec {
     /// number of endpoint included
     pub num_endpoints: usize,
     /// number of initial incomplete traces (before corrections)
-    pub init_num_incomplete_traces: usize,
+    pub num_incomplete_traces: usize,
+    // initial number of Call-chains that do not start at the root of the full trace
+    pub init_num_unrooted_cc: usize,
     /// number of fixes applied
     pub num_fixes: usize,
-    /// number of incomplete traces after application of the fixes
-    pub num_incomplete_after_fixes: usize,
+    // Number of Call-chains that do not start at the root of the full trace after fixes based on call-chains
+    pub num_unrooted_cc_after_fixes: usize,
     /// List of processes that perform caching, which is an input parameter to this analysis
     pub caching_processes: Vec<String>,
 }
@@ -64,11 +66,15 @@ pub struct StatsRec {
     /// number of endpoint included
     pub num_endpoints: usize,
     /// number of initial incomplete traces (before corrections)
-    pub init_num_incomplete_traces: usize,
+    pub num_incomplete_traces: usize,
+    // total number of call_chains
+    pub num_call_chains: usize,
+    // initial number of Call-chains that do not start at the root of the full trace
+    pub init_num_unrooted_cc: usize,
     /// number of fixes applied
     pub num_fixes: usize,
-    /// number of incomplete traces after application of the fixes
-    pub num_incomplete_after_fixes: usize,
+    // Number of Call-chains that do not start at the root of the full trace after fixes based on call-chains
+    pub num_unrooted_cc_after_fixes: usize,
     /// Start date-time per trace in a Naive format as the encoding in the source-files is based on Epoch-micros and does not contain time-zone information
     pub start_dt: Vec<NaiveDateTime>,
     /// End date-time for each trace
@@ -94,9 +100,11 @@ impl From<StatsRecJson> for StatsRec {
             num_spans: srj.num_spans,
             num_files: srj.num_files,
             num_endpoints: srj.num_endpoints,
-            init_num_incomplete_traces: srj.init_num_incomplete_traces,
+            num_incomplete_traces: srj.num_incomplete_traces,
+            num_call_chains: srj.num_call_chains,
+            init_num_unrooted_cc: srj.init_num_unrooted_cc,
             num_fixes: srj.num_fixes,
-            num_incomplete_after_fixes: srj.num_incomplete_after_fixes,
+            num_unrooted_cc_after_fixes: srj.num_unrooted_cc_after_fixes,
             start_dt: srj.start_dt.into_iter().map(micros_to_datetime).collect(),
             end_dt: srj.end_dt.into_iter().map(micros_to_datetime).collect(),
             duration_micros: srj.duration_micros,
@@ -112,16 +120,18 @@ impl StatsRec {
         let caching_process = mem::take(&mut bsr.caching_processes);
         let num_files = bsr.num_files;
         let num_endpoints = bsr.num_endpoints;
-        let init_num_incomplete_traces = bsr.init_num_incomplete_traces;
+        let num_incomplete_traces = bsr.num_incomplete_traces;
+        let init_num_unrooted_cc = bsr.init_num_unrooted_cc;
         let num_fixes = bsr.num_fixes;
-        let num_incomplete_after_fixes = bsr.num_incomplete_after_fixes;
+        let num_unrooted_cc_after_fixes = bsr.num_unrooted_cc_after_fixes;
         StatsRec {
             caching_processes: caching_process,
             num_files,
             num_endpoints,
-            init_num_incomplete_traces,
+            num_incomplete_traces,
+            init_num_unrooted_cc,
             num_fixes,
-            num_incomplete_after_fixes,
+            num_unrooted_cc_after_fixes,
             ..Default::default()
         }
     }
@@ -264,13 +274,17 @@ impl StatsRec {
                 s.push(format!("num_files:; {}", self.num_files));
                 s.push(format!("num_endpoints:; {}", self.num_endpoints));
                 s.push(format!(
-                    "init_num_incomplete_traces:; {}",
-                    self.init_num_incomplete_traces
+                    "num_incomplete_traces:; {}",
+                    self.num_incomplete_traces
+                ));
+                s.push(format!(
+                    "init_num_unrooted_cc:; {}",
+                    self.init_num_unrooted_cc
                 ));
                 s.push(format!("num_fixes:; {}", self.num_fixes));
                 s.push(format!(
-                    "num_incomplete_after_fixes:; {}",
-                    self.num_incomplete_after_fixes
+                    "num_unrooted_cc_after_fixes:; {}",
+                    self.num_unrooted_cc_after_fixes
                 ));
                 s.push(format!("start_dt; {:?}", self.start_dt));
                 s.push(format!("end_dt:; {:?}", self.end_dt));
@@ -361,6 +375,22 @@ impl StatsRec {
                     .collect::<Vec<_>>()
             })
             .collect()
+    }
+
+    /// internal function
+    pub fn count_call_chains(&self) -> (usize, usize) {
+        let total_cc = self
+            .stats
+            .values()
+            .map(|st| st.call_chain.0.keys().count())
+            .count();
+
+        let unrooted_cc = self
+            .stats
+            .values()
+            .map(|st| st.call_chain.0.values().filter(|ccv| !ccv.rooted).count())
+            .count();
+        (total_cc, unrooted_cc)
     }
 
     /// resturns a hashset containing all call-chains (string-keys)
