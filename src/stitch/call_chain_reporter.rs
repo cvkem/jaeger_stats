@@ -40,28 +40,29 @@ impl CCReportItem {
     }
 }
 
-type CCKey = (String, Vec<CChainStatsKey>);
+type CCKey = (String, Vec<(CChainStatsKey, bool)>);
 
 impl CCReportItems {
     /// repartition the keys by grouping on the string value (proc_oper) and then on the usize decending
-    /// the resturned value groups the cck-keys behind each proc_oper in decending count order (So most frequent call-chains on top of the table)
-    fn repartition_keys(mut keys: Vec<(String, CChainStatsKey, usize)>) -> Vec<CCKey> {
+    /// the returned value groups the cck-keys behind each proc_oper in decending count order (So most frequent call-chains on top of the table)
+    fn repartition_keys(mut keys: Vec<(String, CChainStatsKey, usize, bool)>) -> Vec<CCKey> {
         keys.sort_unstable_by(|a, b| match a.0.cmp(&b.0) {
-            Ordering::Equal => a.2.cmp(&b.2).reverse(),
+            Ordering::Equal => a.2.cmp(&b.2).reverse(), // here count is the secundary sorting criterium
             other => other,
         });
 
         keys.into_iter()
             .fold(
                 (Vec::<CCKey>::new(), String::new()),
-                |(mut acc, curr_po), (proc_oper, cck, _)| {
+                |(mut acc, curr_po), (proc_oper, cck, cnt, rooted)| {
+                    let item = (cck, rooted); // the CChainStatsKey and a bool showing whether this chain is rooted.
                     if proc_oper == curr_po {
                         let len = acc.len();
-                        acc[len - 1].1.push(cck);
+                        acc[len - 1].1.push(item);
                         (acc, curr_po)
                     } else {
                         let curr_po = proc_oper.to_owned();
-                        acc.push((proc_oper.to_owned(), [cck].to_vec()));
+                        acc.push((proc_oper.to_owned(), [item].to_vec()));
                         (acc, curr_po)
                     }
                 },
@@ -78,27 +79,20 @@ impl CCReportItems {
             if let Some(stats_rec) = stats_rec {
                 stats_rec.stats.iter().for_each(|(_proc_key, st)| {
                     st.call_chain.0.iter().for_each(|(cc_key, cc_val)| {
-                        // checks
                         let cc_key_clone = cc_key.clone();
-                        // if *cc_key != cc_key_clone {
-                        //     println!("Failed to clone for '{cc_key:#?}'.")
-                        // };
-                        //let process = cc_key_clone.get_leaf_process();
-                        // if *proc_key != process {
-                        //     println!(
-                        //         "Mismatch between '{proc_key}' and extracted proces '{process}'"
-                        //     )
-                        // }
                         keys.entry(cc_key_clone)
-                            .and_modify(|v| *v += cc_val.count)
-                            .or_insert(cc_val.count);
+                            .and_modify(|(cnt, rooted)| {
+                                *cnt += cc_val.count;
+                                *rooted &= cc_val.rooted;
+                            })
+                            .or_insert((cc_val.count, cc_val.rooted));
                     })
                 })
             }
         });
         let keys: Vec<_> = keys
             .into_iter()
-            .map(|(cck, count)| (cck.get_leaf(), cck, count))
+            .map(|(cck, count_root)| (cck.get_leaf(), cck, count_root.0, count_root.1))
             .collect();
 
         // make grouping based on the Process_operation field (get_leaf)
