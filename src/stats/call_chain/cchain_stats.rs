@@ -67,15 +67,17 @@ impl CChainStatsKey {
     pub fn get_endpoint(&self) -> String {
         self.call_chain
             .first()
-            .expect("Call chain is epmty!")
+            .expect("Call chain is empty!")
             .get_process_method()
     }
 
-    /// Get the leaf process/method which is located start this call-chain. This is also the identifier for the group at the level of 'stats'.
+    /// Get the leaf process/method which is last step of this call-chain. This is also the identifier for the group at the level of 'stats'.
+    /// Howver, whether this is the real leaf depends on the question whether this is a partial or a full call-chain. A partial call-chain has some next process-steps that follow
+    /// and thus form an extension of the current call-chain.
     pub fn get_leaf(&self) -> String {
         self.call_chain
             .last()
-            .expect("Call chain is epmty!")
+            .expect("Call chain is empty!")
             .get_process_method()
     }
 
@@ -83,7 +85,7 @@ impl CChainStatsKey {
     pub fn get_leaf_process(&self) -> String {
         self.call_chain
             .last()
-            .expect("Call chain is epmty!")
+            .expect("Call chain is empty!")
             .get_process()
     }
 

@@ -26,6 +26,8 @@ pub struct StitchParameters {
 pub struct CallChainData {
     pub full_key: String,
     pub inboud_process_key: String,
+    pub rooted: bool,
+    pub is_leaf: bool,
     pub data: StitchedSet,
 }
 #[derive(Default)]
@@ -88,7 +90,7 @@ impl Stitched {
             .for_each(|(proc_oper, cc_keys)| {
                 let call_chains = cc_keys
                     .into_iter()
-                    .map(|cc_key| {
+                    .map(|(cc_key, rooted)| {
                         let key_data = CCReportItems::extract_dataset(&data, &cc_key);
                         let stitched_set = CALL_CHAIN_REPORT_ITEMS
                             .0
@@ -98,6 +100,8 @@ impl Stitched {
                         CallChainData {
                             full_key: cc_key.to_string(),
                             inboud_process_key: cc_key.inbound_call_chain_key(),
+                            rooted,
+                            is_leaf: cc_key.is_leaf,
                             data: StitchedSet(stitched_set),
                         }
                     })
@@ -207,6 +211,8 @@ impl Stitched {
             &[
                 "Full Call-chain (path)",
                 "cc_hash",
+                "rooted",
+                "is_leaf",
                 "Process/Operation",
                 "Inbound_chain",
             ],
@@ -215,9 +221,11 @@ impl Stitched {
         self.call_chain.iter().for_each(|(po_label, call_chains)| {
             call_chains.iter().for_each(|ccd| {
                 csv.add_line(format!(
-                    "{}; {}; {}; {}; {}",
+                    "{}; {}; {}; {}; {}; {}; {}",
                     ccd.full_key,
                     string_hash(&ccd.full_key),
+                    if ccd.rooted { "rooted" } else { "" },
+                    if ccd.is_leaf { "leaf" } else { "" },
                     po_label,
                     ccd.inboud_process_key,
                     utils::floats_to_string(ccd.data.summary_avg(), " ;")
@@ -229,6 +237,8 @@ impl Stitched {
         csv.add_line(self.full_data_header(&[
             "Full call-chain (path)",
             "cc_hash",
+            "rooted",
+            "is_leaf",
             "Final Process/Oper",
             "Inbound_chain",
         ]));
@@ -237,6 +247,8 @@ impl Stitched {
                 csv.append(&mut ccd.data.csv_output(&[
                     &ccd.full_key,
                     &string_hash(&ccd.full_key),
+                    if ccd.rooted { "rooted" } else { "" },
+                    if ccd.is_leaf { "leaf" } else { "" },
                     &po_label,
                     &ccd.inboud_process_key,
                 ]))
