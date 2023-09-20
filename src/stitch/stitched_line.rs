@@ -1,5 +1,5 @@
 use super::anomalies::{Anomalies, AnomalyParameters};
-use crate::utils::{self, LinearRegression};
+use crate::utils::{self, ExponentialRegression, LinearRegression};
 
 const MIN_POINTS_FOR_ST_MULTIPLIER: usize = 2;
 
@@ -7,7 +7,24 @@ const MIN_POINTS_FOR_ST_MULTIPLIER: usize = 2;
 /// Used to represent a short time-interval and the linear regression on this short interval. This data is used to detect anomalies
 pub struct ShortTermStitchedLine {
     pub data: Vec<Option<f64>>,
-    pub lin_reg: LinearRegression,
+    pub lin_regr: LinearRegression,
+}
+
+#[derive(Debug)]
+pub enum BestFit {
+    LinRegr,
+    ExprRegr,
+    None,
+}
+
+impl ToString for BestFit {
+    fn to_string(&self) -> String {
+        match self {
+            BestFit::LinRegr => "Linear".to_string(),
+            BestFit::ExprRegr => "Exponential".to_string(),
+            BestFit::None => String::new(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -18,7 +35,9 @@ pub struct StitchedLine {
     pub data: Vec<Option<f64>>,
     pub num_filled_columns: u32,
     pub data_avg: Option<f64>,
-    pub lin_reg: Option<LinearRegression>,
+    pub lin_regr: Option<LinearRegression>,
+    pub exp_regr: Option<ExponentialRegression>,
+    pub best_fit: BestFit,
     pub st_line: Option<ShortTermStitchedLine>,
 }
 
@@ -26,7 +45,20 @@ impl StitchedLine {
     /// compute a data-series (StitchedLine) including linear regression, the average of the data and possibly a short-term line for the last few datapoint.
     /// The Short-Term line is used to detect anomalies. However, this is only computed if the full dataset significantly exceed the size of the ST
     pub fn new(label: String, data: Vec<Option<f64>>, pars: &AnomalyParameters) -> Self {
-        let lin_reg = LinearRegression::new(&data);
+        let lin_regr = LinearRegression::new(&data);
+        let exp_regr = ExponentialRegression::new(&data);
+        let best_fit = match (&lin_regr, &exp_regr) {
+            (None, None) => BestFit::None,
+            (Some(_), None) => BestFit::LinRegr,
+            (None, Some(_)) => BestFit::ExprRegr,
+            (Some(lr), Some(er)) => {
+                if er.R_squared > lr.R_squared {
+                    BestFit::ExprRegr
+                } else {
+                    BestFit::LinRegr
+                }
+            }
+        };
 
         let st_line = if data.len() >= MIN_POINTS_FOR_ST_MULTIPLIER * pars.st_num_points {
             let st_data: Vec<_> = data
@@ -37,7 +69,7 @@ impl StitchedLine {
             // Only if the Lineair regression is possible a ShortTermStitchedLine is returne
             LinearRegression::new(&st_data).map(|lr| ShortTermStitchedLine {
                 data: st_data,
-                lin_reg: lr,
+                lin_regr: lr,
             })
         } else {
             None
@@ -53,7 +85,9 @@ impl StitchedLine {
             data,
             num_filled_columns,
             data_avg,
-            lin_reg,
+            lin_regr,
+            exp_regr,
+            best_fit,
             st_line,
         }
     }
@@ -73,9 +107,17 @@ impl StitchedLine {
 
     /// Compute the growth per time-interval
     pub fn periodic_growth(&self) -> Option<f64> {
-        self.lin_reg
-            .as_ref()
-            .and_then(|lr| lr.avg_growth_per_period)
+        match &self.best_fit {
+            BestFit::LinRegr => self
+                .lin_regr
+                .as_ref()
+                .and_then(|lr| lr.avg_growth_per_period),
+            BestFit::ExprRegr => self
+                .exp_regr
+                .as_ref()
+                .and_then(|er| Some(er.avg_growth_per_period)),
+            _ => None,
+        }
     }
 
     /// Compute a scaled slope by moving the average value to 0.5.
@@ -83,7 +125,7 @@ impl StitchedLine {
     pub fn scaled_slope(&self) -> Option<f64> {
         self.data_avg.and_then(|avg| {
             if avg.abs() > 1e-100 {
-                self.lin_reg
+                self.lin_regr
                     .as_ref()
                     .map(|lin_reg| lin_reg.slope / (2.0 * avg))
             } else {
@@ -100,7 +142,7 @@ impl StitchedLine {
             if avg.abs() > 1e-100 {
                 self.st_line
                     .as_ref()
-                    .map(|stl| stl.lin_reg.slope / (2.0 * avg))
+                    .map(|stl| stl.lin_regr.slope / (2.0 * avg))
             } else {
                 None
             }
@@ -108,7 +150,7 @@ impl StitchedLine {
     }
 
     pub fn last_deviation_scaled(&self) -> Option<f64> {
-        self.lin_reg.as_ref().and_then(|lr| {
+        self.lin_regr.as_ref().and_then(|lr| {
             lr.get_deviation(&self.data, self.data.len() - 1)
                 .and_then(|deviation| {
                     if lr.L1_deviation.abs() > 1e-100 {
@@ -120,6 +162,12 @@ impl StitchedLine {
         })
     }
 
+    fn last_exp_model_deviation(&self) -> Option<f64> {
+        self.exp_regr.as_ref().and_then(|er| {
+            self.data[self.data.len() - 1].map(|val| val - er.predict((self.data.len() - 1) as f64))
+        })
+    }
+
     /// return the headers that correspond to a data-row (assuming this Line is representative for data availability over the full dataset).
     pub fn headers(&self) -> String {
         let columns = self
@@ -128,14 +176,14 @@ impl StitchedLine {
             .enumerate()
             .map(|(idx, x)| {
                 if x.is_some() {
-                    format!("{}", idx + 1)
+                    format!("{}", idx)
                 } else {
-                    format!("_{}", idx + 1)
+                    format!("_{}", idx)
                 }
             })
             .collect::<Vec<_>>()
             .join("; ");
-        format!("label; NUM_FILLED; {columns}; ; ; slope; y_intercept; R_squared; L1_deviation; scaled_slope; last_deviation; periodic_growth")
+        format!("label; NUM_FILLED; {columns}; ; ; best_fit; slope; y_intercept; r2; L1_norm; scaled_slope; last_deviation; periodic_growth; exp_a, exp_b; exp_r2; exp_last_dev;")
     }
 
     /// Show the current line as a string in the csv-format with a ';' separator
@@ -144,11 +192,17 @@ impl StitchedLine {
         let values = utils::floats_ref_to_string(&self.data, "; ");
         let header = prefixes.join("; ");
 
-        if let Some(lr) = &self.lin_reg {
+        let (exp_a, exp_b, exp_r2) = match &self.exp_regr {
+            Some(er) => (Some(er.a), Some(er.b), Some(er.R_squared)),
+            None => (None, None, None),
+        };
+
+        if let Some(lr) = &self.lin_regr {
             format!(
-                "{header}; {}; {}; {values}; ; ; {}; {}; {}; {}; {}; {}; {}",
+                "{header}; {}; {}; {values}; ; ; {}; {}; {}; {}; {}; {}; {}; {}; {}; {}; {}; {};",
                 self.label,
                 self.num_filled_columns,
+                self.best_fit.to_string(),
                 utils::format_float(lr.slope),
                 utils::format_float(lr.y_intercept),
                 utils::format_float(lr.R_squared),
@@ -156,6 +210,10 @@ impl StitchedLine {
                 utils::format_float_opt(self.scaled_slope()),
                 utils::format_float_opt(self.last_deviation_scaled()),
                 utils::format_float_opt(self.periodic_growth()),
+                utils::format_float_opt(exp_a),
+                utils::format_float_opt(exp_b),
+                utils::format_float_opt(exp_r2),
+                utils::format_float_opt(self.last_exp_model_deviation())
             )
         } else {
             format!(
