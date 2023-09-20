@@ -64,7 +64,7 @@ impl StitchedSet {
         self.prefix_with_counts(
             self.0
                 .iter()
-                .map(|sl| sl.lin_reg.as_ref().map(|lr| lr.slope)),
+                .map(|sl| sl.lin_regr.as_ref().map(|lr| lr.slope)),
         )
     }
 

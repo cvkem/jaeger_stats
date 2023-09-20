@@ -1,12 +1,4 @@
-#[derive(Debug)]
-struct DataPoint {
-    x: f64,
-    y: f64,
-}
-
-type DataSet = Vec<DataPoint>;
-
-type Averages = (f64, f64);
+use super::{Averages, DataPoint, DataSet};
 
 #[derive(Debug)]
 pub struct LinearRegression {
@@ -18,8 +10,13 @@ pub struct LinearRegression {
 }
 
 impl LinearRegression {
-    pub fn new(data: &[Option<f64>]) -> Option<Self> {
-        let data = get_dataset(data);
+    pub fn new(orig_data: &[Option<f64>]) -> Option<Self> {
+        let data = get_dataset(orig_data);
+        let orig_len = orig_data.len();
+        Self::new_from_dataset(&data, orig_len)
+    }
+
+    pub fn new_from_dataset(data: &DataSet, orig_len: usize) -> Option<Self> {
         if data.len() < 2 {
             // insufficient data to compute a value
             None
@@ -31,10 +28,12 @@ impl LinearRegression {
             let L1_deviation = get_L1_deviation(&data, slope, y_intercept);
 
             let avg_growth_per_period = {
-                let start = y_intercept + slope;
-                let end = y_intercept + slope * (data.len() as f64);
+                let start = y_intercept;
+                let num_step = (orig_len - 1) as f64;
+                let end = y_intercept + slope * num_step;
                 if start.abs() > 1e-10 {
-                    Some((end - start) / start)
+                    let mid_point = (start + end) / 2.0; // using mid-point as it represents dataset better (or does this all single out?)
+                    Some((end - start) / mid_point / (num_step / 2.0))
                 } else {
                     None
                 }
@@ -48,7 +47,6 @@ impl LinearRegression {
             })
         }
     }
-
     pub fn get_deviation(&self, data: &[Option<f64>], idx: usize) -> Option<f64> {
         assert!(idx < data.len());
         data[idx].and_then(|y| {
@@ -59,14 +57,14 @@ impl LinearRegression {
     }
 }
 
-/// Get the averages over x and y for all filled values, where x = counting from 1 to N
+/// Get the dataset over x and y for all filled values, where x = counting from 0 to N-1
 fn get_dataset(data: &[Option<f64>]) -> DataSet {
     data.iter()
         .enumerate()
         // TODO: is  the .as_ref() on next line needed as f64 is copy?
         .filter_map(|(idx, val)| {
             val.as_ref().map(|val| DataPoint {
-                x: idx as f64 + 1.0,
+                x: idx as f64,
                 y: *val,
             })
         })
