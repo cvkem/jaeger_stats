@@ -1,6 +1,7 @@
 use super::{DataPoint, DataSet, LinearRegression};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ExponentialRegression {
     /// the multiplier of the curve y = a * b^x
     pub a: f64,

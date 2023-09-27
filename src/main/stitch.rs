@@ -64,6 +64,7 @@ fn main() {
 
     let path = Path::new(&args.output);
     stitched.write_csv(path);
+    stitched.to_json("stitched.json");
 
     println!("Stitched output written to: '{}'", path.display());
 
