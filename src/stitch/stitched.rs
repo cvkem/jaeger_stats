@@ -126,11 +126,10 @@ impl Stitched {
         let Some(ext) = path_str.extension() else {
             panic!("Failed to find extension of '{}'", path_str.display());
         };
-        let ext = ext.to_str().unwrap();
 
-        let stiched = match ext {
+        let stiched = match ext.to_str().unwrap() {
             "json" => serde_json::from_reader(reader)?,
-            //"bincode" => bincode::deserialize_from(reader)?,
+            "bincode" => bincode::deserialize_from(reader)?,
             ext => panic!(
                 "Unknown extension '{ext}'of inputfile {}",
                 path_str.display()
@@ -141,13 +140,29 @@ impl Stitched {
 
     /// write the 'stitched' dataset to json
     pub fn to_json(&self, file_name: &str) {
-        let f = fs::File::create(file_name).expect("Failed to open file");
+        let path_str = Path::new(file_name);
+        let f = fs::File::create(path_str).expect("Failed to open file");
         let writer = io::BufWriter::new(f);
         // on a large dataset to_write pretty takes 15.5 seconds while to_write takes 12 sec (so 30% extra for pretty printing to make it human readible)
-        match serde_json::to_writer_pretty(writer, &self) {
-            Ok(()) => (),
-            Err(err) => panic!("failled to Serialize !! {err:?}"),
-        }
+
+        let Some(ext) = path_str.extension() else {
+            panic!("Failed to find extension of '{}'", path_str.display());
+        };
+
+        match ext.to_str().unwrap() {
+            "json" => match serde_json::to_writer_pretty(writer, self) {
+                Ok(()) => (),
+                Err(err) => panic!("failed to Serialize '{file_name}' to JSON!! {err:?}"),
+            },
+            "bincode" => match bincode::serialize_into(writer, self) {
+                Ok(()) => (),
+                Err(err) => panic!("failed to Serialize '{file_name}' to BINCODE!! {err:?}"),
+            },
+            ext => panic!(
+                "Unknown extension '{ext}'of inputfile {}",
+                path_str.display()
+            ),
+        };
     }
 
     /// Generate a header for a summary line showing as all metrics over a single statistic.
