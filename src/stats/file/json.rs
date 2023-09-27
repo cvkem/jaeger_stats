@@ -12,6 +12,6 @@ pub fn dump_file(file_name: &str, stats: StatsRec) {
     // on a large dataset to_write pretty takes 15.5 seconds while to_write takes 12 sec (so 30% extra for pretty printing to make it human readible)
     match serde_json::to_writer_pretty(writer, &srj) {
         Ok(()) => (),
-        Err(err) => panic!("failled to Serialize !! {err:?}"),
+        Err(err) => panic!("failed to Serialize !! {err:?}"),
     }
 }
