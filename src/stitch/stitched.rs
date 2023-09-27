@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, error::Error, fs, io};
 
 use crate::{
     string_hash,
@@ -15,6 +15,8 @@ use super::{
     stitch_tables::{BASIC_REPORT_ITEMS, CALL_CHAIN_REPORT_ITEMS, PROC_OPER_REPORT_ITEMS},
     stitched_set::StitchedSet,
 };
+use serde::{Deserialize, Serialize};
+use serde_json::{self};
 use std::{mem, path::Path};
 
 #[derive(Debug)]
@@ -23,6 +25,7 @@ pub struct StitchParameters {
     pub anomaly_pars: AnomalyParameters,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct CallChainData {
     pub full_key: String,
     pub inboud_process_key: String,
@@ -30,7 +33,8 @@ pub struct CallChainData {
     pub is_leaf: bool,
     pub data: StitchedSet,
 }
-#[derive(Default)]
+
+#[derive(Default, Serialize, Deserialize)]
 pub struct Stitched {
     /// the list of input-files (one per analysis) that are used. This list also
     pub sources: StitchSources,
@@ -57,6 +61,7 @@ impl Stitched {
         // this method reads the data in the original format, so data contains one column (StatsRec) per dataset
         let mut data = stitch_list.read_data();
 
+        //TODO: check if drop works as expected.
         let num_dropped = DataSeries(&mut data).drop_low_volume_traces(pars.drop_count);
         println!(
             "Based on drop_count={} we have dropped {num_dropped} Processes over all datasets.",
@@ -110,6 +115,39 @@ impl Stitched {
             });
 
         stitched
+    }
+
+    pub fn from_json(file_name: &str) -> Result<Self, Box<dyn Error>> {
+        //let keep = path.clone().into_string().unwrap();
+        let path_str = Path::new(file_name);
+        let f = fs::File::open(path_str)?;
+        let reader = io::BufReader::new(f);
+
+        let Some(ext) = path_str.extension() else {
+            panic!("Failed to find extension of '{}'", path_str.display());
+        };
+        let ext = ext.to_str().unwrap();
+
+        let stiched = match ext {
+            "json" => serde_json::from_reader(reader)?,
+            //"bincode" => bincode::deserialize_from(reader)?,
+            ext => panic!(
+                "Unknown extension '{ext}'of inputfile {}",
+                path_str.display()
+            ),
+        };
+        Ok(stiched)
+    }
+
+    /// write the 'stitched' dataset to json
+    pub fn to_json(&self, file_name: &str) {
+        let f = fs::File::create(file_name).expect("Failed to open file");
+        let writer = io::BufWriter::new(f);
+        // on a large dataset to_write pretty takes 15.5 seconds while to_write takes 12 sec (so 30% extra for pretty printing to make it human readible)
+        match serde_json::to_writer_pretty(writer, &self) {
+            Ok(()) => (),
+            Err(err) => panic!("failled to Serialize !! {err:?}"),
+        }
     }
 
     /// Generate a header for a summary line showing as all metrics over a single statistic.

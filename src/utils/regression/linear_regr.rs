@@ -1,6 +1,7 @@
 use super::{Averages, DataPoint, DataSet};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LinearRegression {
     pub slope: f64,
     pub y_intercept: f64,

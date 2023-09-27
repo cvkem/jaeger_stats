@@ -1,16 +1,17 @@
 use super::anomalies::{Anomalies, AnomalyParameters};
 use crate::utils::{self, ExponentialRegression, LinearRegression};
+use serde::{Deserialize, Serialize};
 
 const MIN_POINTS_FOR_ST_MULTIPLIER: usize = 2;
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 /// Used to represent a short time-interval and the linear regression on this short interval. This data is used to detect anomalies
 pub struct ShortTermStitchedLine {
     pub data: Vec<Option<f64>>,
     pub lin_regr: LinearRegression,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum BestFit {
     LinRegr,
     ExprRegr,
@@ -27,7 +28,7 @@ impl ToString for BestFit {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 /// StitchedLine represents a line of values for a certain metric as mentioned in label. When sufficient data is present the Linear regression is added.
 /// Also an optional st_line is added which represents the last ST_dATA_LEN values of the data-array including a linear regression. However this is only added if the full data-set contains enough values.
 pub struct StitchedLine {

@@ -1,8 +1,10 @@
 use super::stitched_line::StitchedLine;
 
+use serde::{Deserialize, Serialize};
+
 /// A StitchedSet is a vector of StitchedLine items.
 /// Each StitchedLine represents a metric and carries a label that represents that data. The contents of the StitchedLine is a time-series of the data and a linear-regression over that data.
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Deserialize, Serialize)]
 pub struct StitchedSet(pub Vec<StitchedLine>);
 
 impl StitchedSet {
