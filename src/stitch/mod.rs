@@ -19,3 +19,5 @@ mod stitched_set;
 pub use anomalies::AnomalyParameters;
 pub use stitch_list::StitchList;
 pub use stitched::{StitchParameters, Stitched};
+pub use stitched_line::{BestFit, StitchedLine};
+pub use stitched_set::StitchedSet;
