@@ -21,6 +21,7 @@ pub use utils::{
 };
 
 pub use stitch::{
-    AnomalyParameters, BestFit, StitchList, StitchParameters, Stitched, StitchedLine, StitchedSet,
+    get_proc_oper_chart_data, get_process_list, AnomalyParameters, BestFit, ChartDataParameters,
+    ChartLine, ProcessListItem, StitchList, StitchParameters, Stitched, StitchedLine, StitchedSet,
 };
 pub use trace_analysis::analyze_file_or_folder;

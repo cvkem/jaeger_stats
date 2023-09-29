@@ -5,6 +5,7 @@
 //! split these phases such that we a separation of concerns and open new options to use the data.
 
 mod anomalies;
+mod api;
 mod call_chain_reporter;
 mod dataseries;
 mod key;
@@ -17,6 +18,9 @@ mod stitched_line;
 mod stitched_set;
 
 pub use anomalies::AnomalyParameters;
+pub use api::{
+    get_proc_oper_chart_data, get_process_list, ChartDataParameters, ChartLine, ProcessListItem,
+};
 pub use stitch_list::StitchList;
 pub use stitched::{StitchParameters, Stitched};
 pub use stitched_line::{BestFit, StitchedLine};

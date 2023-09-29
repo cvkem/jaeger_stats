@@ -78,11 +78,7 @@ impl StitchedSet {
         self.prefix_with_counts(self.0.iter().map(|sl| sl.scaled_slope()))
     }
 
-    pub fn get_metric_stitched_line(&self, metric: &str) -> &StitchedLine {
-        self.0
-            .iter()
-            .filter(|line| &line.label == metric)
-            .next()
-            .expect("Invalid metric: At least one line should exist")
+    pub fn get_metric_stitched_line(&self, metric: &str) -> Option<&StitchedLine> {
+        self.0.iter().filter(|line| &line.label == metric).next()
     }
 }
