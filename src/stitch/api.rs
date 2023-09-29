@@ -42,19 +42,21 @@ pub fn get_process_list(data: &Stitched, metric: &str) -> Vec<ProcessListItem> {
 
 #[derive(Serialize, Debug)]
 pub struct ChartLine {
-    label: String,
-    data: Vec<Option<f64>>,
+    pub label: String,
+    pub data: Vec<Option<f64>>,
 }
 
 #[derive(Serialize, Debug)]
 pub struct ChartDataParameters {
     pub title: String,
+    pub process: String,
+    pub metric: String,
     pub labels: Vec<String>,
     pub lines: Vec<ChartLine>,
 }
 
 impl ChartDataParameters {
-    pub fn new(process: &str, st_line: &StitchedLine) -> Self {
+    pub fn new(process: &str, metric: &str, st_line: &StitchedLine) -> Self {
         let labels = st_line
             .data
             .iter()
@@ -89,7 +91,9 @@ impl ChartDataParameters {
             });
         };
         ChartDataParameters {
-            title: process.to_owned(),
+            title: format!("{}  of {}", metric, process),
+            process: process.to_owned(),
+            metric: metric.to_owned(),
             labels,
             lines,
         }
@@ -109,7 +113,7 @@ pub fn get_proc_oper_chart_data(
     {
         Some((proc, st_set)) => st_set
             .get_metric_stitched_line(metric)
-            .map(|sl| ChartDataParameters::new(proc, sl)),
+            .map(|sl| ChartDataParameters::new(proc, metric, sl)),
         None => {
             error!("Could not find process '{process}'");
             None
