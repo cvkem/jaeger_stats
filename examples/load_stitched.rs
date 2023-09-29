@@ -1,5 +1,9 @@
 use clap::Parser;
-use jaeger_stats::{BestFit, Stitched, StitchedLine, StitchedSet};
+use jaeger_stats::{
+    get_proc_oper_chart_data, get_process_list, BestFit, ChartDataParameters, ChartLine,
+    ProcessListItem, Stitched, StitchedLine, StitchedSet,
+};
+use log::{error, info};
 use serde::Serialize;
 use serde_json;
 use std::{error::Error, fs, io, time::Instant};
@@ -14,72 +18,8 @@ struct Args {
     input: String,
 }
 
-#[derive(Serialize)]
-pub struct ProcessListItem {
-    pub idx: usize,
-    pub name: String,
-    pub rank: f64,
-}
-
-///TODO: move to stitched_set
-
 const FILTER_METRIC: &str = "rate (avg)";
 const PROCESS: &str = "retail-gateway//services/apic-productinzicht/api";
-
-pub fn get_process_list(data: &Stitched, metric: &str) -> Vec<ProcessListItem> {
-    let mut proc_list: Vec<_> = data
-        .process_operation
-        .iter()
-        .enumerate()
-        .map(|(idx, po)| {
-            let line = po.1.get_metric_stitched_line(metric);
-            let rank = line.periodic_growth().unwrap_or(-1000.0);
-
-            ProcessListItem {
-                idx: idx + 1,
-                name: po.0.to_owned(),
-                rank,
-            }
-        })
-        .collect();
-    proc_list.sort_by(|a, b| b.rank.partial_cmp(&a.rank).unwrap());
-
-    proc_list
-}
-
-#[derive(Serialize, Debug)]
-pub struct ChartLine {
-    label: String,
-    data: Vec<f64>,
-}
-
-#[derive(Serialize, Debug)]
-pub struct ChartDataParameters {
-    pub title: String,
-    pub labels: Vec<String>,
-    pub lines: Vec<ChartLine>,
-}
-
-pub fn get_chart_data(data: &Stitched, process: &str, metric: &str) -> ChartDataParameters {
-    ChartDataParameters {
-        title: process.to_owned(),
-        labels: vec!["1".to_string(), "2".to_string(), "3".to_string()],
-        lines: vec![
-            ChartLine {
-                label: "Observed".to_string(),
-                data: vec![1.2, 2.5, 3.3],
-            },
-            ChartLine {
-                label: "y=1.0 + 1.0*x".to_string(),
-                data: vec![2.0, 3.0, 4.0],
-            },
-            ChartLine {
-                label: "y=1.0 *1.05^x".to_string(),
-                data: vec![1.0, 2.0, 4.0],
-            },
-        ],
-    }
-}
 
 fn dump_proc_list(file_name: &str, proc_list: &Vec<ProcessListItem>) {
     let f = fs::File::create(file_name).expect("Failed to open file");
@@ -91,7 +31,7 @@ fn dump_proc_list(file_name: &str, proc_list: &Vec<ProcessListItem>) {
     }
 }
 
-fn dump_chart_data(file_name: &str, proc_list: &ChartDataParameters) {
+fn dump_chart_data(file_name: &str, proc_list: &Option<ChartDataParameters>) {
     let f = fs::File::create(file_name).expect("Failed to open file");
     let writer = io::BufWriter::new(f);
     // on a large dataset to_write pretty takes 15.5 seconds while to_write takes 12 sec (so 30% extra for pretty printing to make it human readible)
@@ -109,19 +49,29 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Reading stitched from '{input_file}'");
 
     let now = Instant::now();
-    let data = Stitched::from_json(input_file).unwrap();
-    println!("Elapsed time: {}", now.elapsed().as_secs());
+    let data = match Stitched::from_json(input_file) {
+        Ok(stitched) => stitched,
+        Err(err) => {
+            error!("Failed to load file '{input_file}'");
+            panic!("Failure during load of file: {input_file}");
+        }
+    };
+    println!("Elapsed time after load: {}", now.elapsed().as_secs());
 
     let proc_list = get_process_list(&data, FILTER_METRIC);
 
     dump_proc_list("proces_list_mock.json", &proc_list);
 
-    let chart_data = get_chart_data(&data, PROCESS, FILTER_METRIC);
+    let chart_data = get_proc_oper_chart_data(&data, PROCESS, FILTER_METRIC);
 
     dump_chart_data("charts_mock.json", &chart_data);
     // if SHOW_STDOUT {
     //     println!("{:#?}", data);
     // }
+    println!(
+        "Elapsed time after handling requests: {}",
+        now.elapsed().as_secs()
+    );
 
     Ok(())
 }

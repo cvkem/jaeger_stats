@@ -56,6 +56,11 @@ impl LinearRegression {
             Some(y - expect)
         })
     }
+
+    /// predict the y value for a specific x-value
+    pub fn predict(&self, x: f64) -> f64 {
+        self.slope * x + self.y_intercept
+    }
 }
 
 /// Get the dataset over x and y for all filled values, where x = counting from 0 to N-1
@@ -72,7 +77,7 @@ fn get_dataset(data: &[Option<f64>]) -> DataSet {
         .collect()
 }
 
-/// Get the averages over x and y for all filled values, where x = counting from 1 to N
+/// Get the averages over x and y for all filled values, where x = counting from 0 to N
 fn get_average_xy(data: &DataSet) -> Averages {
     let avg_x = data.iter().map(|dp| dp.x).sum::<f64>() / data.len() as f64;
     let avg_y = data.iter().map(|dp| dp.y).sum::<f64>() / data.len() as f64;

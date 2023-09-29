@@ -15,6 +15,7 @@ datetime = "0.5.2"
 encoding_rs = "0.8.32"
 fxhash = "0.2.1"
 lazy_static = "1.4.0"
+log = "0.4.20"
 regex = "1.9.1"
 serde = { version="1.0", features=["derive"] }
 serde_json = { version="1.0"}
