@@ -11,16 +11,47 @@ pub struct ProcessListItem {
     pub rank: f64,
 }
 
-pub fn get_process_list(data: &Stitched, metric: &str) -> Vec<ProcessListItem> {
-    let mut proc_list: Vec<_> = data
+type ProcessList = Vec<ProcessListItem>;
+
+/// get the rand of this stitched set based on the growth of the 'metric'.
+fn get_stitched_set_rank(stitch_set: &StitchedSet, metric: &str) -> f64 {
+    // rank on the periodic-growth of the selected metric
+    let line = stitch_set
+        .get_metric_stitched_line(metric)
+        .unwrap_or_else(|| panic!("Could not find ranking-metric '{}'", metric));
+    line.periodic_growth().unwrap_or(-1000.0)
+}
+
+/// Reorder the list of processes based on the rank field and renumber if the 'metric' is set.
+fn reorder_process_list(mut proc_list: ProcessList, metric: &str) -> ProcessList {
+    if !metric.is_empty() {
+        proc_list.sort_by(|a, b| b.rank.partial_cmp(&a.rank).unwrap());
+
+        // renumber for new ordering
+        proc_list
+            .iter_mut()
+            .enumerate()
+            .for_each(|(idx, pli)| pli.idx = idx + 1);
+    }
+
+    proc_list
+}
+
+/// return a ranked list of processes where rank is based on the periodic-growth of the metric provided.
+/// If metric is an empty string the data will be provided in the current order (lexicographic sort.)
+pub fn get_process_list(data: &Stitched, metric: &str) -> ProcessList {
+    let list_size = data.process_operation.len();
+    let proc_list: Vec<_> = data
         .process_operation
         .iter()
         .enumerate()
         .map(|(idx, po)| {
-            let line =
-                po.1.get_metric_stitched_line(metric)
-                    .unwrap_or_else(|| panic!("Could not find ranking-metric '{}'", metric));
-            let rank = line.periodic_growth().unwrap_or(-1000.0);
+            // provide a rank based on the reverse of the index, as the highest rank should be in first position.
+            let rank = if metric.is_empty() {
+                (list_size - idx) as f64
+            } else {
+                get_stitched_set_rank(&po.1, metric)
+            };
 
             ProcessListItem {
                 idx: idx + 1,
@@ -29,15 +60,44 @@ pub fn get_process_list(data: &Stitched, metric: &str) -> Vec<ProcessListItem> {
             }
         })
         .collect();
-    proc_list.sort_by(|a, b| b.rank.partial_cmp(&a.rank).unwrap());
 
-    // renumber for new ordering
-    proc_list
-        .iter_mut()
-        .enumerate()
-        .for_each(|(idx, pli)| pli.idx = idx + 1);
+    reorder_process_list(proc_list, metric)
+}
 
-    proc_list
+/// get an ordered list of call-chains ranked based on 'metric'.
+pub fn get_call_chain_list(data: &Stitched, proc_oper: &str, metric: &str) -> ProcessList {
+    let proc_list = match data
+        .call_chain
+        .iter()
+        .filter(|(k, _v)| k == proc_oper)
+        .map(|(_k, v)| v)
+        .next()
+    {
+        Some(ccd_vec) => {
+            let list_size = ccd_vec.len();
+            ccd_vec
+                .iter()
+                .enumerate()
+                .map(|(idx, ccd)| {
+                    // provide a rank based on the reverse of the index, as the highest rank should be in first position.
+                    let rank = if metric.is_empty() {
+                        (list_size - idx) as f64
+                    } else {
+                        get_stitched_set_rank(&ccd.data, metric)
+                    };
+
+                    ProcessListItem {
+                        idx: idx + 1,
+                        name: ccd.inboud_process_key.to_owned(),
+                        rank,
+                    }
+                })
+                .collect()
+        }
+        None => Vec::new(),
+    };
+
+    reorder_process_list(proc_list, metric)
 }
 
 #[derive(Serialize, Debug)]
@@ -51,6 +111,7 @@ pub struct ChartDataParameters {
     pub title: String,
     pub process: String,
     pub metric: String,
+    pub description: Vec<(String, String)>,
     pub labels: Vec<String>,
     pub lines: Vec<ChartLine>,
 }
@@ -90,16 +151,36 @@ impl ChartDataParameters {
                     .collect(),
             });
         };
+        let description = {
+            let growth = st_line.periodic_growth().map(|v| v * 100.0);
+            let best_fit = match st_line.best_fit {
+                BestFit::ExprRegr => format!(
+                    "Exponential ({:1}%)",
+                    growth.expect("Exp. growth value missing")
+                ),
+                BestFit::LinRegr => format!(
+                    "Lineair ({:1}%)",
+                    growth.expect("Lin. growth value missing")
+                ),
+                BestFit::None => "None".to_string(),
+            };
+            vec![
+                ("BestFit".to_owned(), best_fit),
+                //TODO: more items can be added.
+            ]
+        };
         ChartDataParameters {
             title: format!("{}  of {}", metric, process),
             process: process.to_owned(),
             metric: metric.to_owned(),
+            description,
             labels,
             lines,
         }
     }
 }
 
+/// the the chart-data for a specific Process-operation combination
 pub fn get_proc_oper_chart_data(
     data: &Stitched,
     process: &str,
@@ -116,6 +197,41 @@ pub fn get_proc_oper_chart_data(
             .map(|sl| ChartDataParameters::new(proc, metric, sl)),
         None => {
             error!("Could not find process '{process}'");
+            None
+        }
+    }
+}
+
+/// the the chart-data for a specific call-chain (within a process context)
+/// the process can not be derived from the call-chain as we only have a string-key with inbound processes,
+pub fn get_call_chain_chart_data(
+    data: &Stitched,
+    process_key: &str,
+    call_chain_key: &str,
+    metric: &str,
+) -> Option<ChartDataParameters> {
+    match data
+        .call_chain
+        .iter()
+        .filter(|(proc, _)| proc == process_key)
+        .next()
+    {
+        Some((proc, ccd_vec)) => match ccd_vec
+            .iter()
+            .filter(|ccd| ccd.inboud_process_key == call_chain_key)
+            .next()
+        {
+            Some(ccd) => ccd
+                .data
+                .get_metric_stitched_line(metric)
+                .map(|sl| ChartDataParameters::new(proc, metric, sl)),
+            None => {
+                error!("Could not find call-chain '{call_chain_key}' within list for process '{process_key}'");
+                None
+            }
+        },
+        None => {
+            error!("Could not find process '{process_key}'");
             None
         }
     }
