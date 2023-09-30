@@ -36,7 +36,7 @@ pub struct CallChainData {
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct Stitched {
-    /// the list of input-files (one per analysis) that are used. This list also
+    /// the list of input-files (one per analysis) that are used.
     pub sources: StitchSources,
     pub basic: StitchedSet,
     pub process_operation: Vec<(String, StitchedSet)>,
