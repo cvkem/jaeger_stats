@@ -1,5 +1,6 @@
 use crate::{BestFit, Stitched, StitchedLine, StitchedSet};
 use log::{error, info};
+use regex::Regex;
 use serde::Serialize;
 use serde_json;
 use std::{error::Error, fs, io, time::Instant};
@@ -12,6 +13,22 @@ pub struct ProcessListItem {
 }
 
 type ProcessList = Vec<ProcessListItem>;
+
+/// find the list of labels for the graphs by extracting them from the source-list descriptions.
+pub fn get_label_list(data: &Stitched) -> Vec<String> {
+    let re = Regex::new(r"[0-9]{8}").unwrap();
+
+    data.sources
+        .0
+        .iter()
+        .filter(|src| src.column.is_some())
+        .enumerate()
+        .map(|(idx, src)| match re.find(&src.description) {
+            Some(label) => label.as_str().to_owned(),
+            None => format!("{}", idx),
+        })
+        .collect()
+}
 
 /// get the rand of this stitched set based on the growth of the 'metric'.
 fn get_stitched_set_rank(stitch_set: &StitchedSet, metric: &str) -> f64 {
@@ -64,7 +81,7 @@ pub fn get_process_list(data: &Stitched, metric: &str) -> ProcessList {
     reorder_process_list(proc_list, metric)
 }
 
-/// get an ordered list of call-chains ranked based on 'metric'.
+/// get an ordered list of call-chains ranked based on 'metric' that are inbound on a point.
 pub fn get_call_chain_list(data: &Stitched, proc_oper: &str, metric: &str) -> ProcessList {
     let proc_list = match data
         .call_chain
@@ -85,6 +102,13 @@ pub fn get_call_chain_list(data: &Stitched, proc_oper: &str, metric: &str) -> Pr
                     } else {
                         get_stitched_set_rank(&ccd.data, metric)
                     };
+
+                    if ccd.inboud_process_key.is_empty() {
+                        println!(
+                            "EMPTY inbound-key on {:?} for {:?}",
+                            ccd.inboud_process_key, ccd.full_key
+                        );
+                    }
 
                     ProcessListItem {
                         idx: idx + 1,
@@ -166,7 +190,7 @@ impl ChartDataParameters {
             };
             vec![
                 ("BestFit".to_owned(), best_fit),
-                //TODO: more items can be added.
+                //TODO: more items can be added. Would be nice to state if this is inbound or outbound
             ]
         };
         ChartDataParameters {

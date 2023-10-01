@@ -25,7 +25,7 @@ pub struct StitchParameters {
     pub anomaly_pars: AnomalyParameters,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CallChainData {
     pub full_key: String,
     pub inboud_process_key: String,

@@ -25,7 +25,7 @@ impl StitchSourceItem {
 }
 
 #[derive(Default, Debug, Deserialize, Serialize)]
-pub struct StitchSources(Vec<StitchSourceItem>);
+pub struct StitchSources(pub Vec<StitchSourceItem>);
 
 impl StitchSources {
     /// add an unnumbered line (comment line)
@@ -43,6 +43,8 @@ impl StitchSources {
     pub fn csv_output(&self) -> Vec<String> {
         self.0.iter().map(|line| line.to_csv_string()).collect()
     }
+
+    //TODO: This list already should contain the correct list of labels, as extracted from the description based on a provided pattern.
 }
 
 #[derive(Default, Debug)]
