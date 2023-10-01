@@ -55,12 +55,19 @@ impl CChainStatsKey {
 
     /// Prefer a key based on the inbound process-calls only, so Outbound and Unknown are skipped
     pub fn inbound_call_chain_key(&self) -> String {
-        self.call_chain
+        let key = self
+            .call_chain
             .iter()
             .filter(|call| call.call_direction == CallDirection::Inbound)
             .map(|call| call.get_process_method())
             .collect::<Vec<_>>()
-            .join(", ")
+            .join(", ");
+        if key.is_empty() && self.call_chain.len() > 0 {
+            // if string is empty but call-chain is not we show the first call (the api-gateway call that apparantly is not marked as inbound)
+            self.call_chain[0].get_process_method()
+        } else {
+            key
+        }
     }
 
     /// Get the (external) end-point which is the start this call-chain
