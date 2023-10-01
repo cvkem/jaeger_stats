@@ -1,14 +1,13 @@
 use crate::{BestFit, Stitched, StitchedLine, StitchedSet};
-use log::{error, info};
+use log::error;
 use regex::Regex;
 use serde::Serialize;
-use serde_json;
-use std::{error::Error, fs, io, time::Instant};
 
 #[derive(Serialize)]
 pub struct ProcessListItem {
     pub idx: usize,
-    pub name: String,
+    pub key: String,
+    pub display: String, // the display can be used in select-boxes, but is nog guaranteed to be unique (at least nog for a Call-chain list.)
     pub rank: f64,
 }
 
@@ -30,7 +29,7 @@ pub fn get_label_list(data: &Stitched) -> Vec<String> {
         .collect()
 }
 
-/// get the rand of this stitched set based on the growth of the 'metric'.
+/// get the rank of this stitched set based on the growth of the 'metric'.
 fn get_stitched_set_rank(stitch_set: &StitchedSet, metric: &str) -> f64 {
     // rank on the periodic-growth of the selected metric
     let line = stitch_set
@@ -72,7 +71,8 @@ pub fn get_process_list(data: &Stitched, metric: &str) -> ProcessList {
 
             ProcessListItem {
                 idx: idx + 1,
-                name: po.0.to_owned(),
+                key: po.0.to_owned(),
+                display: po.0.to_owned(),
                 rank,
             }
         })
@@ -112,7 +112,8 @@ pub fn get_call_chain_list(data: &Stitched, proc_oper: &str, metric: &str) -> Pr
 
                     ProcessListItem {
                         idx: idx + 1,
-                        name: ccd.inboud_process_key.to_owned(),
+                        key: ccd.full_key.to_owned(),
+                        display: ccd.inboud_process_key.to_owned(),
                         rank,
                     }
                 })
