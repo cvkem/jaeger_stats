@@ -1,7 +1,8 @@
 use clap::Parser;
 use jaeger_stats::{
-    get_proc_oper_chart_data, get_process_list, BestFit, ChartDataParameters, ChartLine,
-    ProcessListItem, Stitched, StitchedLine, StitchedSet,
+    get_call_chain_chart_data, get_call_chain_list, get_label_list, get_proc_oper_chart_data,
+    get_process_list, BestFit, ChartDataParameters, ChartLine, ProcessListItem, Stitched,
+    StitchedLine, StitchedSet,
 };
 use log::{error, info};
 use serde::Serialize;
@@ -19,7 +20,8 @@ struct Args {
 }
 
 const FILTER_METRIC: &str = "rate (avg)";
-const PROCESS: &str = "retail-gateway//services/apic-productinzicht/api";
+const PROCESS: &str = "bspc-productinzicht/geefProducten";
+//const PROCESS: &str = "retail-gateway//services/apic-productinzicht/api";
 
 fn dump_proc_list(file_name: &str, proc_list: &Vec<ProcessListItem>) {
     let f = fs::File::create(file_name).expect("Failed to open file");
@@ -58,13 +60,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
     println!("Elapsed time after load: {}", now.elapsed().as_secs());
 
-    let proc_list = get_process_list(&data, FILTER_METRIC);
+    {
+        /// Showing Processes
+        let proc_list = get_process_list(&data, FILTER_METRIC);
 
-    dump_proc_list("proces_list_mock.json", &proc_list);
+        dump_proc_list("proces_list_mock.json", &proc_list);
 
-    let chart_data = get_proc_oper_chart_data(&data, PROCESS, FILTER_METRIC);
+        let chart_data = get_proc_oper_chart_data(&data, PROCESS, FILTER_METRIC);
 
-    dump_chart_data("charts_mock.json", &chart_data);
+        dump_chart_data("charts_mock.json", &chart_data);
+    }
+
+    {
+        /// Showing Call_chains
+        let proc_list = get_call_chain_list(&data, PROCESS, FILTER_METRIC);
+
+        dump_proc_list("cc_proces_list_mock.json", &proc_list);
+
+        let chart_data = get_call_chain_chart_data(&data, PROCESS, PROCESS, FILTER_METRIC);
+
+        dump_chart_data("cc_charts_mock.json", &chart_data);
+    }
+
+    println!("{:?}", get_label_list(&data));
+
     // if SHOW_STDOUT {
     //     println!("{:#?}", data);
     // }
