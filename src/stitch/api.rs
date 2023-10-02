@@ -262,7 +262,7 @@ impl ChartDataParameters {
                     growth.unwrap_or(-1000.0)
                 ),
                 BestFit::LinRegr => format!(
-                    "Lineair ({:1}%)",
+                    "Lineair ({:.1}%)",
                     growth.unwrap_or(-1000.0)
                 ),
                 BestFit::None => "None".to_string(),
