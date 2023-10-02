@@ -305,6 +305,7 @@ pub fn get_call_chain_chart_data(
     process_key: &str,
     call_chain_key: &str,
     metric: &str,
+    scope: &str,  // when scope is "end2end" we should not filter on process (to be implemented)
 ) -> Option<ChartDataParameters> {
     match data
         .call_chain
