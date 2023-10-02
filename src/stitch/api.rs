@@ -213,13 +213,13 @@ pub struct ChartDataParameters {
 }
 
 impl ChartDataParameters {
-    pub fn new(process: &str, metric: &str, st_line: &StitchedLine) -> Self {
-        let labels = st_line
-            .data
-            .iter()
-            .enumerate()
-            .map(|(idx, _)| format!("{}", idx))
-            .collect();
+    pub fn new(process: &str, metric: &str, labels: Vec<String>, st_line: &StitchedLine) -> Self {
+        // let labels = st_line
+        //     .data
+        //     .iter()
+        //     .enumerate()
+        //     .map(|(idx, _)| format!("{}", idx))
+        //     .collect();
         let mut lines = Vec::new();
         lines.push(ChartLine {
             label: "Observed".to_string(),
@@ -258,7 +258,7 @@ impl ChartDataParameters {
             };
             let best_fit = match st_line.best_fit {
                 BestFit::ExprRegr => format!(
-                    "Exponential ({:1}%)",
+                    "Exponential ({:.1}%)",
                     growth.unwrap_or(-1000.0)
                 ),
                 BestFit::LinRegr => format!(
@@ -297,7 +297,7 @@ pub fn get_proc_oper_chart_data(
     {
         Some((proc, st_set)) => st_set
             .get_metric_stitched_line(metric)
-            .map(|sl| ChartDataParameters::new(proc, metric, sl)),
+            .map(|sl| ChartDataParameters::new(proc, metric, get_label_list(data), sl)),
         None => {
             error!("Could not find process '{process}'");
             None
@@ -371,7 +371,7 @@ pub fn get_call_chain_chart_data(
             proc[0]
                 .data
                 .get_metric_stitched_line(metric)
-                .map(|sl| ChartDataParameters::new(call_chain_key, metric, sl))
+                .map(|sl| ChartDataParameters::new(call_chain_key, metric, get_label_list(data),sl))
         }
     }
 }
