@@ -249,14 +249,21 @@ impl ChartDataParameters {
         };
         let description = {
             let growth = st_line.periodic_growth().map(|v| v * 100.0);
+            if growth.is_none() {
+                match st_line.best_fit {
+                    BestFit::LinRegr | BestFit::ExprRegr => error!("Could not find growth value for best-fit model {:?} ", st_line.best_fit),
+                    BestFit::None => ()
+
+                }
+            };
             let best_fit = match st_line.best_fit {
                 BestFit::ExprRegr => format!(
                     "Exponential ({:1}%)",
-                    growth.expect("Exp. growth value missing")
+                    growth.unwrap_or(-1000.0)
                 ),
                 BestFit::LinRegr => format!(
                     "Lineair ({:1}%)",
-                    growth.expect("Lin. growth value missing")
+                    growth.unwrap_or(-1000.0)
                 ),
                 BestFit::None => "None".to_string(),
             };
@@ -298,38 +305,73 @@ pub fn get_proc_oper_chart_data(
     }
 }
 
+
+// PROCESS OPTIMIZED VERSION, but less generic.
+// /// the the chart-data for a specific call-chain (within a process context)
+// /// the process can not be derived from the call-chain as we only have a string-key with inbound processes,
+// pub fn get_call_chain_chart_data(
+//     data: &Stitched,
+//     process_key: &str,
+//     call_chain_key: &str,
+//     metric: &str,
+//     scope: &str,  // when scope is "end2end" we should not filter on process (to be implemented)
+// ) -> Option<ChartDataParameters> {
+//     match data
+//         .call_chain
+//         .iter()
+//         .filter(|(proc, _)| proc == process_key)
+//         .next()
+//     {
+//         Some((proc, ccd_vec)) => match ccd_vec
+//             .iter()
+//             .filter(|ccd| ccd.inboud_process_key == call_chain_key)
+//             .next()
+//         {
+//             Some(ccd) => ccd
+//                 .data
+//                 .get_metric_stitched_line(metric)
+//                 .map(|sl| ChartDataParameters::new(proc, metric, sl)),
+//             None => {
+//                 error!("Could not find call-chain '{call_chain_key}' within list for process '{process_key}'");
+//                 None
+//             }
+//         },
+//         None => {
+//             error!("Could not find process '{process_key}'");
+//             None
+//         }
+//     }
+// }
+
 /// the the chart-data for a specific call-chain (within a process context)
 /// the process can not be derived from the call-chain as we only have a string-key with inbound processes,
 pub fn get_call_chain_chart_data(
     data: &Stitched,
-    process_key: &str,
     call_chain_key: &str,
     metric: &str,
-    scope: &str,  // when scope is "end2end" we should not filter on process (to be implemented)
 ) -> Option<ChartDataParameters> {
-    match data
+    let proc: Vec<_> = data
         .call_chain
         .iter()
-        .filter(|(proc, _)| proc == process_key)
-        .next()
-    {
-        Some((proc, ccd_vec)) => match ccd_vec
-            .iter()
-            .filter(|ccd| ccd.inboud_process_key == call_chain_key)
-            .next()
-        {
-            Some(ccd) => ccd
+        .flat_map(|(_k, ccd_vec)| {
+            ccd_vec
+                .iter()
+                .filter(|ccd| ccd.full_key == call_chain_key)
+        })
+        .collect();
+    match proc.len() {
+        0 => {
+            error!("Could not find call-chain '{call_chain_key}'");
+            None
+        },
+        n => {
+            if n > 1 {
+                error!("Observed {n} matches for key {call_chain_key}. Returning first match only");
+            };
+            proc[0]
                 .data
                 .get_metric_stitched_line(metric)
-                .map(|sl| ChartDataParameters::new(proc, metric, sl)),
-            None => {
-                error!("Could not find call-chain '{call_chain_key}' within list for process '{process_key}'");
-                None
-            }
-        },
-        None => {
-            error!("Could not find process '{process_key}'");
-            None
+                .map(|sl| ChartDataParameters::new(call_chain_key, metric, sl))
         }
     }
 }
