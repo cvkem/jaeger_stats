@@ -32,11 +32,12 @@ impl LinearRegression {
                 let start = y_intercept;
                 let num_step = (orig_len - 1) as f64;
                 let end = y_intercept + slope * num_step;
-                if start.abs() > 1e-10 {
-                    let mid_point = (start + end) / 2.0; // using mid-point as it represents dataset better (or does this all single out?)
+                let mid_point = (start + end) / 2.0; // using mid-point as it represents dataset better (or does this all single out?)
+                if mid_point.abs() > 1e-10 {
                     Some((end - start) / mid_point / (num_step / 2.0))
                 } else {
-                    None
+                    assert!(slope.abs() <= 1e-10); // double check we have a horizontal line
+                    Some(0.0)
                 }
             };
             Some(Self {
