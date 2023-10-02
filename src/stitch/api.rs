@@ -2,6 +2,7 @@ use crate::{BestFit, Stitched, StitchedLine, StitchedSet};
 use log::error;
 use regex::Regex;
 use serde::Serialize;
+use std::cmp::Ordering;
 
 #[derive(Serialize)]
 pub struct ProcessListItem {
@@ -15,7 +16,7 @@ type ProcessList = Vec<ProcessListItem>;
 
 /// find the list of labels for the graphs by extracting them from the source-list descriptions.
 pub fn get_label_list(data: &Stitched) -> Vec<String> {
-    let re = Regex::new(r"[0-9]{8}").unwrap();
+    let re = Regex::new(r"[0-9]{8}").expect("Failed to create regexp for dates");
 
     data.sources
         .0
@@ -39,9 +40,9 @@ fn get_stitched_set_rank(stitch_set: &StitchedSet, metric: &str) -> f64 {
 }
 
 /// Reorder the list of processes based on the rank field and renumber if the 'metric' is set.
-fn reorder_process_list(mut proc_list: ProcessList, metric: &str) -> ProcessList {
+fn reorder_and_renumber(mut proc_list: ProcessList, metric: &str) -> ProcessList {
     if !metric.is_empty() {
-        proc_list.sort_by(|a, b| b.rank.partial_cmp(&a.rank).unwrap());
+        proc_list.sort_by(|a, b| b.rank.partial_cmp(&a.rank).unwrap_or(Ordering::Equal));
 
         // renumber for new ordering
         proc_list
@@ -49,6 +50,23 @@ fn reorder_process_list(mut proc_list: ProcessList, metric: &str) -> ProcessList
             .enumerate()
             .for_each(|(idx, pli)| pli.idx = idx + 1);
     }
+
+    proc_list
+}
+
+/// Reorder the list of processes based on the rank field and renumber if the 'metric' is set.
+fn rank_lexicographic(mut proc_list: ProcessList) -> ProcessList {
+    proc_list.sort_by(|a, b| a.key.cmp(&b.key));
+    let list_len = proc_list.len();
+
+    // renumber for new ordering
+    proc_list
+        .iter_mut()
+        .enumerate()
+        .for_each(|(idx, pli)| {
+            pli.idx = idx + 1;
+            pli.rank = (list_len -idx) as f64;
+    });
 
     proc_list
 }
@@ -78,11 +96,11 @@ pub fn get_process_list(data: &Stitched, metric: &str) -> ProcessList {
         })
         .collect();
 
-    reorder_process_list(proc_list, metric)
+    reorder_and_renumber(proc_list, metric)
 }
 
 /// get an ordered list of call-chains ranked based on 'metric' that are inbound on a point.
-pub fn get_call_chain_list(data: &Stitched, proc_oper: &str, metric: &str) -> ProcessList {
+fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -> ProcessList {
     let proc_list = match data
         .call_chain
         .iter()
@@ -118,11 +136,64 @@ pub fn get_call_chain_list(data: &Stitched, proc_oper: &str, metric: &str) -> Pr
                     }
                 })
                 .collect()
+        },
+        None => {
+            error!("Could not find section for proces_oper = '{proc_oper}'");
+            Vec::new()
         }
-        None => Vec::new(),
     };
 
-    reorder_process_list(proc_list, metric)
+    reorder_and_renumber(proc_list, metric)
+}
+
+
+/// get an ordered list of call-chains ranked based on 'metric' that are end2end process (from end-point to leaf-process of the call-chain).
+fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str) -> ProcessList {
+    let re = Regex::new(proc_oper).expect("Failed to create regex for proc_oper");
+
+    let proc_list = data
+        .call_chain
+        .iter()
+        .flat_map(|(_k, ccd_vec)| {
+            ccd_vec
+                .iter()
+                .filter(|ccd| ccd.is_leaf)
+                .filter(|ccd| re.find(&ccd.full_key).is_some())
+                .map(|ccd| {
+                    // provide a rank based on the reverse of the index, as the highest rank should be in first position.
+                    let rank = if metric.is_empty() {
+                         -1000.0  // will be rewritten
+                    } else {
+                        get_stitched_set_rank(&ccd.data, metric)
+                    };
+
+                    ProcessListItem {
+                        idx: 0, // will be rewritten
+                        key: ccd.full_key.to_owned(),
+                        display: ccd.inboud_process_key.to_owned(),
+                        rank,
+                    }
+                })
+        })
+        .collect();
+
+    if metric.is_empty() {
+        rank_lexicographic(proc_list)
+    } else {
+        reorder_and_renumber(proc_list, metric)
+    }
+}
+
+/// get an ordered list of call-chains ranked based on 'metric' that are inbound on a point.
+pub fn get_call_chain_list(data: &Stitched, proc_oper: &str, metric: &str, scope: &str) -> ProcessList {
+    match scope {
+        "inbound" | "" => get_call_chain_list_inbound(data, proc_oper, metric), // default option
+        "end2end" => get_call_chain_list_end2end(data, proc_oper, metric),
+        scope => {
+            error!("Unknown scope '{scope}' expected either 'inbound' or 'end2end'.");
+            Vec::new()
+        }
+    }
 }
 
 #[derive(Serialize, Debug)]
