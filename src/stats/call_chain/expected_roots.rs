@@ -33,7 +33,7 @@ impl ExpectedRoots {
         }
     }
 
-    /// Find the most frequent end-point out of a list 
+    /// Find the most frequent end-point out of a list
     pub fn get_frequent_endpoint(&mut self) -> Option<String> {
         match self.0.len() {
             0 => None,
