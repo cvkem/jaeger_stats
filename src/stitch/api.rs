@@ -293,8 +293,8 @@ impl ChartDataParameters {
                 }
             };
             let best_fit = match st_line.best_fit {
-                BestFit::ExprRegr => format!("Exponential ({:.1}%)", growth.unwrap_or(-1000.0)),
-                BestFit::LinRegr => format!("Lineair ({:.1}%)", growth.unwrap_or(-1000.0)),
+                BestFit::ExprRegr => format!("Exponential ({:.1}%), R2={:.2}", growth.unwrap_or(-1000.0), st_line.exp_regr.as_ref().expect("missing exp_regr").R_squared),
+                BestFit::LinRegr => format!("Linear ({:.1}%), R2={:.2}", growth.unwrap_or(-1000.0), st_line.lin_regr.as_ref().expect("missing lin_regr").R_squared),
                 BestFit::None => "None".to_string(),
             };
             vec![
