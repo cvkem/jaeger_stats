@@ -425,13 +425,13 @@ impl StatsRec {
                     // fix the non-rooted paths by a rewrite of the key
                     let mut fix_failed = 0;
                     non_rooted.iter_mut()
-                        .for_each(|(k, v)| {
+                        .for_each(|(cck, v)| {
                             if let Some(expect_cc) = v
                                 .expect_root
-                                .get_frequent_end_point()
+                                .get_frequent_endpoint()
                                 .and_then(|end_point| cchain_cache.get_cchain_key(&CChainEndPointCache::str_to_cache_key(&end_point)))
                             {
-                                if k.remap_callchain(expect_cc) {
+                                if cck.remap_callchain(expect_cc) {
                                     assert!(!v.rooted);  // should be false
                                     num_fixes += 1;
                                     v.rooted = true;

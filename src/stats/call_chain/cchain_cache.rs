@@ -24,7 +24,7 @@ impl EndPointCChains {
         Some(Self { dirty, chains })
     }
 
-    /// udpate the entry with the provided chains. If updates are needed set dirty-flag to false
+    /// Update the entry with the provided chains. If updates are needed set dirty-flag to false
     pub fn update_chains(&mut self, check_chains: Vec<CChainStatsKey>) {
         let new_entries: Vec<_> = check_chains
             .into_iter()

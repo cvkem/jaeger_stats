@@ -162,7 +162,7 @@ fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str) -
                 .map(|ccd| {
                     // provide a rank based on the reverse of the index, as the highest rank should be in first position.
                     let rank = if metric.is_empty() {
-                         -1000.0  // will be rewritten
+                         -1000.0  // will be rewritten before returning this value
                     } else {
                         get_stitched_set_rank(&ccd.data, metric)
                     };
