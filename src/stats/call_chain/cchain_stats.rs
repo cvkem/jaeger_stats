@@ -143,6 +143,7 @@ impl CChainStatsKey {
     }
 
     /// try to remap a non-rooted call-chain based on expected call chains and return whether the remapping succeeded.
+    /// TODO: also return the missing prefix such that it can be corrected later in the overall stats?
     pub fn remap_callchain(&mut self, expected_cc: &EndPointCChains) -> bool {
         let cc_len = self.call_chain.len();
         let matches: Vec<_> = expected_cc

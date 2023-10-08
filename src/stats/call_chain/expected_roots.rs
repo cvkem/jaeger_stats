@@ -33,12 +33,13 @@ impl ExpectedRoots {
         }
     }
 
-    pub fn get_frequent_end_point(&mut self) -> Option<String> {
+    /// Find the most frequent end-point out of a list 
+    pub fn get_frequent_endpoint(&mut self) -> Option<String> {
         match self.0.len() {
             0 => None,
             1 => Some(self.0[0].proc_oper.to_string()),
             n => {
-                println!("Select best key out of {n} end_points");
+                println!("Select best key out of {n} end-points");
                 let mut idx = 0;
                 for i in 1..(self.0.len()) {
                     if self.0[i].count > self.0[idx].count {
