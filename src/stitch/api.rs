@@ -14,17 +14,44 @@ pub struct ProcessListItem {
 
 type ProcessList = Vec<ProcessListItem>;
 
+
+/// Map a numberal string like for example "02" to the string "Febr".
+fn get_month_description(month: &str) -> &str {
+    match month {
+        "01" => "Jan",
+        "02" => "Febr",
+        "03" => "March",
+        "04" => "April",
+        "05" => "May",
+        "06" => "June",
+        "07" => "July",
+        "08" => "Aug",
+        "09" => "Sept",
+        "10" => "Oct",
+        "11" => "Nov",
+        "12" => "Dec",
+        month => panic!("Invalid month {month} expecting string with exactly two digits and zero-prefixed for jan-sept.")
+    }
+}
+
 /// find the list of labels for the graphs by extracting them from the source-list descriptions.
+/// The description is assume to contain a sub-string yyyymmdd, so for example "20231008". For this string the output Sept 8 is produced.
 pub fn get_label_list(data: &Stitched) -> Vec<String> {
-    let re = Regex::new(r"[0-9]{8}").expect("Failed to create regexp for dates");
+    // TODO: we could guard against multiple matches being present
+    let re = Regex::new(r"(\d{4})(\d{2})(\d{2})").expect("Failed to create regexp for dates");
 
     data.sources
         .0
         .iter()
         .filter(|src| src.column.is_some())
         .enumerate()
-        .map(|(idx, src)| match re.find(&src.description) {
-            Some(label) => label.as_str().to_owned(),
+        .map(|(idx, src)| match re.captures(&src.description).map(|caps| caps.extract()) {
+            Some((_full, [_year, month, day])) => {
+                let month = get_month_description(month);
+                // remove the 0-prefix if it exists
+                let day = if day.chars().next() == Some('0') { &day[1..] } else { day };
+                format!("{month}-{day}") 
+            },
             None => format!("{}", idx),
         })
         .collect()
