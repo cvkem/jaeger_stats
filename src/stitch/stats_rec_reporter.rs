@@ -13,16 +13,20 @@ impl SRReportItem {
         Self { label, processor }
     }
 
+    /// extract values
+    pub fn extract_data(&self, data: &[Option<StatsRec>]) -> Vec<Option<f64>> {
+        data.iter()
+            .map(|ms| ms.as_ref().and_then(self.processor))
+            .collect::<Vec<_>>()
+    }
+
     /// extract a line of stitched data for the current report item.
     pub fn extract_stitched_line(
         &self,
         data: &[Option<StatsRec>],
         pars: &AnomalyParameters,
     ) -> StitchedLine {
-        let values = data
-            .iter()
-            .map(|ms| ms.as_ref().and_then(self.processor))
-            .collect::<Vec<_>>();
+        let values = self.extract_data(data);
 
         StitchedLine::new(self.label.to_string(), values, pars)
     }

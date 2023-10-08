@@ -1,3 +1,4 @@
+use super::stitch_tables::BASIC_REPORT_ITEMS;
 use crate::{BestFit, Stitched, StitchedLine, StitchedSet};
 use log::error;
 use regex::Regex;
@@ -13,7 +14,6 @@ pub struct ProcessListItem {
 }
 
 type ProcessList = Vec<ProcessListItem>;
-
 
 /// Map a numberal string like for example "02" to the string "Febr".
 fn get_month_description(month: &str) -> &str {
@@ -45,15 +45,21 @@ pub fn get_label_list(data: &Stitched) -> Vec<String> {
         .iter()
         .filter(|src| src.column.is_some())
         .enumerate()
-        .map(|(idx, src)| match re.captures(&src.description).map(|caps| caps.extract()) {
-            Some((_full, [_year, month, day])) => {
-                let month = get_month_description(month);
-                // remove the 0-prefix if it exists
-                let day = if day.chars().next() == Some('0') { &day[1..] } else { day };
-                format!("{month}-{day}") 
+        .map(
+            |(idx, src)| match re.captures(&src.description).map(|caps| caps.extract()) {
+                Some((_full, [_year, month, day])) => {
+                    let month = get_month_description(month);
+                    // remove the 0-prefix if it exists
+                    let day = if day.chars().next() == Some('0') {
+                        &day[1..]
+                    } else {
+                        day
+                    };
+                    format!("{month}-{day}")
+                }
+                None => format!("{}", idx),
             },
-            None => format!("{}", idx),
-        })
+        )
         .collect()
 }
 
@@ -87,12 +93,9 @@ fn rank_lexicographic(mut proc_list: ProcessList) -> ProcessList {
     let list_len = proc_list.len();
 
     // renumber for new ordering
-    proc_list
-        .iter_mut()
-        .enumerate()
-        .for_each(|(idx, pli)| {
-            pli.idx = idx + 1;
-            pli.rank = (list_len -idx) as f64;
+    proc_list.iter_mut().enumerate().for_each(|(idx, pli)| {
+        pli.idx = idx + 1;
+        pli.rank = (list_len - idx) as f64;
     });
 
     proc_list
@@ -163,7 +166,7 @@ fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -
                     }
                 })
                 .collect()
-        },
+        }
         None => {
             error!("Could not find section for proces_oper = '{proc_oper}'");
             Vec::new()
@@ -172,7 +175,6 @@ fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -
 
     reorder_and_renumber(proc_list, metric)
 }
-
 
 /// get an ordered list of call-chains ranked based on 'metric' that are end2end process (from end-point to leaf-process of the call-chain).
 fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str) -> ProcessList {
@@ -189,7 +191,7 @@ fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str) -
                 .map(|ccd| {
                     // provide a rank based on the reverse of the index, as the highest rank should be in first position.
                     let rank = if metric.is_empty() {
-                         -1000.0  // will be rewritten before returning this value
+                        -1000.0 // will be rewritten before returning this value
                     } else {
                         get_stitched_set_rank(&ccd.data, metric)
                     };
@@ -212,7 +214,12 @@ fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str) -
 }
 
 /// get an ordered list of call-chains ranked based on 'metric' that are inbound on a point.
-pub fn get_call_chain_list(data: &Stitched, proc_oper: &str, metric: &str, scope: &str) -> ProcessList {
+pub fn get_call_chain_list(
+    data: &Stitched,
+    proc_oper: &str,
+    metric: &str,
+    scope: &str,
+) -> ProcessList {
     match scope {
         "inbound" | "" => get_call_chain_list_inbound(data, proc_oper, metric), // default option
         "end2end" => get_call_chain_list_end2end(data, proc_oper, metric),
@@ -278,20 +285,16 @@ impl ChartDataParameters {
             let growth = st_line.periodic_growth().map(|v| v * 100.0);
             if growth.is_none() {
                 match st_line.best_fit {
-                    BestFit::LinRegr | BestFit::ExprRegr => error!("Could not find growth value for best-fit model {:?} ", st_line.best_fit),
-                    BestFit::None => ()
-
+                    BestFit::LinRegr | BestFit::ExprRegr => error!(
+                        "Could not find growth value for best-fit model {:?} ",
+                        st_line.best_fit
+                    ),
+                    BestFit::None => (),
                 }
             };
             let best_fit = match st_line.best_fit {
-                BestFit::ExprRegr => format!(
-                    "Exponential ({:.1}%)",
-                    growth.unwrap_or(-1000.0)
-                ),
-                BestFit::LinRegr => format!(
-                    "Lineair ({:.1}%)",
-                    growth.unwrap_or(-1000.0)
-                ),
+                BestFit::ExprRegr => format!("Exponential ({:.1}%)", growth.unwrap_or(-1000.0)),
+                BestFit::LinRegr => format!("Lineair ({:.1}%)", growth.unwrap_or(-1000.0)),
                 BestFit::None => "None".to_string(),
             };
             vec![
@@ -331,7 +334,6 @@ pub fn get_proc_oper_chart_data(
         }
     }
 }
-
 
 // PROCESS OPTIMIZED VERSION, but less generic.
 // /// the the chart-data for a specific call-chain (within a process context)
@@ -380,25 +382,47 @@ pub fn get_call_chain_chart_data(
     let proc: Vec<_> = data
         .call_chain
         .iter()
-        .flat_map(|(_k, ccd_vec)| {
-            ccd_vec
-                .iter()
-                .filter(|ccd| ccd.full_key == call_chain_key)
-        })
+        .flat_map(|(_k, ccd_vec)| ccd_vec.iter().filter(|ccd| ccd.full_key == call_chain_key))
         .collect();
     match proc.len() {
         0 => {
             error!("Could not find call-chain '{call_chain_key}'");
             None
-        },
+        }
         n => {
             if n > 1 {
                 error!("Observed {n} matches for key {call_chain_key}. Returning first match only");
             };
-            proc[0]
-                .data
-                .get_metric_stitched_line(metric)
-                .map(|sl| ChartDataParameters::new(call_chain_key, metric, get_label_list(data),sl))
+            proc[0].data.get_metric_stitched_line(metric).map(|sl| {
+                ChartDataParameters::new(call_chain_key, metric, get_label_list(data), sl)
+            })
         }
+    }
+}
+
+#[derive(Serialize, Debug)]
+pub struct Table {
+    pub column_labels: Vec<String>,
+    pub data: Vec<ChartLine>,
+}
+
+pub fn get_file_stats(data: &Stitched) -> Table {
+    // let values = BASIC_REPORT_ITEMS
+    //     .iter()
+    //     .map(|sr| sr.extract_data(&data.basic))
+    //     .collect();
+    let values = data
+        .basic
+        .0
+        .iter()
+        .map(|sl| ChartLine {
+            label: sl.label.to_owned(),
+            data: sl.data.clone(),
+        })
+        .collect();
+
+    Table {
+        column_labels: get_label_list(data),
+        data: values,
     }
 }
