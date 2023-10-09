@@ -1,19 +1,23 @@
-use super::stitch_tables::BASIC_REPORT_ITEMS;
 use crate::{BestFit, Stitched, StitchedLine, StitchedSet};
 use log::error;
 use regex::Regex;
 use serde::Serialize;
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::HashMap};
 
 #[derive(Serialize)]
 pub struct ProcessListItem {
-    pub idx: usize,
+    pub idx: i64,
     pub key: String,
     pub display: String, // the display can be used in select-boxes, but is nog guaranteed to be unique (at least nog for a Call-chain list.)
     pub rank: f64,
+    pub avg_count: i64,
+    pub chain_type: String,
+    pub inbound_idx: i64 
 }
 
 type ProcessList = Vec<ProcessListItem>;
+
+const DEFAULT_RANK: f64 = -1.0;  // indicates growth not defined
 
 /// Map a numberal string like for example "02" to the string "Febr".
 fn get_month_description(month: &str) -> &str {
@@ -69,7 +73,19 @@ fn get_stitched_set_rank(stitch_set: &StitchedSet, metric: &str) -> f64 {
     let line = stitch_set
         .get_metric_stitched_line(metric)
         .unwrap_or_else(|| panic!("Could not find ranking-metric '{}'", metric));
-    line.periodic_growth().unwrap_or(-1000.0)
+    line.periodic_growth().unwrap_or(DEFAULT_RANK)
+}
+
+/// get the average count of this process or call-chain over a measurements.
+fn get_stitched_set_count(stitch_set: &StitchedSet) -> i64 {
+    let metric = "count";
+    let line = stitch_set
+        .get_metric_stitched_line(metric)
+        .unwrap_or_else(|| panic!("Could not find metric '{}'", metric));
+    match line.data_avg {
+        Some(avg) => avg.round() as i64,
+        None => 0
+    }
 }
 
 /// Reorder the list of processes based on the rank field and renumber if the 'metric' is set.
@@ -81,7 +97,7 @@ fn reorder_and_renumber(mut proc_list: ProcessList, metric: &str) -> ProcessList
         proc_list
             .iter_mut()
             .enumerate()
-            .for_each(|(idx, pli)| pli.idx = idx + 1);
+            .for_each(|(idx, pli)| pli.idx = (idx + 1) as i64);
     }
 
     proc_list
@@ -94,7 +110,7 @@ fn rank_lexicographic(mut proc_list: ProcessList) -> ProcessList {
 
     // renumber for new ordering
     proc_list.iter_mut().enumerate().for_each(|(idx, pli)| {
-        pli.idx = idx + 1;
+        pli.idx = (idx + 1) as i64;
         pli.rank = (list_len - idx) as f64;
     });
 
@@ -116,12 +132,16 @@ pub fn get_process_list(data: &Stitched, metric: &str) -> ProcessList {
             } else {
                 get_stitched_set_rank(&po.1, metric)
             };
+            let avg_count = get_stitched_set_count(&po.1);
 
             ProcessListItem {
-                idx: idx + 1,
+                idx: (idx + 1) as i64,
                 key: po.0.to_owned(),
                 display: po.0.to_owned(),
                 rank,
+                avg_count,
+                chain_type: String::new(),
+                inbound_idx: 0,
             }
         })
         .collect();
@@ -158,11 +178,16 @@ fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -
                         );
                     }
 
+                    let avg_count = get_stitched_set_count(&ccd.data);
+
                     ProcessListItem {
-                        idx: idx + 1,
+                        idx: (idx + 1) as i64,
                         key: ccd.full_key.to_owned(),
                         display: ccd.inboud_process_key.to_owned(),
                         rank,
+                        avg_count,
+                        chain_type: ccd.chain_type().to_owned(),
+                        inbound_idx: 0,
                     }
                 })
                 .collect()
@@ -176,13 +201,86 @@ fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -
     reorder_and_renumber(proc_list, metric)
 }
 
+
+struct InboundPrefixIdxItem {
+    prefix: String,
+    idx: i64,
+}
+
+struct InboundPrefixIdx ( Vec<InboundPrefixIdxItem> );
+
+impl InboundPrefixIdx {
+    /// get the map of inbound-processes that maps the prefix to a process-id.
+    fn new(data: &Stitched, proc_oper: &str) -> Self {
+        let po_items: Vec<_> = data
+            .call_chain
+            .iter()
+            .filter(|(k, _v)| k == proc_oper)
+            .map(|(_k, v)| v)
+            .next()
+            .unwrap_or_else(|| panic!("There should be a least on instance of proc_oper: {proc_oper}"))
+            .iter()
+            .enumerate()
+            .map(|(idx, ccd)| {
+                let parts: Vec<_> = ccd.full_key.split("&").collect();
+                if parts.len() != 3 {
+                    panic!("full-key was split in {} parts, i.e. {parts:?} (3 parts expected)", parts.len());
+                }
+                let prefix = parts[0].trim();
+                let idx = (idx + 1) as i64;
+                (ccd.is_leaf, prefix, idx)
+            })
+            .collect();
+        let mut inbound_idx_map = HashMap::new();
+        // First insert tails.
+        po_items
+            .iter()
+            .filter(|(is_leaf, _, _)| *is_leaf)
+            .for_each(|(_, prefix, idx)| { _ = inbound_idx_map.insert((*prefix).to_string(), *idx);});
+        // Next overwrite with the non-tails
+        po_items
+            .iter()
+            .filter(|(is_leaf, _, _)| !*is_leaf)
+            .for_each(|(_, prefix, idx)| { _ = inbound_idx_map.insert((*prefix).to_string(), *idx);});
+        let mut inbound_idx_list = InboundPrefixIdx ( inbound_idx_map
+            .into_iter()
+            .map(|(prefix, idx)| InboundPrefixIdxItem{prefix, idx })
+            .collect() );
+        inbound_idx_list
+            .0
+            .sort_by(|a, b| match (a.prefix.len(), b.prefix.len()) {
+                    (al, bl) if al > bl => Ordering::Less,
+                    (al, bl) if al < bl => Ordering::Greater,
+                    _ => Ordering::Equal
+            });
+        inbound_idx_list
+    }
+
+    /// the the matching prefix, or return 0
+    fn get_idx(&self, full_key: &str) -> i64 {
+        match self
+            .0
+            .iter()
+            .filter(|iit| full_key.starts_with(&iit.prefix))
+            .next() {
+                Some(iit) => iit.idx,
+                None => 0  // no match found
+            }
+    }
+
+}
+
+
 /// get an ordered list of call-chains ranked based on 'metric' that are end2end process (from end-point to leaf-process of the call-chain).
 fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str) -> ProcessList {
     let re = Regex::new(proc_oper).expect("Failed to create regex for proc_oper");
 
+    let inbound_prefix_idx = InboundPrefixIdx::new(data, proc_oper);
+
     let proc_list = data
         .call_chain
         .iter()
+        .filter(|(k, _ccd)| k != proc_oper)  // these are already reported as inbound chains
         .flat_map(|(_k, ccd_vec)| {
             ccd_vec
                 .iter()
@@ -191,16 +289,21 @@ fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str) -
                 .map(|ccd| {
                     // provide a rank based on the reverse of the index, as the highest rank should be in first position.
                     let rank = if metric.is_empty() {
-                        -1000.0 // will be rewritten before returning this value
+                        DEFAULT_RANK // will be rewritten before returning this value
                     } else {
                         get_stitched_set_rank(&ccd.data, metric)
                     };
+                    let avg_count = get_stitched_set_count(&ccd.data);
 
+                    let inbound_idx = inbound_prefix_idx.get_idx(&ccd.full_key);  // TODO
                     ProcessListItem {
                         idx: 0, // will be rewritten
                         key: ccd.full_key.to_owned(),
                         display: ccd.inboud_process_key.to_owned(),
                         rank,
+                        avg_count,
+                        chain_type: ccd.chain_type().to_owned(),
+                        inbound_idx
                     }
                 })
         })
@@ -293,8 +396,8 @@ impl ChartDataParameters {
                 }
             };
             let best_fit = match st_line.best_fit {
-                BestFit::ExprRegr => format!("Exponential ({:.1}%), R2={:.2}", growth.unwrap_or(-1000.0), st_line.exp_regr.as_ref().expect("missing exp_regr").R_squared),
-                BestFit::LinRegr => format!("Linear ({:.1}%), R2={:.2}", growth.unwrap_or(-1000.0), st_line.lin_regr.as_ref().expect("missing lin_regr").R_squared),
+                BestFit::ExprRegr => format!("Exponential ({:.1}%), R2={:.2}", growth.unwrap_or(DEFAULT_RANK), st_line.exp_regr.as_ref().expect("missing exp_regr").R_squared),
+                BestFit::LinRegr => format!("Linear ({:.1}%), R2={:.2}", growth.unwrap_or(DEFAULT_RANK), st_line.lin_regr.as_ref().expect("missing lin_regr").R_squared),
                 BestFit::None => "None".to_string(),
             };
             vec![

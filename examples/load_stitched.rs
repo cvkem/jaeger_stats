@@ -73,17 +73,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     {
         /// Showing Call_chains
-        let proc_list = get_call_chain_list(&data, PROCESS, FILTER_METRIC);
+        let proc_list = get_call_chain_list(&data, PROCESS, FILTER_METRIC, "end2end");
 
         dump_proc_list("cc_proces_list_mock.json", &proc_list);
 
-        let chart_data = get_call_chain_chart_data(&data, PROCESS, PROCESS, FILTER_METRIC);
+        let chart_data = get_call_chain_chart_data(&data, PROCESS, FILTER_METRIC);
 
         dump_chart_data("cc_charts_mock.json", &chart_data);
     }
 
     println!("{:?}", get_label_list(&data));
 
+    
     // if SHOW_STDOUT {
     //     println!("{:#?}", data);
     // }

@@ -34,6 +34,17 @@ pub struct CallChainData {
     pub data: StitchedSet,
 }
 
+impl CallChainData {
+    pub fn chain_type(&self) -> &str {
+        match (self.rooted, self.is_leaf) {
+            (true, true) => "end2end",
+            (true, false) => "partial",
+            (false, true) => "unrooted-leaf",
+            (false, false) => "floating"
+        }
+    }
+}
+
 #[derive(Default, Serialize, Deserialize)]
 pub struct Stitched {
     /// the list of input-files (one per analysis) that are used.
