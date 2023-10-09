@@ -505,6 +505,7 @@ pub fn get_call_chain_chart_data(
 }
 
 #[derive(Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Table {
     pub column_labels: Vec<String>,
     pub data: Vec<ChartLine>,
