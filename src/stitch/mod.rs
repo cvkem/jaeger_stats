@@ -20,7 +20,7 @@ mod stitched_set;
 pub use anomalies::AnomalyParameters;
 pub use api::{
     get_call_chain_chart_data, get_call_chain_list, get_file_stats, get_label_list,
-    get_proc_oper_chart_data, get_process_list, ChartDataParameters, ChartLine, ProcessListItem,
+    get_proc_oper_chart_data, get_process_list, ChartDataParameters, ChartLine, ProcessListItem, Table
 };
 pub use stitch_list::StitchList;
 pub use stitched::{StitchParameters, Stitched};

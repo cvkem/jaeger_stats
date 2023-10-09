@@ -23,6 +23,6 @@ pub use utils::{
 pub use stitch::{
     get_call_chain_chart_data, get_call_chain_list, get_file_stats, get_label_list,
     get_proc_oper_chart_data, get_process_list, AnomalyParameters, BestFit, ChartDataParameters,
-    ChartLine, ProcessListItem, StitchList, StitchParameters, Stitched, StitchedLine, StitchedSet,
+    ChartLine, ProcessListItem, StitchList, StitchParameters, Stitched, StitchedLine, StitchedSet, Table
 };
 pub use trace_analysis::analyze_file_or_folder;
