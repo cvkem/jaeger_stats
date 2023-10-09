@@ -5,6 +5,7 @@ use serde::Serialize;
 use std::{cmp::Ordering, collections::HashMap};
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProcessListItem {
     pub idx: i64,
     pub key: String,
