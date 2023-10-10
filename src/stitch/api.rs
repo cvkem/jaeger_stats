@@ -1,8 +1,9 @@
 use crate::{BestFit, Stitched, StitchedLine, StitchedSet};
+use super::inbound_prefix_idx::InboundPrefixIdx;
 use log::error;
 use regex::Regex;
 use serde::Serialize;
-use std::{cmp::Ordering, collections::HashMap};
+use std::cmp::Ordering;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -201,76 +202,6 @@ fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -
 
     reorder_and_renumber(proc_list, metric)
 }
-
-
-struct InboundPrefixIdxItem {
-    prefix: String,
-    idx: i64,
-}
-
-struct InboundPrefixIdx ( Vec<InboundPrefixIdxItem> );
-
-impl InboundPrefixIdx {
-    /// get the map of inbound-processes that maps the prefix to a process-id.
-    fn new(data: &Stitched, proc_oper: &str) -> Self {
-        let po_items: Vec<_> = data
-            .call_chain
-            .iter()
-            .filter(|(k, _v)| k == proc_oper)
-            .map(|(_k, v)| v)
-            .next()
-            .unwrap_or_else(|| panic!("There should be a least on instance of proc_oper: {proc_oper}"))
-            .iter()
-            .enumerate()
-            .map(|(idx, ccd)| {
-                let parts: Vec<_> = ccd.full_key.split("&").collect();
-                if parts.len() != 3 {
-                    panic!("full-key was split in {} parts, i.e. {parts:?} (3 parts expected)", parts.len());
-                }
-                let prefix = parts[0].trim();
-                let idx = (idx + 1) as i64;
-                (ccd.is_leaf, prefix, idx)
-            })
-            .collect();
-        let mut inbound_idx_map = HashMap::new();
-        // First insert tails.
-        po_items
-            .iter()
-            .filter(|(is_leaf, _, _)| *is_leaf)
-            .for_each(|(_, prefix, idx)| { _ = inbound_idx_map.insert((*prefix).to_string(), *idx);});
-        // Next overwrite with the non-tails
-        po_items
-            .iter()
-            .filter(|(is_leaf, _, _)| !*is_leaf)
-            .for_each(|(_, prefix, idx)| { _ = inbound_idx_map.insert((*prefix).to_string(), *idx);});
-        let mut inbound_idx_list = InboundPrefixIdx ( inbound_idx_map
-            .into_iter()
-            .map(|(prefix, idx)| InboundPrefixIdxItem{prefix, idx })
-            .collect() );
-        inbound_idx_list
-            .0
-            .sort_by(|a, b| match (a.prefix.len(), b.prefix.len()) {
-                    (al, bl) if al > bl => Ordering::Less,
-                    (al, bl) if al < bl => Ordering::Greater,
-                    _ => Ordering::Equal
-            });
-        inbound_idx_list
-    }
-
-    /// the the matching prefix, or return 0
-    fn get_idx(&self, full_key: &str) -> i64 {
-        match self
-            .0
-            .iter()
-            .filter(|iit| full_key.starts_with(&iit.prefix))
-            .next() {
-                Some(iit) => iit.idx,
-                None => 0  // no match found
-            }
-    }
-
-}
-
 
 /// get an ordered list of call-chains ranked based on 'metric' that are end2end process (from end-point to leaf-process of the call-chain).
 fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str) -> ProcessList {

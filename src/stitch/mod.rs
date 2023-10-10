@@ -8,6 +8,7 @@ mod anomalies;
 mod api;
 mod call_chain_reporter;
 mod dataseries;
+mod inbound_prefix_idx;
 mod key;
 mod proc_oper_stats_reporter;
 mod stats_rec_reporter;
