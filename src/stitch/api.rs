@@ -204,7 +204,7 @@ fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -
 }
 
 /// get an ordered list of call-chains ranked based on 'metric' that are end2end process (from end-point to leaf-process of the call-chain).
-fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str) -> ProcessList {
+fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str, all_chains: bool) -> ProcessList {
     let re = Regex::new(proc_oper).expect("Failed to create regex for proc_oper");
 
     let inbound_prefix_idx = InboundPrefixIdx::new(data, proc_oper);
@@ -216,7 +216,7 @@ fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str) -
         .flat_map(|(_k, ccd_vec)| {
             ccd_vec
                 .iter()
-                .filter(|ccd| ccd.is_leaf)
+                .filter(|ccd| all_chains || ccd.is_leaf)
                 .filter(|ccd| re.find(&ccd.full_key).is_some())
                 .map(|ccd| {
                     // provide a rank based on the reverse of the index, as the highest rank should be in first position.
@@ -257,9 +257,10 @@ pub fn get_call_chain_list(
 ) -> ProcessList {
     match scope {
         "inbound" | "" => get_call_chain_list_inbound(data, proc_oper, metric), // default option
-        "end2end" => get_call_chain_list_end2end(data, proc_oper, metric),
+        "end2end" => get_call_chain_list_end2end(data, proc_oper, metric, false),
+        "all" => get_call_chain_list_end2end(data, proc_oper, metric, true),
         scope => {
-            error!("Unknown scope '{scope}' expected either 'inbound' or 'end2end'.");
+            error!("Unknown scope '{scope}' expected either 'inbound', 'end2end' or 'all'.");
             Vec::new()
         }
     }
