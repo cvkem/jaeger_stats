@@ -204,7 +204,7 @@ fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -
 }
 
 /// get an ordered list of call-chains ranked based on 'metric' that are end2end process (from end-point to leaf-process of the call-chain).
-fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str, all_chains: bool) -> ProcessList {
+fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str, all_chains: bool, inbound_idx_filter: Option<i64>) -> ProcessList {
     let re = Regex::new(proc_oper).expect("Failed to create regex for proc_oper");
 
     let inbound_prefix_idx = InboundPrefixIdx::new(data, proc_oper);
@@ -218,7 +218,7 @@ fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str, a
                 .iter()
                 .filter(|ccd| all_chains || ccd.is_leaf)
                 .filter(|ccd| re.find(&ccd.full_key).is_some())
-                .map(|ccd| {
+                .filter_map(|ccd| {
                     // provide a rank based on the reverse of the index, as the highest rank should be in first position.
                     let rank = if metric.is_empty() {
                         DEFAULT_RANK // will be rewritten before returning this value
@@ -227,15 +227,19 @@ fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str, a
                     };
                     let avg_count = get_stitched_set_count(&ccd.data);
 
-                    let inbound_idx = inbound_prefix_idx.get_idx(&ccd.full_key);  // TODO
-                    ProcessListItem {
-                        idx: 0, // will be rewritten
-                        key: ccd.full_key.to_owned(),
-                        display: ccd.inboud_process_key.to_owned(),
-                        rank,
-                        avg_count,
-                        chain_type: ccd.chain_type().to_owned(),
-                        inbound_idx
+                    let inbound_idx = inbound_prefix_idx.get_idx(&ccd.full_key);
+                    if inbound_idx_filter.is_none() || inbound_idx_filter == Some(inbound_idx) {
+                        Some(ProcessListItem {
+                            idx: 0, // will be rewritten
+                            key: ccd.full_key.to_owned(),
+                            display: ccd.inboud_process_key.to_owned(),
+                            rank,
+                            avg_count,
+                            chain_type: ccd.chain_type().to_owned(),
+                            inbound_idx
+                        })
+                    } else {
+                        None  // inbound_idx does not match the filter
                     }
                 })
         })
@@ -254,11 +258,12 @@ pub fn get_call_chain_list(
     proc_oper: &str,
     metric: &str,
     scope: &str,
+    inbound_idx: Option<i64>,
 ) -> ProcessList {
     match scope {
         "inbound" | "" => get_call_chain_list_inbound(data, proc_oper, metric), // default option
-        "end2end" => get_call_chain_list_end2end(data, proc_oper, metric, false),
-        "all" => get_call_chain_list_end2end(data, proc_oper, metric, true),
+        "end2end" => get_call_chain_list_end2end(data, proc_oper, metric, false, inbound_idx),
+        "all" => get_call_chain_list_end2end(data, proc_oper, metric, true, inbound_idx),
         scope => {
             error!("Unknown scope '{scope}' expected either 'inbound', 'end2end' or 'all'.");
             Vec::new()
