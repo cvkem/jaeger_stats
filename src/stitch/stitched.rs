@@ -40,7 +40,7 @@ impl CallChainData {
             (true, true) => "end2end",
             (true, false) => "partial",
             (false, true) => "unrooted-leaf",
-            (false, false) => "floating"
+            (false, false) => "floating",
         }
     }
 }
