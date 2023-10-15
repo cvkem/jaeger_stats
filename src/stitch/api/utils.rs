@@ -1,25 +1,13 @@
+use super::{
+    inbound_prefix_idx::InboundPrefixIdx,
+    types::{ChartDataParameters, ChartLine, ProcessList, ProcessListItem, Table},
+};
 use crate::{BestFit, Stitched, StitchedLine, StitchedSet};
-use super::inbound_prefix_idx::InboundPrefixIdx;
 use log::error;
 use regex::Regex;
-use serde::Serialize;
 use std::cmp::Ordering;
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ProcessListItem {
-    pub idx: i64,
-    pub key: String,
-    pub display: String, // the display can be used in select-boxes, but is nog guaranteed to be unique (at least nog for a Call-chain list.)
-    pub rank: f64,
-    pub avg_count: i64,
-    pub chain_type: String,
-    pub inbound_idx: i64 
-}
-
-type ProcessList = Vec<ProcessListItem>;
-
-const DEFAULT_RANK: f64 = -1.0;  // indicates growth not defined
+const DEFAULT_RANK: f64 = -1.0; // indicates growth not defined
 
 /// Map a numberal string like for example "02" to the string "Febr".
 fn get_month_description(month: &str) -> &str {
@@ -86,7 +74,7 @@ fn get_stitched_set_count(stitch_set: &StitchedSet) -> i64 {
         .unwrap_or_else(|| panic!("Could not find metric '{}'", metric));
     match line.data_avg {
         Some(avg) => avg.round() as i64,
-        None => 0
+        None => 0,
     }
 }
 
@@ -204,7 +192,13 @@ fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -
 }
 
 /// get an ordered list of call-chains ranked based on 'metric' that are end2end process (from end-point to leaf-process of the call-chain).
-fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str, all_chains: bool, inbound_idx_filter: Option<i64>) -> ProcessList {
+fn get_call_chain_list_end2end(
+    data: &Stitched,
+    proc_oper: &str,
+    metric: &str,
+    all_chains: bool,
+    inbound_idx_filter: Option<i64>,
+) -> ProcessList {
     let re = Regex::new(proc_oper).expect("Failed to create regex for proc_oper");
 
     let inbound_prefix_idx = InboundPrefixIdx::new(data, proc_oper);
@@ -212,7 +206,7 @@ fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str, a
     let proc_list = data
         .call_chain
         .iter()
-        .filter(|(k, _ccd)| k != proc_oper)  // these are already reported as inbound chains
+        .filter(|(k, _ccd)| k != proc_oper) // these are already reported as inbound chains
         .flat_map(|(_k, ccd_vec)| {
             ccd_vec
                 .iter()
@@ -236,10 +230,10 @@ fn get_call_chain_list_end2end(data: &Stitched, proc_oper: &str, metric: &str, a
                             rank,
                             avg_count,
                             chain_type: ccd.chain_type().to_owned(),
-                            inbound_idx
+                            inbound_idx,
                         })
                     } else {
-                        None  // inbound_idx does not match the filter
+                        None // inbound_idx does not match the filter
                     }
                 })
         })
@@ -269,22 +263,6 @@ pub fn get_call_chain_list(
             Vec::new()
         }
     }
-}
-
-#[derive(Serialize, Debug)]
-pub struct ChartLine {
-    pub label: String,
-    pub data: Vec<Option<f64>>,
-}
-
-#[derive(Serialize, Debug)]
-pub struct ChartDataParameters {
-    pub title: String,
-    pub process: String,
-    pub metric: String,
-    pub description: Vec<(String, String)>,
-    pub labels: Vec<String>,
-    pub lines: Vec<ChartLine>,
 }
 
 impl ChartDataParameters {
@@ -334,8 +312,24 @@ impl ChartDataParameters {
                 }
             };
             let best_fit = match st_line.best_fit {
-                BestFit::ExprRegr => format!("Exponential ({:.1}%), R2={:.2}", growth.unwrap_or(DEFAULT_RANK), st_line.exp_regr.as_ref().expect("missing exp_regr").R_squared),
-                BestFit::LinRegr => format!("Linear ({:.1}%), R2={:.2}", growth.unwrap_or(DEFAULT_RANK), st_line.lin_regr.as_ref().expect("missing lin_regr").R_squared),
+                BestFit::ExprRegr => format!(
+                    "Exponential ({:.1}%), R2={:.2}",
+                    growth.unwrap_or(DEFAULT_RANK),
+                    st_line
+                        .exp_regr
+                        .as_ref()
+                        .expect("missing exp_regr")
+                        .R_squared
+                ),
+                BestFit::LinRegr => format!(
+                    "Linear ({:.1}%), R2={:.2}",
+                    growth.unwrap_or(DEFAULT_RANK),
+                    st_line
+                        .lin_regr
+                        .as_ref()
+                        .expect("missing lin_regr")
+                        .R_squared
+                ),
                 BestFit::None => "None".to_string(),
             };
             vec![
@@ -439,13 +433,6 @@ pub fn get_call_chain_chart_data(
             })
         }
     }
-}
-
-#[derive(Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub struct Table {
-    pub column_labels: Vec<String>,
-    pub data: Vec<ChartLine>,
 }
 
 pub fn get_file_stats(data: &Stitched) -> Table {

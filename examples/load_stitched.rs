@@ -1,7 +1,6 @@
 use clap::Parser;
 use jaeger_stats::{
-    get_call_chain_chart_data, get_call_chain_list, get_label_list, get_proc_oper_chart_data,
-    get_process_list, BestFit, ChartDataParameters, ChartLine, ProcessListItem, Stitched,
+    BestFit, ChartDataParameters, ChartLine, ProcessListItem, Stitched, StitchedDataSet,
     StitchedLine, StitchedSet,
 };
 use log::{error, info};
@@ -51,40 +50,33 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Reading stitched from '{input_file}'");
 
     let now = Instant::now();
-    let data = match Stitched::from_json(input_file) {
-        Ok(stitched) => stitched,
-        Err(err) => {
-            error!("Failed to load file '{input_file}'");
-            panic!("Failure during load of file: {input_file}");
-        }
-    };
+    let sd = StitchedDataSet::from_file(&input_file).unwrap();
     println!("Elapsed time after load: {}", now.elapsed().as_secs());
 
     {
         /// Showing Processes
-        let proc_list = get_process_list(&data, FILTER_METRIC);
+        let proc_list = sd.get_process_list(FILTER_METRIC);
 
         dump_proc_list("proces_list_mock.json", &proc_list);
 
-        let chart_data = get_proc_oper_chart_data(&data, PROCESS, FILTER_METRIC);
+        let chart_data = sd.get_proc_oper_chart_data(PROCESS, FILTER_METRIC);
 
         dump_chart_data("charts_mock.json", &chart_data);
     }
 
     {
         /// Showing Call_chains
-        let proc_list = get_call_chain_list(&data, PROCESS, FILTER_METRIC, "end2end");
+        let proc_list = sd.get_call_chain_list(PROCESS, FILTER_METRIC, "end2end", None);
 
         dump_proc_list("cc_proces_list_mock.json", &proc_list);
 
-        let chart_data = get_call_chain_chart_data(&data, PROCESS, FILTER_METRIC);
+        let chart_data = sd.get_call_chain_chart_data(PROCESS, FILTER_METRIC);
 
         dump_chart_data("cc_charts_mock.json", &chart_data);
     }
 
-    println!("{:?}", get_label_list(&data));
+    //    println!("{:?}", sd.get_label_list());
 
-    
     // if SHOW_STDOUT {
     //     println!("{:#?}", data);
     // }
