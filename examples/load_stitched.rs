@@ -35,7 +35,7 @@ fn dump_proc_list(file_name: &str, proc_list: &Vec<ProcessListItem>) {
 fn dump_chart_data(file_name: &str, proc_list: &Option<ChartDataParameters>) {
     let f = fs::File::create(file_name).expect("Failed to open file");
     let writer = io::BufWriter::new(f);
-    // on a large dataset to_write pretty takes 15.5 seconds while to_write takes 12 sec (so 30% extra for pretty printing to make it human readible)
+    // on a large dataset to_write pretty takes 15.5 seconds while to_write takes 12 sec (so 30% extra for pretty printing to make it human-readible)
     match serde_json::to_writer_pretty(writer, proc_list) {
         Ok(()) => (),
         Err(err) => panic!("failed to Serialize !! {err:?}"),
