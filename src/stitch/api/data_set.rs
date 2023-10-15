@@ -87,9 +87,10 @@ impl StitchedDataSet {
     }
 
     pub fn get_file_stats(&self) -> Table {
-        utils::get_file_stats(&self.current)
+        match self.original.as_ref() {
+            Some(ds) => utils::get_file_stats(ds),
+            None => utils::get_file_stats(&self.current)
+        }
     }
 
-    // TODO: implement
-    // get_label_list,
 }
