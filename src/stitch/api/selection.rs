@@ -1,10 +1,10 @@
 use crate::stitch::stitched::CallChainData;
 
 use super::super::{stitch_list::StitchSources, stitched_set::StitchedSet, Stitched};
-use super::{types::Label, utils, Selection};
-use std::rc::Rc;
+use super::{types::SelectLabel, utils, Selection};
+use std::sync::Arc;
 
-impl Label {
+impl SelectLabel {
     pub fn new(idx: i64, label: String) -> Self {
         Self {
             idx,
@@ -19,7 +19,7 @@ pub fn get_full_selection(data: &Stitched) -> Selection {
     utils::get_label_list(data)
         .into_iter()
         .enumerate()
-        .map(|(idx, label)| Label::new(idx as i64, label))
+        .map(|(idx, label)| SelectLabel::new(idx as i64, label))
         .collect()
 }
 
@@ -63,10 +63,10 @@ fn get_call_chain_selection(
 }
 
 /// get a derived dataset that only contains the selected columns
-pub fn get_derived_stitched(original: &Stitched, selection: &Vec<bool>) -> Rc<Stitched> {
+pub fn get_derived_stitched(original: &Stitched, selection: &Vec<bool>) -> Arc<Stitched> {
     let process_operation = get_proc_oper_selection(original, selection);
     let call_chain = get_call_chain_selection(original, selection);
-    Rc::new(Stitched {
+    Arc::new(Stitched {
         sources: StitchSources(Vec::new()), // exluded from copy
         basic: StitchedSet(Vec::new()),     // exluded from copy
         process_operation,

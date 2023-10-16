@@ -6,7 +6,7 @@ use super::{
     utils,
 };
 use log::{error, info};
-use std::{path::Path, rc::Rc};
+use std::{path::Path, sync::Arc};
 use thiserror;
 
 #[derive(thiserror::Error, Debug)]
@@ -27,9 +27,9 @@ pub enum Error {
 
 pub struct StitchedDataSet {
     /// current dataset used for most of the operations
-    current: Rc<Stitched>,
+    current: Arc<Stitched>,
     /// The original dataset in case we are working on a selection of the original data, or None if current is the original dataset
-    original: Rc<Stitched>,
+    original: Arc<Stitched>,
 
     data_selection: Selection,
 }
@@ -37,7 +37,7 @@ pub struct StitchedDataSet {
 impl StitchedDataSet {
     pub fn new(data: Stitched) -> Self {
         let data_selection = get_full_selection(&data);
-        let original = Rc::new(data);
+        let original = Arc::new(data);
         let current = original.clone();
         Self {
             current,
