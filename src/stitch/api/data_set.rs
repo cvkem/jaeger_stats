@@ -1,10 +1,12 @@
 use super::super::Stitched;
+use super::selection::get_derived_stitched;
 use super::{
-    types::{ChartDataParameters, ProcessList, Table},
+    selection::get_full_selection,
+    types::{ChartDataParameters, ProcessList, Selection, Table},
     utils,
 };
 use log::{error, info};
-use std::{error, path::Path};
+use std::{path::Path, rc::Rc};
 use thiserror;
 
 #[derive(thiserror::Error, Debug)]
@@ -18,20 +20,29 @@ pub enum Error {
 
     #[error("the file `{0}` is not found")]
     does_not_exist(String),
+
+    #[error("Mismatch in length of the selection which contains {0} elements, while the original dataset has {1} columns.")]
+    selection_failure(usize, usize),
 }
 
 pub struct StitchedDataSet {
     /// current dataset used for most of the operations
-    current: Box<Stitched>,
+    current: Rc<Stitched>,
     /// The original dataset in case we are working on a selection of the original data, or None if current is the original dataset
-    original: Option<Box<Stitched>>,
+    original: Rc<Stitched>,
+
+    data_selection: Selection,
 }
 
 impl StitchedDataSet {
     pub fn new(data: Stitched) -> Self {
+        let data_selection = get_full_selection(&data);
+        let original = Rc::new(data);
+        let current = original.clone();
         Self {
-            current: Box::new(data),
-            original: None,
+            current,
+            original,
+            data_selection,
         }
     }
 
@@ -86,11 +97,35 @@ impl StitchedDataSet {
         utils::get_call_chain_chart_data(&self.current, call_chain_key, metric)
     }
 
+    /// filestats are always derived from the original dataset
     pub fn get_file_stats(&self) -> Table {
-        match self.original.as_ref() {
-            Some(ds) => utils::get_file_stats(ds),
-            None => utils::get_file_stats(&self.current)
-        }
+        utils::get_file_stats(&self.original)
     }
 
+    pub fn get_selection(&self) -> &Selection {
+        &self.data_selection
+    }
+
+    /// update the selection by creating a modified dataset that only contains the selected data.
+    pub fn set_selection(&mut self, selected: Vec<bool>) -> Result<(), Error> {
+        let orig_len = self.data_selection.len();
+        let select_len = selected.len();
+        if orig_len != select_len {
+            Err(Error::selection_failure(select_len, orig_len))
+        } else {
+            self.current = if selected.iter().all(|x| *x) {
+                // move back to the original which is a full selection of all data
+                self.original.clone()
+            } else {
+                get_derived_stitched(&self.original, &selected)
+            };
+
+            // update the selection
+            selected
+                .into_iter()
+                .enumerate()
+                .for_each(|(idx, sel)| self.data_selection[idx].selected = sel);
+            Ok(())
+        }
+    }
 }

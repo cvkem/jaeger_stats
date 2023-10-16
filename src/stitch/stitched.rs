@@ -28,7 +28,7 @@ pub struct StitchParameters {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CallChainData {
     pub full_key: String,
-    pub inboud_process_key: String,
+    pub inboud_process_key: String, // TODO: contains typo (should be inbound), find the right moment to fix this as this exists in datasets
     pub rooted: bool,
     pub is_leaf: bool,
     pub data: StitchedSet,
@@ -41,6 +41,21 @@ impl CallChainData {
             (true, false) => "partial",
             (false, true) => "unrooted-leaf",
             (false, false) => "floating",
+        }
+    }
+
+    /// Get a subset of selected data-points for each of the stiched lines in the stitched set, or None if the selection does not contain any f64 values (only None)
+    /// assume that the size of the selection was checked by the upstream process (the caller).
+    pub fn get_selection(&self, selection: &Vec<bool>) -> Option<Self> {
+        match self.data.get_selection(selection) {
+            Some(data) => Some(CallChainData {
+                full_key: self.full_key.to_owned(),
+                inboud_process_key: self.inboud_process_key.to_owned(),
+                rooted: self.rooted,
+                is_leaf: self.is_leaf,
+                data,
+            }),
+            None => None,
         }
     }
 }

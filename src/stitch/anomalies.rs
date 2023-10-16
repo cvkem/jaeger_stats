@@ -9,6 +9,14 @@ pub struct AnomalyParameters {
     pub scaled_st_slope_bound: f64, // default 0.05
     pub l1_dev_bound: f64,          // default 2.0
 }
+
+pub const DEFAULT_ANOMALY_PARS: AnomalyParameters = AnomalyParameters {
+    scaled_slope_bound: 0.05,
+    st_num_points: 5,
+    scaled_st_slope_bound: 0.05,
+    l1_dev_bound: 2.0,
+};
+
 pub struct Anomalies {
     pub scaled_slope: Option<f64>,
     pub st_scaled_slope: Option<f64>,

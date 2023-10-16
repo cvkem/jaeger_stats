@@ -1,4 +1,5 @@
-use super::stitched_line::StitchedLine;
+use super::{anomalies::DEFAULT_ANOMALY_PARS, stitched_line::StitchedLine};
+use std::iter;
 
 use serde::{Deserialize, Serialize};
 
@@ -80,5 +81,33 @@ impl StitchedSet {
 
     pub fn get_metric_stitched_line(&self, metric: &str) -> Option<&StitchedLine> {
         self.0.iter().filter(|line| &line.label == metric).next()
+    }
+
+    /// Get a subset of selected data-points for each of the stiched lines in the stitched set, or None if the selection does not contain any f64 values (only None)
+    /// assume that the size of the selection was checked by the upstream process (the caller).
+    pub fn get_selection(&self, selection: &Vec<bool>) -> Option<Self> {
+        let data: Vec<_> = self
+            .0
+            .iter()
+            .map(|sl| {
+                let selected: Vec<_> = iter::zip(selection.iter(), sl.data.iter())
+                    .filter_map(|(sel, val)| if *sel { Some(*val) } else { None })
+                    .collect();
+                let has_value = selected.iter().any(|x| x.is_some());
+                (&sl.label, selected, has_value)
+            })
+            .collect();
+
+        if data.iter().any(|(_, _, has_value)| *has_value) {
+            Some(StitchedSet(
+                data.into_iter()
+                    .map(|(lbl, data, _)| {
+                        StitchedLine::new(lbl.to_owned(), data, &DEFAULT_ANOMALY_PARS)
+                    })
+                    .collect(),
+            ))
+        } else {
+            None
+        }
     }
 }

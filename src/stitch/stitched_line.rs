@@ -223,4 +223,9 @@ impl StitchedLine {
             )
         }
     }
+
+    // /// Get a subset of selected data-points for each of the stiched lines in the stitched set.
+    // /// assume that the size of the selection was checked by the upstream process (the caller).
+    // pub fn get_selection(&self, selection: &Vec<bool>) -> Self {
+    // }
 }
