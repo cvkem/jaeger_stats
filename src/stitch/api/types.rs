@@ -37,7 +37,7 @@ pub struct Table {
     pub data: Vec<ChartLine>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct SelectLabel {
     pub idx: i64, // could be u64, but will be used in json, so will be signed anyway
     pub label: String,
