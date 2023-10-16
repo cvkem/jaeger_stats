@@ -80,7 +80,7 @@ fn write_end_point_stats_and_correct_incomplete(
     stats_folder: &PathBuf,
     traces: Vec<TraceExt>, // moving data in and extracting later to prevent the need to copy data. Really needed??
     cchain_cache: &mut CChainEndPointCache,
-    mut bsr: BasicStatsRec,
+    bsr: BasicStatsRec,
     output_ext: &str,
     rooted_spans_only: bool,
     //    cchain_folder: &PathBuf, // temporary var (TODO: move to caches)

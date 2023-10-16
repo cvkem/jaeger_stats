@@ -36,3 +36,12 @@ pub struct Table {
     pub column_labels: Vec<String>,
     pub data: Vec<ChartLine>,
 }
+
+#[derive(Serialize, Debug)]
+pub struct Label {
+    pub idx: i64, // could be u64, but will be used in json, so will be signed anyway
+    pub label: String,
+    pub selected: bool,
+}
+
+pub type Selection = Vec<Label>;
