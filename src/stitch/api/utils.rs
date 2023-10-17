@@ -351,6 +351,7 @@ impl ChartDataParameters {
 /// the the chart-data for a specific Process-operation combination
 pub fn get_proc_oper_chart_data(
     data: &Stitched,
+    labels: Vec<String>,
     process: &str,
     metric: &str,
 ) -> Option<ChartDataParameters> {
@@ -362,7 +363,7 @@ pub fn get_proc_oper_chart_data(
     {
         Some((proc, st_set)) => st_set
             .get_metric_stitched_line(metric)
-            .map(|sl| ChartDataParameters::new(proc, metric, get_label_list(data), sl)),
+            .map(|sl| ChartDataParameters::new(proc, metric, labels, sl)),
         None => {
             error!("Could not find process '{process}'");
             None
@@ -407,10 +408,11 @@ pub fn get_proc_oper_chart_data(
 //     }
 // }
 
-/// the the chart-data for a specific call-chain (within a process context)
+/// the the chart-data for a specific call-chain and metric (within a process context)
 /// the process can not be derived from the call-chain as we only have a string-key with inbound processes,
 pub fn get_call_chain_chart_data(
     data: &Stitched,
+    labels: Vec<String>,
     call_chain_key: &str,
     metric: &str,
 ) -> Option<ChartDataParameters> {
@@ -428,9 +430,10 @@ pub fn get_call_chain_chart_data(
             if n > 1 {
                 error!("Observed {n} matches for key {call_chain_key}. Returning first match only");
             };
-            proc[0].data.get_metric_stitched_line(metric).map(|sl| {
-                ChartDataParameters::new(call_chain_key, metric, get_label_list(data), sl)
-            })
+            proc[0]
+                .data
+                .get_metric_stitched_line(metric)
+                .map(|sl| ChartDataParameters::new(call_chain_key, metric, labels, sl))
         }
     }
 }
