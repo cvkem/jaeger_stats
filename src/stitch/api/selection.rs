@@ -24,15 +24,12 @@ pub fn get_full_selection(data: &Stitched) -> Selection {
 }
 
 /// get the sources for the current selection, and omit all comments (sources without an index-number)
-fn get_stitch_sources(
-    original: &Stitched,
-    selection: &Vec<bool>,
-) -> StitchSources {
+fn get_stitch_sources(original: &Stitched, selection: &Vec<bool>) -> StitchSources {
     let sources = original.sources.0.iter().filter(|src| src.column.is_some());
     let sel_src = iter::zip(selection, sources)
         .filter_map(|(sel, src)| if *sel { Some((*src).clone()) } else { None })
         .collect();
-    StitchSources( sel_src )
+    StitchSources(sel_src)
 }
 
 /// get a copy of the process_operation data for a specific selection
@@ -81,7 +78,7 @@ pub fn get_derived_stitched(original: &Stitched, selection: &Vec<bool>) -> Arc<S
     let sources = get_stitch_sources(original, selection);
     Arc::new(Stitched {
         sources,
-        basic: StitchedSet(Vec::new()),     // exluded from copy
+        basic: StitchedSet(Vec::new()), // exluded from copy
         process_operation,
         call_chain,
     })

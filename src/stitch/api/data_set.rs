@@ -67,6 +67,15 @@ impl StitchedDataSet {
         }
     }
 
+    /// Get a copy of the cached label-list
+    fn get_label_list(&self) -> Vec<String> {
+        self.data_selection
+            .iter()
+            .filter(|label_item| label_item.selected)
+            .map(|label_item| label_item.label.to_owned())
+            .collect()
+    }
+
     pub fn get_process_list(&self, metric: &str) -> ProcessList {
         utils::get_process_list(&self.current, metric)
     }
@@ -86,7 +95,7 @@ impl StitchedDataSet {
         process: &str,
         metric: &str,
     ) -> Option<ChartDataParameters> {
-        utils::get_proc_oper_chart_data(&self.current, process, metric)
+        utils::get_proc_oper_chart_data(&self.current, self.get_label_list(), process, metric)
     }
 
     pub fn get_call_chain_chart_data(
@@ -94,7 +103,12 @@ impl StitchedDataSet {
         call_chain_key: &str,
         metric: &str,
     ) -> Option<ChartDataParameters> {
-        utils::get_call_chain_chart_data(&self.current, call_chain_key, metric)
+        utils::get_call_chain_chart_data(
+            &self.current,
+            self.get_label_list(),
+            call_chain_key,
+            metric,
+        )
     }
 
     /// filestats are always derived from the original dataset

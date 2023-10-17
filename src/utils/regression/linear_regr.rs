@@ -1,6 +1,6 @@
 use super::{Averages, DataPoint, DataSet};
-use serde::{Deserialize, Serialize};
 use log::error;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LinearRegression {
