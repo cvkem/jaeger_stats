@@ -2,7 +2,7 @@ use crate::{stats::StatsRec, utils::read_lines};
 use serde::{Deserialize, Serialize};
 use std::{error::Error, ffi::OsString, path::Path};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct StitchSourceItem {
     pub column: Option<u32>,
     pub description: String,
