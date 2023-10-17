@@ -1,5 +1,6 @@
 use super::{Averages, DataPoint, DataSet};
 use serde::{Deserialize, Serialize};
+use log::error;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LinearRegression {
@@ -33,10 +34,12 @@ impl LinearRegression {
                 let num_step = (orig_len - 1) as f64;
                 let end = y_intercept + slope * num_step;
                 let mid_point = (start + end) / 2.0; // using mid-point as it represents dataset better (or does this all single out?)
-                if mid_point.abs() > 1e-10 {
+                if mid_point.abs() > 1e-100 {
                     Some((end - start) / mid_point / (num_step / 2.0))
                 } else {
-                    assert!(slope.abs() <= 1e-10); // double check we have a horizontal line
+                    if slope.abs() > 1e-10 {
+                        error!("Failed to compute growth:  midpoint = {mid_point} is close to zero while slope = {slope}.")
+                    }; // double check we have a horizontal line
                     Some(0.0)
                 }
             };
