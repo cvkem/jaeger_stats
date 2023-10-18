@@ -1,4 +1,4 @@
-use crate::raw::JaegerItem;
+use crate::{raw::JaegerItem, utils::{self, Chapter}};
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -10,6 +10,9 @@ pub struct Process {
     pub server_name: String,
     pub ip: String,
     pub jaeger_version: String,
+    pub telemetry_sdk_language: String,
+    pub telemetry_sdk_name: String,
+    pub telemetry_sdk_version: String,
 }
 
 impl Process {
@@ -35,7 +38,14 @@ impl Process {
                         "hostname" => self.server_name = val,
                         "ip" => self.ip = val,
                         "jaeger.version" => self.jaeger_version = val,
-                        _ => panic!("Found unknown key '{key}' for process {proc_key}"),
+                        "telemetry.sdk.language" => self.telemetry_sdk_language = val,
+                        "telemetry.sdk.name" => self.telemetry_sdk_name = val,
+                        "telemetry.sdk.version" => self.telemetry_sdk_version = val,
+                        _ => utils::report(
+                            Chapter::Issues,
+                            format!(
+                                "Ignored Unknown key {key}='{val}' for process {proc_key}"
+                            ))
                     }
                 }
             }
