@@ -90,7 +90,7 @@ pub type JaegerTags = Vec<JaegerTag>;
 pub struct JaegerSpan {
     pub traceID: String,
     pub spanID: String,
-    pub flags: i32,
+    pub flags: Option<i32>,
     pub operationName: String,
     pub references: Vec<JaegerReference>,
     pub startTime: i64,
