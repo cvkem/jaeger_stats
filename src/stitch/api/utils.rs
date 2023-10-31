@@ -161,10 +161,10 @@ fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -
                         get_stitched_set_rank(&ccd.data, metric)
                     };
 
-                    if ccd.inboud_process_key.is_empty() {
+                    if ccd.inbound_process_key.is_empty() {
                         println!(
                             "EMPTY inbound-key on {:?} for {:?}",
-                            ccd.inboud_process_key, ccd.full_key
+                            ccd.inbound_process_key, ccd.full_key
                         );
                     }
 
@@ -173,7 +173,7 @@ fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -
                     ProcessListItem {
                         idx: (idx + 1) as i64,
                         key: ccd.full_key.to_owned(),
-                        display: ccd.inboud_process_key.to_owned(),
+                        display: ccd.inbound_process_key.to_owned(),
                         rank,
                         avg_count,
                         chain_type: ccd.chain_type().to_owned(),
@@ -226,7 +226,7 @@ fn get_call_chain_list_end2end(
                         Some(ProcessListItem {
                             idx: 0, // will be rewritten
                             key: ccd.full_key.to_owned(),
-                            display: ccd.inboud_process_key.to_owned(),
+                            display: ccd.inbound_process_key.to_owned(),
                             rank,
                             avg_count,
                             chain_type: ccd.chain_type().to_owned(),

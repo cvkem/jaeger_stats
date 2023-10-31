@@ -28,7 +28,8 @@ pub struct StitchParameters {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CallChainData {
     pub full_key: String,
-    pub inboud_process_key: String, // TODO: contains typo (should be inbound), find the right moment to fix this as this exists in datasets
+    #[serde(alias = "inboud_process_key")]
+    pub inbound_process_key: String, // TODO: contains typo (should be inbound), find the right moment to fix this as this exists in datasets
     pub rooted: bool,
     pub is_leaf: bool,
     pub data: StitchedSet,
@@ -50,7 +51,7 @@ impl CallChainData {
         match self.data.get_selection(selection) {
             Some(data) => Some(CallChainData {
                 full_key: self.full_key.to_owned(),
-                inboud_process_key: self.inboud_process_key.to_owned(),
+                inbound_process_key: self.inbound_process_key.to_owned(),
                 rooted: self.rooted,
                 is_leaf: self.is_leaf,
                 data,
@@ -130,7 +131,7 @@ impl Stitched {
                             .collect();
                         CallChainData {
                             full_key: cc_key.to_string(),
-                            inboud_process_key: cc_key.inbound_call_chain_key(),
+                            inbound_process_key: cc_key.inbound_call_chain_key(),
                             rooted,
                             is_leaf: cc_key.is_leaf,
                             data: StitchedSet(stitched_set),
@@ -306,7 +307,7 @@ impl Stitched {
                     if ccd.rooted { "rooted" } else { "" },
                     if ccd.is_leaf { "leaf" } else { "" },
                     po_label,
-                    ccd.inboud_process_key,
+                    ccd.inbound_process_key,
                     utils::floats_to_string(ccd.data.summary_avg(), " ;")
                 ))
             });
@@ -329,7 +330,7 @@ impl Stitched {
                     if ccd.rooted { "rooted" } else { "" },
                     if ccd.is_leaf { "leaf" } else { "" },
                     &po_label,
-                    &ccd.inboud_process_key,
+                    &ccd.inbound_process_key,
                 ]))
             });
         });
@@ -399,7 +400,7 @@ impl Stitched {
                                 num_anomalies += 1;
                                 csv.add_line(
                                     anomalies
-                                        .report_stats_line(&ccd.full_key, &ccd.inboud_process_key),
+                                        .report_stats_line(&ccd.full_key, &ccd.inbound_process_key),
                                 )
                             }
                         })
