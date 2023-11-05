@@ -1,17 +1,22 @@
 use super::super::Stitched;
 use std::{cmp::Ordering, collections::HashMap};
 
+/// Represents a prefix and a corresponding index (idx) for this prefix.
 pub struct InboundPrefixIdxItem {
     pub prefix: String,
     pub idx: i64,
 }
 
+/// Structure containing a mapping of the available prefixes of a call-chain and the idx (index) these prefixed should be mapped onto.
+/// This list is prepared for a specific proc_oper value.
 pub struct InboundPrefixIdx(Vec<InboundPrefixIdxItem>);
 
 impl InboundPrefixIdx {
+
     /// get the map of inbound-processes that maps the prefix to a process-id.
     pub fn new(data: &Stitched, proc_oper: &str) -> Self {
         let po_items: Vec<_> = data
+            // first find the item containing this proc_oper (there should be exactly one instance)
             .call_chain
             .iter()
             .filter(|(k, _v)| k == proc_oper)
@@ -20,6 +25,7 @@ impl InboundPrefixIdx {
             .unwrap_or_else(|| {
                 panic!("There should be a least on instance of proc_oper: {proc_oper}")
             })
+            // next iterate over all call-chains located under this proc_oper-key.
             .iter()
             .enumerate()
             .map(|(idx, ccd)| {
@@ -66,7 +72,8 @@ impl InboundPrefixIdx {
         inbound_idx_list
     }
 
-    /// the the matching prefix, or return 0
+    /// Get the matching prefix, or return 0
+    /// this list representing a mapping has been constructured based on a specific 'proc_oper' value.
     pub fn get_idx(&self, full_key: &str) -> i64 {
         match self
             .0

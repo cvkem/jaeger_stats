@@ -1,6 +1,7 @@
 use super::super::Stitched;
 use super::selection::get_derived_stitched;
 use super::{
+    mermaid,
     selection::get_full_selection,
     types::{ChartDataParameters, ProcessList, Selection, Table},
     utils,
@@ -96,6 +97,15 @@ impl StitchedDataSet {
         metric: &str,
     ) -> Option<ChartDataParameters> {
         utils::get_proc_oper_chart_data(&self.current, self.get_label_list(), process, metric)
+    }
+
+    /// get a mermaid diagram that depicts the current selection based on proc_oper and optionally a call-chain.
+    pub fn get_mermaid_diagram(
+        &self,
+        proc_oper: &str,
+        call_chain_key: Option<&str>
+    ) -> String {
+        mermaid::get_diagram(&self.current, proc_oper, call_chain_key)
     }
 
     pub fn get_call_chain_chart_data(

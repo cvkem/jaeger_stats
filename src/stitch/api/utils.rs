@@ -199,7 +199,7 @@ fn get_call_chain_list_end2end(
     all_chains: bool,
     inbound_idx_filter: Option<i64>,
 ) -> ProcessList {
-    let re = Regex::new(proc_oper).expect("Failed to create regex for proc_oper");
+    let re_proc_oper = Regex::new(proc_oper).expect("Failed to create regex for proc_oper");
 
     let inbound_prefix_idx = InboundPrefixIdx::new(data, proc_oper);
 
@@ -211,7 +211,7 @@ fn get_call_chain_list_end2end(
             ccd_vec
                 .iter()
                 .filter(|ccd| all_chains || ccd.is_leaf)
-                .filter(|ccd| re.find(&ccd.full_key).is_some())
+                .filter(|ccd| re_proc_oper.find(&ccd.full_key).is_some())
                 .filter_map(|ccd| {
                     // provide a rank based on the reverse of the index, as the highest rank should be in first position.
                     let rank = if metric.is_empty() {

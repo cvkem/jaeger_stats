@@ -1,5 +1,6 @@
 mod data_set;
 mod inbound_prefix_idx;
+mod mermaid;
 mod selection;
 mod types;
 mod utils;
