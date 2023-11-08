@@ -52,6 +52,7 @@ impl StitchedSet {
         self.0.iter().map(|sl| sl.data_avg).collect()
     }
 
+    /// given an iterator of Option<f64> it is prefixed with two values,
     fn prefix_with_counts(&self, data: impl Iterator<Item = Option<f64>>) -> Vec<Option<f64>> {
         // NOTE: here we assume first line always is a count-metric
         let count = self.0.first().and_then(|data| data.data_avg);

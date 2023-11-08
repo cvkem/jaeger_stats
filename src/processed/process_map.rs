@@ -1,4 +1,7 @@
-use crate::{raw::JaegerItem, utils::{self, Chapter}};
+use crate::{
+    raw::JaegerItem,
+    utils::{self, Chapter},
+};
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -43,9 +46,8 @@ impl Process {
                         "telemetry.sdk.version" => self.telemetry_sdk_version = val,
                         _ => utils::report(
                             Chapter::Issues,
-                            format!(
-                                "Ignored Unknown key {key}='{val}' for process {proc_key}"
-                            ))
+                            format!("Ignored Unknown key {key}='{val}' for process {proc_key}"),
+                        ),
                     }
                 }
             }

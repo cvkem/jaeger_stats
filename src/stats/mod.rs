@@ -10,7 +10,7 @@ mod traceext; // already defines its public interface
 mod traceextvec;
 
 pub use {
-    call_chain::CChainEndPointCache,
+    call_chain::{CChainEndPointCache, CChainStatsKey},
     operation_stats::OperationStats,
     proc_oper_stats::{ProcOperStats, ProcOperStatsValue},
     stats_rec::{chained_stats, BasicStatsRec, StatsRec, Version},

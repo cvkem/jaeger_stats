@@ -53,7 +53,8 @@ impl CChainStatsKey {
         call_chain_key(&self.call_chain, &self.caching_process, self.is_leaf)
     }
 
-    /// Prefer a key based on the inbound process-calls only, so Outbound and Unknown are skipped
+    /// A key based on the inbound process-calls only, so Outbound and Unknown are skipped.
+    /// This key contains less redudant information, but is not guaranteed to be unique.
     pub fn inbound_call_chain_key(&self) -> String {
         let key = self
             .call_chain

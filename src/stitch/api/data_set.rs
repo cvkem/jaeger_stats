@@ -100,11 +100,7 @@ impl StitchedDataSet {
     }
 
     /// get a mermaid diagram that depicts the current selection based on proc_oper and optionally a call-chain.
-    pub fn get_mermaid_diagram(
-        &self,
-        proc_oper: &str,
-        call_chain_key: Option<&str>
-    ) -> String {
+    pub fn get_mermaid_diagram(&self, proc_oper: &str, call_chain_key: Option<&str>) -> String {
         mermaid::get_diagram(&self.current, proc_oper, call_chain_key)
     }
 

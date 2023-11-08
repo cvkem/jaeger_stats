@@ -12,7 +12,6 @@ pub struct InboundPrefixIdxItem {
 pub struct InboundPrefixIdx(Vec<InboundPrefixIdxItem>);
 
 impl InboundPrefixIdx {
-
     /// get the map of inbound-processes that maps the prefix to a process-id.
     pub fn new(data: &Stitched, proc_oper: &str) -> Self {
         let po_items: Vec<_> = data
