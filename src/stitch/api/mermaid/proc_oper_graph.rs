@@ -51,24 +51,26 @@ impl Process {
     /// add this process as a subgraph with a series of nodes
     fn add_nodes(&self, diagram: &mut Vec<String>) {
         diagram.push(format!("\tsubgraph {}", self.proc));
-        self.operations.iter().for_each(|oper| diagram.push(format!("\t\t{}/{}([{}/{}])", 
-            self.proc, oper.oper,
-            self.proc, oper.oper)));
+        self.operations.iter().for_each(|oper| {
+            diagram.push(format!(
+                "\t\t{}/{}([{}/{}])",
+                self.proc, oper.oper, self.proc, oper.oper
+            ))
+        });
         diagram.push("\tend".to_string());
     }
-
 
     /// add this process as a subgraph with a series of nodes
     fn add_links(&self, diagram: &mut Vec<String>, pog: &ProcOperGraph) {
         self.operations.iter().for_each(|oper| {
             oper.calls.iter().for_each(|call| {
                 let target = pog.get_target(call.to_proc, call.to_oper);
-                diagram.push(format!("\t\t{}/{} -->|{}| {}", 
-                self.proc, oper.oper,
-                call.count,
-                target))
+                diagram.push(format!(
+                    "\t{}/{} -->|{}| {}",
+                    self.proc, oper.oper, call.count, target
+                ))
             })
-});
+        });
     }
     /// Get the label of an operation (or outbound call) of this process
     fn get_operation_label(&self, oper_idx: usize) -> String {

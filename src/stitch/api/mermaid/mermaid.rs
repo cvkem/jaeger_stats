@@ -1,5 +1,5 @@
-use crate::{stats::CChainStatsKey, Stitched};
 use super::proc_oper_graph::ProcOperGraph;
+use crate::{stats::CChainStatsKey, Stitched};
 
 use regex::Regex;
 
