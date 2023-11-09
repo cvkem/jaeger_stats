@@ -47,6 +47,33 @@ impl Process {
         });
         oper_idx
     }
+
+    /// add this process as a subgraph with a series of nodes
+    fn add_nodes(&self, diagram: &mut Vec<String>) {
+        diagram.push(format!("\tsubgraph {}", self.proc));
+        self.operations.iter().for_each(|oper| diagram.push(format!("\t\t{}/{}([{}/{}])", 
+            self.proc, oper.oper,
+            self.proc, oper.oper)));
+        diagram.push("\tend".to_string());
+    }
+
+
+    /// add this process as a subgraph with a series of nodes
+    fn add_links(&self, diagram: &mut Vec<String>, pog: &ProcOperGraph) {
+        self.operations.iter().for_each(|oper| {
+            oper.calls.iter().for_each(|call| {
+                let target = pog.get_target(call.to_proc, call.to_oper);
+                diagram.push(format!("\t\t{}/{} -->|{}| {}", 
+                self.proc, oper.oper,
+                call.count,
+                target))
+            })
+});
+    }
+    /// Get the label of an operation (or outbound call) of this process
+    fn get_operation_label(&self, oper_idx: usize) -> String {
+        format!("{}/{}", self.proc, self.operations[oper_idx].oper)
+    }
 }
 
 #[derive(Debug)]
@@ -106,5 +133,20 @@ impl ProcOperGraph {
         // Add or update the link
         to.count = count;
         self.0[from.to_proc].operations[from.to_oper].upsert_link(to)
+    }
+
+    /// get the name of a target defined by proc_idx and oper_idx within this Graph.
+    fn get_target(&self, proc_idx: usize, oper_idx: usize) -> String {
+        self.0[proc_idx].get_operation_label(oper_idx)
+    }
+
+    pub fn mermaid_diagram(&self) -> String {
+        let mut diagram = Vec::new();
+        diagram.push("graph LR".to_string());
+
+        self.0.iter().for_each(|p| p.add_nodes(&mut diagram));
+        self.0.iter().for_each(|p| p.add_links(&mut diagram, self));
+
+        diagram.join("\n")
     }
 }

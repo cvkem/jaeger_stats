@@ -1,6 +1,5 @@
-use super::super::Stitched;
+use crate::{stats::CChainStatsKey, Stitched};
 use super::proc_oper_graph::ProcOperGraph;
-use crate::stats::CChainStatsKey;
 
 use regex::Regex;
 
@@ -35,5 +34,5 @@ pub fn get_diagram(data: &Stitched, proc_oper: &str, call_chain_key: Option<&str
             pog
         },
     );
-    format!("{:?}", pog)
+    pog.mermaid_diagram()
 }
