@@ -1,11 +1,26 @@
 use crate::stats::call_chain::{Call, CallDirection};
 
+struct Loc {
+    proc_idx: usize,
+    oper_idx: usize,
+}
+
 /// defines a position in the ProcessConnection, where the first index is the process and the second is the operation.
 #[derive(Debug)]
 struct CallDescriptor {
     to_proc: usize,
     to_oper: usize,
     count: f64,
+}
+
+impl CallDescriptor {
+    fn new(loc: Loc, count: f64) -> Self {
+        Self {
+            to_proc: loc.proc_idx,
+            to_oper: loc.oper_idx,
+            count,
+        }
+    }
 }
 
 /// Used to store outbound
@@ -87,41 +102,29 @@ impl ProcOperGraph {
     }
 
     /// insert a new Process and operation pair and returns its call-descriptor
-    fn push_proc_oper(&mut self, call: Call) -> CallDescriptor {
+    fn push_proc_oper(&mut self, call: Call) -> Loc {
         let mut process = Process {
             proc: call.process,
             operations: Vec::new(),
         };
-        let to_proc = self.0.len();
-        let to_oper = process.push_oper(call.method, call.call_direction);
+        let proc_idx = self.0.len();
+        let oper_idx = process.push_oper(call.method, call.call_direction);
         self.0.push(process);
-        CallDescriptor {
-            to_proc,
-            to_oper,
-            count: 0.0,
-        }
+        Loc { proc_idx, oper_idx }
     }
 
     /// find the proc_oper combination, or insert it, and return the index-pair as a CallDescriptor with count = 0.0
-    fn get_proc_oper_idx(&mut self, call: Call) -> CallDescriptor {
+    fn get_proc_oper_idx(&mut self, call: Call) -> Loc {
         match self.0.iter().position(|p| p.proc == call.process) {
-            Some(to_proc) => match self.0[to_proc]
+            Some(proc_idx) => match self.0[proc_idx]
                 .operations
                 .iter()
                 .position(|o| o.oper == call.method)
             {
-                Some(to_oper) => CallDescriptor {
-                    to_proc,
-                    to_oper,
-                    count: 0.0,
-                },
+                Some(oper_idx) => Loc { proc_idx, oper_idx },
                 None => {
-                    let to_oper = self.0[to_proc].push_oper(call.method, call.call_direction);
-                    CallDescriptor {
-                        to_proc,
-                        to_oper,
-                        count: 0.0,
-                    }
+                    let oper_idx = self.0[proc_idx].push_oper(call.method, call.call_direction);
+                    Loc { proc_idx, oper_idx }
                 }
             },
             None => self.push_proc_oper(call),
@@ -133,8 +136,8 @@ impl ProcOperGraph {
         let from = self.get_proc_oper_idx(from);
         let mut to = self.get_proc_oper_idx(to);
         // Add or update the link
-        to.count = count;
-        self.0[from.to_proc].operations[from.to_oper].upsert_link(to)
+        let to = CallDescriptor::new(to, count);
+        self.0[from.proc_idx].operations[from.oper_idx].upsert_link(to)
     }
 
     /// get the name of a target defined by proc_idx and oper_idx within this Graph.
@@ -142,7 +145,8 @@ impl ProcOperGraph {
         self.0[proc_idx].get_operation_label(oper_idx)
     }
 
-    pub fn mermaid_diagram(&self) -> String {
+    /// generate a detailled Mermaid diagram, which includes the operations and the outbound calls of each of the services.
+    fn mermaid_diagram_full(&self) -> String {
         let mut diagram = Vec::new();
         diagram.push("graph LR".to_string());
 
@@ -150,5 +154,19 @@ impl ProcOperGraph {
         self.0.iter().for_each(|p| p.add_links(&mut diagram, self));
 
         diagram.join("\n")
+    }
+
+    /// Get a compact Mermaid diagram only showing the services, and discarding the detail regarding the actual operation being called.
+    fn mermaid_diagram_compact(&self) -> String {
+        unimplemented!()
+    }
+
+    /// Extract the mermaid diagram based on these imputs
+    pub fn mermaid_diagram(&self, compact: bool) -> String {
+        if compact {
+            self.mermaid_diagram_compact()
+        } else {
+            self.mermaid_diagram_full()
+        }
     }
 }
