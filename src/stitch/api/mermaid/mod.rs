@@ -1,4 +1,4 @@
-mod mermaid;
-mod proc_oper_graph;
+mod diagram;
+mod service_oper_graph;
 
-pub use mermaid::get_diagram;
+pub use diagram::get_diagram;

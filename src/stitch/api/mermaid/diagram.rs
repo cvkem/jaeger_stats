@@ -1,4 +1,4 @@
-use super::proc_oper_graph::ProcOperGraph;
+use super::service_oper_graph::{LineType, ServiceOperGraph};
 use crate::{stats::CChainStatsKey, Stitched};
 
 use regex::Regex;
@@ -11,7 +11,7 @@ pub fn get_diagram(
 ) -> String {
     let re_proc_oper = Regex::new(proc_oper).expect("Failed to create regex for proc_oper");
 
-    let pog = data
+    let mut pog = data
         .call_chain
         .iter()
         //            .filter(|(k, _ccd)| k != proc_oper) // these are already reported as inbound chains
@@ -24,18 +24,22 @@ pub fn get_diagram(
                     let cc = CChainStatsKey::parse(&ccd.full_key).unwrap();
                     let skip = cc.call_chain.len() - 2;
                     let mut cc = cc.call_chain.into_iter().skip(skip);
-                    let send_call = cc.next().unwrap();
-                    let receive_call = cc.next().unwrap();
+                    let from = cc.next().unwrap();
+                    let to = cc.next().unwrap();
                     let count = ccd.data.0.first().and_then(|data| data.data_avg).unwrap();
-                    (send_call, receive_call, count)
+                    (from, to, count)
                 })
         })
-        .fold(
-            ProcOperGraph::new(),
-            |mut pog, (send_call, receive_call, count)| {
-                pog.add(send_call, receive_call, count);
-                pog
-            },
-        );
+        .fold(ServiceOperGraph::new(), |mut pog, (from, to, count)| {
+            pog.add_connection(from, to, count);
+            pog
+        });
+
+    // Emphasize the selected path if the call_chain-key is provided
+    if let Some(call_chain_key) = call_chain_key {
+        let cck = CChainStatsKey::parse(call_chain_key).unwrap();
+        std::iter::zip(cck.call_chain.iter(), cck.call_chain.iter().skip(1))
+            .for_each(|(from, to)| pog.update_line_type(from, to, LineType::Emphasized))
+    }
     pog.mermaid_diagram(compact)
 }
