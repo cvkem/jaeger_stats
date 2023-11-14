@@ -13,6 +13,14 @@ pub enum LineType {
     CurrentReach,
     Reachable,
 }
+// link-style example: linkStyle 37,10,22 stroke:#ff3,stroke-width:4px,color:red;
+
+#[derive(Debug, PartialEq)]
+pub enum ServiceType {
+    Default,
+    Emphasized,
+}
+
 
 /// defines a position in the ProcessConnection, where the first index is the process and the second is the operation.
 #[derive(Debug)]
@@ -71,10 +79,16 @@ impl Operation {
 #[derive(Debug)]
 pub struct Service {
     pub service: String,
+    pub service_type: ServiceType,
     pub operations: Vec<Operation>,
 }
 
 impl Service {
+
+    fn new(service: String) -> Self {
+        Self{service, service_type: ServiceType::Default, operations: Vec::new()}
+    }
+
     /// push an Operation to the Servic and return the index
     fn add_operation(&mut self, oper: String, call_direction: CallDirection) -> usize {
         let oper_idx = self.operations.len();
@@ -96,6 +110,10 @@ impl Service {
             ))
         });
         diagram.push("\tend".to_string());
+
+        if self.service_type == ServiceType::Emphasized {
+            diagram.push(format!("\tstyle {} fill:#00f", self.service))
+        };
     }
 
     /// add this process as a subgraph with a series of nodes
@@ -103,10 +121,17 @@ impl Service {
         self.operations.iter().for_each(|oper| {
             oper.calls.iter().for_each(|call| {
                 let target = pog.get_target(call.to_service, call.to_oper);
-                diagram.push(format!(
-                    "\t{}/{} -->|{}| {}",
-                    self.service, oper.oper, call.count, target
-                ))
+                let link = match call.line_type {
+                    LineType::Emphasized => format!(
+                        "\t{}/{} ==>|{}| {}",
+                        self.service, oper.oper, call.count, target
+                    ),
+                    _ => format!(
+                        "\t{}/{} -->|{}| {}",
+                        self.service, oper.oper, call.count, target
+                    )
+                };
+                diagram.push(link)
             })
         });
     }
@@ -126,10 +151,7 @@ impl ServiceOperGraph {
 
     /// insert a new Service-operation pair and returns its location withig the ServiceOperGraph
     fn add_service_operation(&mut self, call: Call) -> Loc {
-        let mut process = Service {
-            service: call.process,
-            operations: Vec::new(),
-        };
+        let mut process = Service::new(call.process);
         let proc_idx = self.0.len();
         let oper_idx = process.add_operation(call.method, call.call_direction);
         self.0.push(process);
@@ -139,9 +161,15 @@ impl ServiceOperGraph {
         }
     }
 
+    /// Get the index of a service
+    fn get_service_idx(&self, service_name: &str) -> Option<usize> {
+        self.0.iter().position(|p| &p.service[..] == service_name)
+    }
+    
+    
     /// find the Service-Operation combination, and return the index-pair as a Location in the ServiceOperGraph or None
-    fn get_service_operation_idx(&mut self, call: &Call) -> Option<Loc> {
-        match self.0.iter().position(|p| p.service == call.process) {
+    fn get_service_operation_idx(&self, call: &Call) -> Option<Loc> {
+        match self.get_service_idx(&call.process) {
             Some(proc_idx) => match self.0[proc_idx]
                 .operations
                 .iter()
@@ -159,7 +187,7 @@ impl ServiceOperGraph {
 
     /// find the Service-Operation combination, or insert it, and return the index-pair as a Location in the ServiceOperGraph
     fn get_create_service_operation_idx(&mut self, call: Call) -> Loc {
-        if let Some(proc_idx) = self.0.iter().position(|p| p.service == call.process) {
+        if let Some(proc_idx) = self.get_service_idx(&call.process) {
             match self.0[proc_idx]
                 .operations
                 .iter()
@@ -182,7 +210,7 @@ impl ServiceOperGraph {
         }
     }
 
-    /// Add a connection for the pair from-to.
+    /// Add a connection between 'from' and 'to'.
     /// In case of calls between services this is expected to be an outbound call from the sender (from) and an inbound call for the receiver.
     /// However, when from and to are located in the same service it is a connection is from the receiver (inbound) to the sender (outbound) as it is an internal pass-through.
     pub fn add_connection(&mut self, from: Call, to: Call, count: f64) {
@@ -205,6 +233,13 @@ impl ServiceOperGraph {
             .unwrap_or_else(|| panic!("Failed to find {to:?} in update_line_type"));
         // Add or update the link
         self.0[from.service_idx].operations[from.oper_idx].update_line_type(to, line_type)
+    }
+
+    pub fn update_service_type(&mut self, service_name: &str, service_type: ServiceType) {
+        match self.get_service_idx(service_name) {
+            Some(service_idx) => self.0[service_idx].service_type = service_type,
+            None => panic!("Could not find service '{service_name}' to update service_type")
+        }
     }
 
     /// get the name of a target defined by proc_idx and oper_idx within this Graph.
