@@ -1,8 +1,8 @@
-use super::service_oper_graph::ServiceType;
-
-
+use super::service_oper_graph::{Service, ServiceOperationType};
 
 pub enum MermaidNode {
-    Node(String),
-    SubGraph(String, ServiceType, Vec<MermaidNode>),
+    Node(String, ServiceOperationType),
+    SubGraph(String, ServiceOperationType, Vec<MermaidNode>),
 }
+
+struct MermaidLink {}

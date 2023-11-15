@@ -19,7 +19,7 @@ struct Args {
 }
 
 const PROC_OPER: &str = "bspc-productinzicht/geefProducten";
-//const PROCESS: &str = "retail-gateway//services/apic-productinzicht/api";
+const CALL_CHAIN_KEY: &str = "retail-gateway/GET:/services/apic-productinzicht/api/producten | retail-gateway//services/apic-productinzicht/api | bspc-productinzicht/geefProducten [Inbound] | bspc-productinzicht/HEAD [Outbound] | bspc-hypotheekaflossingproces/heeftAflossingdetails [Inbound] | bspc-hypotheekaflossingproces/GET [Outbound] | bspc-hypotheekinzicht/zoekHypotheekdetailsPerZekerheid [Inbound] | bspc-hypotheekinzicht/POST [Outbound] | WebSAS/POST [Inbound] | WebSAS/SasFlow [Outbound] | sas/LfiREntrypoint [Inbound] &  [bspc-productinzicht]&  *LEAF*";
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let sd = StitchedDataSet::from_file(&input_file).unwrap();
     println!("Elapsed time after load: {}", now.elapsed().as_secs());
 
-    let mermaid = sd.get_mermaid_diagram(PROC_OPER, None, false);
+    let mermaid = sd.get_mermaid_diagram(PROC_OPER, Some(CALL_CHAIN_KEY), false);
 
     println!("The Mermaid-diagram for {}:\n{}", PROC_OPER, mermaid);
     println!(

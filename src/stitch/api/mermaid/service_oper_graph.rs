@@ -9,18 +9,17 @@ struct Loc {
 #[derive(Debug)]
 pub enum LineType {
     Default,
-    Emphasized,
-    CurrentReach,
     Reachable,
+    CurrentReach,
+    Emphasized,
 }
 // link-style example: linkStyle 37,10,22 stroke:#ff3,stroke-width:4px,color:red;
 
 #[derive(Debug, PartialEq)]
-pub enum ServiceType {
+pub enum ServiceOperationType {
     Default,
     Emphasized,
 }
-
 
 /// defines a position in the ProcessConnection, where the first index is the process and the second is the operation.
 #[derive(Debug)]
@@ -47,6 +46,7 @@ impl CallDescriptor {
 pub struct Operation {
     pub oper: String,
     pub call_direction: CallDirection,
+    pub serv_oper_type: ServiceOperationType,
     calls: Vec<CallDescriptor>,
 }
 
@@ -74,19 +74,27 @@ impl Operation {
             None => panic!("Could not locate a connection to {to:?}"),
         }
     }
+
+    /// update the serv_oper_type of the current operation
+    fn update_serv_oper_type(&mut self, serv_oper_type: ServiceOperationType) {
+        self.serv_oper_type = serv_oper_type
+    }
 }
 
 #[derive(Debug)]
 pub struct Service {
     pub service: String,
-    pub service_type: ServiceType,
+    pub serv_oper_type: ServiceOperationType,
     pub operations: Vec<Operation>,
 }
 
 impl Service {
-
     fn new(service: String) -> Self {
-        Self{service, service_type: ServiceType::Default, operations: Vec::new()}
+        Self {
+            service,
+            serv_oper_type: ServiceOperationType::Default,
+            operations: Vec::new(),
+        }
     }
 
     /// push an Operation to the Servic and return the index
@@ -95,6 +103,7 @@ impl Service {
         self.operations.push(Operation {
             oper,
             call_direction,
+            serv_oper_type: ServiceOperationType::Default,
             calls: Vec::new(),
         });
         oper_idx
@@ -111,7 +120,7 @@ impl Service {
         });
         diagram.push("\tend".to_string());
 
-        if self.service_type == ServiceType::Emphasized {
+        if self.serv_oper_type == ServiceOperationType::Emphasized {
             diagram.push(format!("\tstyle {} fill:#00f", self.service))
         };
     }
@@ -129,7 +138,7 @@ impl Service {
                     _ => format!(
                         "\t{}/{} -->|{}| {}",
                         self.service, oper.oper, call.count, target
-                    )
+                    ),
                 };
                 diagram.push(link)
             })
@@ -165,8 +174,7 @@ impl ServiceOperGraph {
     fn get_service_idx(&self, service_name: &str) -> Option<usize> {
         self.0.iter().position(|p| &p.service[..] == service_name)
     }
-    
-    
+
     /// find the Service-Operation combination, and return the index-pair as a Location in the ServiceOperGraph or None
     fn get_service_operation_idx(&self, call: &Call) -> Option<Loc> {
         match self.get_service_idx(&call.process) {
@@ -225,20 +233,33 @@ impl ServiceOperGraph {
     /// update the LineType of the given connection. The connection should exist, otherwise it is created.
     pub fn update_line_type(&mut self, from: &Call, to: &Call, line_type: LineType) {
         // determine the from and to and add them if they do not exist
-        let from = self
-            .get_service_operation_idx(from)
-            .unwrap_or_else(|| panic!("Failed to find {from:?} in update_line_type"));
-        let to = self
-            .get_service_operation_idx(to)
-            .unwrap_or_else(|| panic!("Failed to find {to:?} in update_line_type"));
-        // Add or update the link
-        self.0[from.service_idx].operations[from.oper_idx].update_line_type(to, line_type)
+        let from_loc = self.get_service_operation_idx(from);
+        let to_loc = self.get_service_operation_idx(to);
+        // Update the link-type
+        match (from_loc, to_loc) {
+            (Some(from), Some(to)) => {
+                self.0[from.service_idx].operations[from.oper_idx].update_line_type(to, line_type)
+            }
+            (None, None) => println!("Failed to find both {from:?} and {to:?}"),
+            (None, Some(_)) => println!("Failed to find from:{from:?} in update_line_type"),
+            (Some(_), None) => println!("Failed to find to:{to:?} in update_line_type"),
+        }
     }
 
-    pub fn update_service_type(&mut self, service_name: &str, service_type: ServiceType) {
-        match self.get_service_idx(service_name) {
-            Some(service_idx) => self.0[service_idx].service_type = service_type,
-            None => panic!("Could not find service '{service_name}' to update service_type")
+    /// Update the serv_oper_type of a service_operation to Emphasized
+    pub fn update_service_operation_type(
+        &mut self,
+        service_name: &str,
+        serv_oper_type: ServiceOperationType,
+    ) {
+        match self.get_service_operation_idx(
+            Call::extract_call(service_name)
+                .as_ref()
+                .expect("could not find service/operation"),
+        ) {
+            Some(loc) => self.0[loc.service_idx].operations[loc.oper_idx]
+                .update_serv_oper_type(serv_oper_type),
+            None => panic!("Could not find service '{service_name}' to update serv_oper_type"),
         }
     }
 
