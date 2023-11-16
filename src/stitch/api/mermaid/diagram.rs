@@ -1,7 +1,23 @@
 use super::service_oper_graph::{LineType, ServiceOperGraph, ServiceOperationType};
 use crate::{stats::CChainStatsKey, Stitched};
-
 use regex::Regex;
+use std::collections::HashMap;
+
+struct CountedPrefix(HashMap<String, f64>);
+
+impl CountedPrefix {
+    fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    /// add a new prefix or increment the existing with 'count'
+    fn add(&mut self, prefix: &str, count: f64) {
+        self.0
+            .entry(prefix.to_owned())
+            .and_modify(|v| *v += count)
+            .or_insert(count);
+    }
+}
 
 pub fn get_diagram(
     data: &Stitched,
@@ -11,8 +27,10 @@ pub fn get_diagram(
 ) -> String {
     let re_service_oper =
         Regex::new(service_oper).expect("Failed to create regex for service_oper");
+    let re_so_prefix = Regex::new(&format!("^.*{}", service_oper))
+        .expect("Failed to create regex for service_oper_prefix");
 
-    let mut sog = data
+    let (mut sog, counted_prefix) = data
         .call_chain
         .iter()
         //            .filter(|(k, _ccd)| k != service_oper) // these are already reported as inbound chains
@@ -22,24 +40,32 @@ pub fn get_diagram(
                 //                    .filter(|ccd| all_chains || ccd.is_leaf) // all-chains as we need statistics at each step
                 .filter(|ccd| re_service_oper.find(&ccd.full_key).is_some())
                 .map(|ccd| {
-                    println!("Observed: '{}'", ccd.full_key); // to extract test-data
-                    if ccd.full_key == "retail-gateway/GET:/services/apic-productinzicht/api/producten | retail-gateway//services/apic-productinzicht/api | bspc-productinzicht/geefProducten [Inbound] | bspc-productinzicht/HEAD [Outbound] | bspc-hypotheekaflossingproces/heeftAflossingdetails [Inbound] | bspc-hypotheekaflossingproces/GET [Outbound] | bspc-hypotheekinzicht/zoekHypotheekdetailsPerZekerheid [Inbound] | bspc-hypotheekinzicht/POST [Outbound] | WebSAS/POST [Inbound] | WebSAS/SasFlow [Outbound] | sas/LfiREntrypoint [Inbound] &  [bspc-productinzicht]&  *LEAF*" {
-                        println!("FOUND relevant path")
-                    }
                     let cc = CChainStatsKey::parse(&ccd.full_key).unwrap();
                     let skip = cc.call_chain.len() - 2;
                     let mut cc = cc.call_chain.into_iter().skip(skip);
                     let from = cc.next().unwrap();
                     let to = cc.next().unwrap();
                     let count = ccd.data.0.first().and_then(|data| data.data_avg).unwrap();
-                    (from, to, count)
+
+                    let prefix = re_so_prefix.find(&ccd.full_key).expect("Prefix not found");
+
+                    // and return result
+                    (prefix, from, to, count)
                 })
         })
-        .fold(ServiceOperGraph::new(), |mut sog, (from, to, count)| {
-            sog.add_connection(from, to, count);
-            sog
-        });
+        .fold(
+            (ServiceOperGraph::new(), CountedPrefix::new()),
+            |mut sog_cp, (prefix, from, to, count)| {
+                sog_cp.0.add_connection(from, to, count);
+                sog_cp.1.add(prefix.as_str(), count);
+                sog_cp
+            },
+        );
 
+    counted_prefix
+        .0
+        .into_iter()
+        .for_each(|(k, v)| println!("  prefix: {k}  --> {v}"));
     // println!("RESULT:\n{:#?}\n\n", sog);
 
     // Emphasize the selected path if the call_chain-key is provided
