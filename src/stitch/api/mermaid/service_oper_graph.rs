@@ -7,7 +7,7 @@ struct Loc {
 }
 
 #[derive(Debug)]
-pub enum LineType {
+pub enum LinkType {
     Default,
     Reachable,
     CurrentReach,
@@ -27,7 +27,7 @@ struct CallDescriptor {
     to_service: usize,
     to_oper: usize,
     count: f64,
-    line_type: LineType,
+    line_type: LinkType,
 }
 
 impl CallDescriptor {
@@ -36,7 +36,7 @@ impl CallDescriptor {
             to_service: loc.service_idx,
             to_oper: loc.oper_idx,
             count,
-            line_type: LineType::Default,
+            line_type: LinkType::Default,
         }
     }
 }
@@ -64,7 +64,7 @@ impl Operation {
     }
 
     /// Update the LineType of the connector
-    fn update_line_type(&mut self, to: Loc, line_type: LineType) {
+    fn update_line_type(&mut self, to: Loc, line_type: LinkType) {
         match self
             .calls
             .iter()
@@ -131,7 +131,7 @@ impl Service {
             oper.calls.iter().for_each(|call| {
                 let target = pog.get_target(call.to_service, call.to_oper);
                 let link = match call.line_type {
-                    LineType::Emphasized => format!(
+                    LinkType::Emphasized => format!(
                         "\t{}/{} ==>|{}| {}",
                         self.service, oper.oper, call.count, target
                     ),
@@ -231,7 +231,7 @@ impl ServiceOperGraph {
     }
 
     /// update the LineType of the given connection. The connection should exist, otherwise it is created.
-    pub fn update_line_type(&mut self, from: &Call, to: &Call, line_type: LineType) {
+    pub fn update_line_type(&mut self, from: &Call, to: &Call, line_type: LinkType) {
         // determine the from and to and add them if they do not exist
         let from_loc = self.get_service_operation_idx(from);
         let to_loc = self.get_service_operation_idx(to);
