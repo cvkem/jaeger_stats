@@ -6,7 +6,7 @@ struct Loc {
     oper_idx: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum LinkType {
     Default,
     Reachable,
