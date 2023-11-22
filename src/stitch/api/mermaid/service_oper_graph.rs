@@ -1,3 +1,4 @@
+use super::mermaid::{Mermaid, MermaidBasicNode, MermaidLink, MermaidSubGraph};
 use crate::stats::call_chain::{Call, CallDirection};
 
 #[derive(Debug)]
@@ -6,7 +7,7 @@ struct Loc {
     oper_idx: usize,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum LinkType {
     Default,
     Reachable,
@@ -15,7 +16,7 @@ pub enum LinkType {
 }
 // link-style example: linkStyle 37,10,22 stroke:#ff3,stroke-width:4px,color:red;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum ServiceOperationType {
     Default,
     Emphasized,
@@ -110,37 +111,25 @@ impl Service {
     }
 
     /// add this service as a subgraph with a series of nodes
-    fn mermaid_add_nodes(&self, diagram: &mut Vec<String>) {
-        diagram.push(format!("\tsubgraph {}", self.service));
+    fn mermaid_add_nodes(&self, mermaid: &mut Mermaid) {
+        let mut sub_graph = MermaidSubGraph::new(self.service.clone(), self.serv_oper_type);
+
         self.operations.iter().for_each(|oper| {
-            diagram.push(format!(
-                "\t\t{}/{}([{}/{}])",
-                self.service, oper.oper, self.service, oper.oper
+            sub_graph.add_node(MermaidBasicNode::new(
+                format!("{}/{}", &self.service, &oper.oper),
+                oper.serv_oper_type,
             ))
         });
-        diagram.push("\tend".to_string());
-
-        if self.serv_oper_type == ServiceOperationType::Emphasized {
-            diagram.push(format!("\tstyle {} fill:#00f", self.service))
-        };
+        mermaid.add_subgraph(sub_graph);
     }
 
     /// add this process as a subgraph with a series of nodes
-    fn mermaid_add_links(&self, diagram: &mut Vec<String>, pog: &ServiceOperGraph) {
+    fn mermaid_add_links(&self, mermaid: &mut Mermaid, pog: &ServiceOperGraph) {
         self.operations.iter().for_each(|oper| {
             oper.calls.iter().for_each(|call| {
+                let src = format!("{}/{}", self.service, oper.oper);
                 let target = pog.get_target(call.to_service, call.to_oper);
-                let link = match call.line_type {
-                    LinkType::Emphasized => format!(
-                        "\t{}/{} ==>|{}| {}",
-                        self.service, oper.oper, call.count, target
-                    ),
-                    _ => format!(
-                        "\t{}/{} -->|{}| {}",
-                        self.service, oper.oper, call.count, target
-                    ),
-                };
-                diagram.push(link)
+                mermaid.add_link(MermaidLink::new(src, target, call.count, call.line_type));
             })
         });
     }
@@ -270,17 +259,16 @@ impl ServiceOperGraph {
 
     /// generate a detailled Mermaid diagram, which includes the operations and the outbound calls of each of the services.
     fn mermaid_diagram_full(&self) -> String {
-        let mut diagram = Vec::new();
-        diagram.push("graph LR".to_string());
+        let mut mermaid = Mermaid::new();
 
         self.0
             .iter()
-            .for_each(|p| p.mermaid_add_nodes(&mut diagram));
+            .for_each(|p| p.mermaid_add_nodes(&mut mermaid));
         self.0
             .iter()
-            .for_each(|p| p.mermaid_add_links(&mut diagram, self));
+            .for_each(|p| p.mermaid_add_links(&mut mermaid, self));
 
-        diagram.join("\n")
+        mermaid.to_diagram()
     }
 
     /// Get a compact Mermaid diagram only showing the services, and discarding the detail regarding the actual operation being called.

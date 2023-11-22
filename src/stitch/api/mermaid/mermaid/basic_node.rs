@@ -1,16 +1,14 @@
-use super::{
-    indent::INDENT_STR,
-    super::service_oper_graph::{LinkType, ServiceOperationType},
-};
+use super::{super::service_oper_graph::ServiceOperationType, indent::INDENT_STR};
 
 /// A basic node without any nested nodes&
-pub struct MermaidBasicNode<'a> {
-    service: &'a str,
+pub struct MermaidBasicNode {
+    service: String,
     serv_oper_type: ServiceOperationType,
 }
 
-impl<'a> MermaidBasicNode<'a> {
-    pub fn new(service: &'a str, serv_oper_type: ServiceOperationType) -> Self {
+impl MermaidBasicNode {
+    pub fn new(service: String, serv_oper_type: ServiceOperationType) -> Self {
+        /// we can not make service a &str as the string needs to be constructed from service and operation to call new (temporary does not live long enough)
         Self {
             service,
             serv_oper_type,
@@ -18,14 +16,13 @@ impl<'a> MermaidBasicNode<'a> {
     }
 
     pub fn to_diagram(&self, diagram: &mut Vec<String>, indent: usize) {
+        let indent_str = INDENT_STR.get_indent_str(indent);
         diagram.push(format!(
             "{}{}([{}])",
-            INDENT_STR.get_indent_str(indent),
-            self.service,
-            self.service
+            indent_str, self.service, self.service
         ));
         if self.serv_oper_type == ServiceOperationType::Emphasized {
-            diagram.push(format!("\tstyle {} fill:#00f", self.service))
+            diagram.push(format!("{}style {} fill:#00f", indent_str, self.service))
         };
     }
 }

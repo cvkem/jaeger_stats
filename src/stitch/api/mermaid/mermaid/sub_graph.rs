@@ -1,26 +1,32 @@
 use super::{
-    basic_node::MermaidBasicNode,
-    indent::INDENT_STR,
-    super::service_oper_graph::{LinkType, ServiceOperationType},
-    node::MermaidNode,
+    super::service_oper_graph::ServiceOperationType, basic_node::MermaidBasicNode,
+    indent::INDENT_STR, node::MermaidNode,
 };
 
 /// A node with an inner structure representing nested nodes.
-pub struct MermaidSubGraph<'a> {
+pub struct MermaidSubGraph {
     /// service has a plain name, so no embedded '/' is expected.
-    service: &'a str,
+    service: String,
     serv_oper_type: ServiceOperationType,
-    nodes: Vec<MermaidNode<'a>>,
+    nodes: Vec<MermaidNode>,
 }
 
-impl<'a> MermaidSubGraph<'a> {
+impl MermaidSubGraph {
+    pub fn new(service: String, serv_oper_type: ServiceOperationType) -> Self {
+        Self {
+            service,
+            serv_oper_type,
+            nodes: Vec::new(),
+        }
+    }
+
     /// add a subgraph, a container that can contain nested simple nodes and subgraphs
-    pub fn add_subgraph(&mut self, sg: MermaidSubGraph<'a>) {
+    pub fn add_subgraph(&mut self, sg: MermaidSubGraph) {
         self.nodes.push(MermaidNode::SubGraph(sg))
     }
 
     /// add a simples node (without any nested nodes)
-    pub fn add_node(&mut self, node: MermaidBasicNode<'a>) {
+    pub fn add_node(&mut self, node: MermaidBasicNode) {
         self.nodes.push(MermaidNode::Node(node))
     }
 

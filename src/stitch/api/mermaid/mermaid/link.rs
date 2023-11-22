@@ -1,19 +1,15 @@
-use super::{
-    indent::INDENT_STR,
-    super::service_oper_graph::{LinkType, ServiceOperationType},
-};
-
+use super::{super::service_oper_graph::LinkType, indent::INDENT_STR};
 
 /// A link between two nodes (either basic node or subgraph)
-pub struct MermaidLink<'a> {
-    src: &'a str,
-    target: &'a str,
+pub struct MermaidLink {
+    src: String,
+    target: String,
     value: f64,
     pub link_type: LinkType,
 }
 
-impl<'a> MermaidLink<'a> {
-    pub fn new(src: &'a str, target: &'a str, value: f64, link_type: LinkType) -> Self {
+impl MermaidLink {
+    pub fn new(src: String, target: String, value: f64, link_type: LinkType) -> Self {
         Self {
             src,
             target,
@@ -39,5 +35,6 @@ impl<'a> MermaidLink<'a> {
                 self.target
             ),
         };
+        diagram.push(link);
     }
 }

@@ -1,34 +1,40 @@
 use super::{
-    basic_node::MermaidBasicNode,
     super::service_oper_graph::{LinkType, ServiceOperationType},
-    node::MermaidNode,
+    basic_node::MermaidBasicNode,
     link::MermaidLink,
+    node::MermaidNode,
     sub_graph::MermaidSubGraph,
 };
 
-pub struct Mermaid<'a> {
-    nodes: Vec<MermaidNode<'a>>,
-    links: Vec<MermaidLink<'a>>,
+pub struct Mermaid {
+    nodes: Vec<MermaidNode>,
+    links: Vec<MermaidLink>,
 }
 
-impl<'a> Mermaid<'a> {
+impl Mermaid {
+    pub fn new() -> Self {
+        Self {
+            nodes: Vec::new(),
+            links: Vec::new(),
+        }
+    }
     /// add a subgraph, a container that can contain nested simple nodes and subgraphs
-    pub fn add_subgraph(&mut self, sg: MermaidSubGraph<'a>) {
+    pub fn add_subgraph(&mut self, sg: MermaidSubGraph) {
         self.nodes.push(MermaidNode::SubGraph(sg))
     }
 
     /// add a simples node (without any nested nodes)
-    pub fn add_node(&mut self, node: MermaidBasicNode<'a>) {
+    pub fn add_node(&mut self, node: MermaidBasicNode) {
         self.nodes.push(MermaidNode::Node(node))
     }
 
     /// add a link to this Mermaid diagram
-    pub fn add_link(&mut self, link: MermaidLink<'a>) {
+    pub fn add_link(&mut self, link: MermaidLink) {
         self.links.push(link)
     }
 
     /// generate a detailled Mermaid diagram, which includes the operations and the outbound calls of each of the services.
-    fn mermaid_diagram(&self) -> String {
+    pub fn to_diagram(&self) -> String {
         let mut diagram = Vec::new();
         diagram.push("graph LR".to_string());
 
