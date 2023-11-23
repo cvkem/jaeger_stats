@@ -1,4 +1,4 @@
-use super::service_oper_graph::LinkType;
+use super::link_type::LinkType;
 use std::collections::HashMap;
 
 #[derive(Eq, PartialEq, Hash)]

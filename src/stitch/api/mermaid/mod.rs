@@ -1,6 +1,5 @@
-mod compact_link;
 mod diagram;
-mod mermaid;
+mod flowchart;
 mod service_oper_graph;
 
 pub use diagram::get_diagram;
