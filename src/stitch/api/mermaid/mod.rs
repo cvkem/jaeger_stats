@@ -1,3 +1,4 @@
+mod compact_link;
 mod diagram;
 mod mermaid;
 mod service_oper_graph;

@@ -104,9 +104,10 @@ impl StitchedDataSet {
         &self,
         proc_oper: &str,
         call_chain_key: Option<&str>,
+        scope: String,
         compact: bool,
     ) -> String {
-        mermaid::get_diagram(&self.current, proc_oper, call_chain_key, compact)
+        mermaid::get_diagram(&self.current, proc_oper, call_chain_key, scope, compact)
     }
 
     pub fn get_call_chain_chart_data(

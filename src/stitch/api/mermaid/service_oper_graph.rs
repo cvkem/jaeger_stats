@@ -1,4 +1,7 @@
-use super::mermaid::{Mermaid, MermaidBasicNode, MermaidLink, MermaidSubGraph};
+use super::{
+    compact_link::{CompKey, CompValue, CompactLink},
+    mermaid::{Mermaid, MermaidBasicNode, MermaidLink, MermaidSubGraph},
+};
 use crate::stats::call_chain::{Call, CallDirection};
 
 #[derive(Debug)]
@@ -10,9 +13,19 @@ struct Loc {
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum LinkType {
     Default,
-    Reachable,
-    CurrentReach,
+    // Reachable,
+    // CurrentReach,
     Emphasized,
+}
+
+impl LinkType {
+    pub fn merge(self, other: LinkType) -> LinkType {
+        match (self, other) {
+            (LinkType::Default, LinkType::Default) => LinkType::Default,
+            (LinkType::Emphasized, _) => LinkType::Emphasized,
+            (_, LinkType::Emphasized) => LinkType::Emphasized,
+        }
+    }
 }
 // link-style example: linkStyle 37,10,22 stroke:#ff3,stroke-width:4px,color:red;
 
@@ -111,7 +124,7 @@ impl Service {
     }
 
     /// add this service as a subgraph with a series of nodes
-    fn mermaid_add_nodes(&self, mermaid: &mut Mermaid) {
+    fn mermaid_add_service_oper(&self, mermaid: &mut Mermaid) {
         let mut sub_graph = MermaidSubGraph::new(self.service.clone(), self.serv_oper_type);
 
         self.operations.iter().for_each(|oper| {
@@ -124,7 +137,7 @@ impl Service {
     }
 
     /// add this process as a subgraph with a series of nodes
-    fn mermaid_add_links(&self, mermaid: &mut Mermaid, pog: &ServiceOperGraph) {
+    fn mermaid_add_service_oper_links(&self, mermaid: &mut Mermaid, pog: &ServiceOperGraph) {
         self.operations.iter().for_each(|oper| {
             oper.calls.iter().for_each(|call| {
                 let src = format!("{}/{}", self.service, oper.oper);
@@ -133,6 +146,38 @@ impl Service {
             })
         });
     }
+
+    /// add this service as a node
+    fn mermaid_add_service(&self, mermaid: &mut Mermaid) {
+        let service_node = MermaidBasicNode::new(self.service.clone(), self.serv_oper_type);
+        mermaid.add_node(service_node);
+    }
+
+    /// add this process as a subgraph with a series of nodes
+    fn mermaid_add_service_links(&self, mermaid: &mut Mermaid, pog: &ServiceOperGraph) {
+        let mut compact_link = CompactLink::new();
+
+        self.operations.iter().for_each(|oper| {
+            oper.calls.iter().for_each(|call| {
+                let src = format!("{}/{}", self.service, oper.oper);
+                let target = pog.get_service(call.to_service);
+                compact_link.add(
+                    CompKey::new(target),
+                    CompValue::new(call.count, call.line_type),
+                )
+            })
+        });
+
+        compact_link.0.into_iter().for_each(|(k, v)| {
+            mermaid.add_link(MermaidLink::new(
+                self.service.clone(),
+                k.target.to_string(),
+                v.count,
+                v.link_type,
+            ))
+        })
+    }
+
     /// Get the label of an operation (or outbound call) of this process
     fn get_operation_label(&self, oper_idx: usize) -> String {
         format!("{}/{}", self.service, self.operations[oper_idx].oper)
@@ -257,27 +302,40 @@ impl ServiceOperGraph {
         self.0[proc_idx].get_operation_label(oper_idx)
     }
 
+    fn get_service(&self, proc_idx: usize) -> &str {
+        &self.0[proc_idx].service
+    }
+
     /// generate a detailled Mermaid diagram, which includes the operations and the outbound calls of each of the services.
     fn mermaid_diagram_full(&self) -> String {
         let mut mermaid = Mermaid::new();
 
         self.0
             .iter()
-            .for_each(|p| p.mermaid_add_nodes(&mut mermaid));
+            .for_each(|p| p.mermaid_add_service_oper(&mut mermaid));
         self.0
             .iter()
-            .for_each(|p| p.mermaid_add_links(&mut mermaid, self));
+            .for_each(|p| p.mermaid_add_service_oper_links(&mut mermaid, self));
 
         mermaid.to_diagram()
     }
 
     /// Get a compact Mermaid diagram only showing the services, and discarding the detail regarding the actual operation being called.
     fn mermaid_diagram_compact(&self) -> String {
-        unimplemented!()
+        let mut mermaid = Mermaid::new();
+
+        self.0
+            .iter()
+            .for_each(|p| p.mermaid_add_service(&mut mermaid));
+        self.0
+            .iter()
+            .for_each(|p| p.mermaid_add_service_links(&mut mermaid, self));
+
+        mermaid.to_diagram()
     }
 
     /// Extract the mermaid diagram based on these imputs
-    pub fn mermaid_diagram(&self, compact: bool) -> String {
+    pub fn mermaid_diagram(&self, range: String, compact: bool) -> String {
         if compact {
             self.mermaid_diagram_compact()
         } else {

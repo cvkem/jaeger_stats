@@ -32,7 +32,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let sd = StitchedDataSet::from_file(&input_file).unwrap();
     println!("Elapsed time after load: {}", now.elapsed().as_secs());
 
-    let mermaid = sd.get_mermaid_diagram(PROC_OPER, Some(CALL_CHAIN_KEY), false);
+    let scope = "full".to_string();
+    let mermaid = sd.get_mermaid_diagram(PROC_OPER, Some(CALL_CHAIN_KEY), scope, true);
 
     println!("The Mermaid-diagram for {}:\n{}", PROC_OPER, mermaid);
     println!(

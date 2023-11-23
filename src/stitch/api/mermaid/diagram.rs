@@ -107,6 +107,7 @@ pub fn get_diagram(
     data: &Stitched,
     service_oper: &str,
     call_chain_key: Option<&str>,
+    scope: String,
     compact: bool,
 ) -> String {
     let sog = build_serv_oper_graph(data, service_oper);
@@ -121,5 +122,5 @@ pub fn get_diagram(
     };
 
     sog.update_service_operation_type(service_oper, ServiceOperationType::Emphasized);
-    sog.mermaid_diagram(compact)
+    sog.mermaid_diagram(scope, compact)
 }
