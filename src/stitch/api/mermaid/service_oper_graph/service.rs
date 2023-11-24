@@ -1,12 +1,13 @@
 use super::{
     super::flowchart::{Mermaid, MermaidBasicNode, MermaidLink, MermaidSubGraph},
     compact_link::{CompKey, CompValue, CompactLink},
+    node_select::NodeSelector,
     operation::Operation,
     position::Position,
     service_oper_graph::ServiceOperGraph,
     service_oper_type::ServiceOperationType,
 };
-use crate::stats::call_chain::{Call, CallDirection};
+use crate::stats::call_chain::CallDirection;
 
 #[derive(Debug)]
 pub struct Service {
@@ -70,17 +71,23 @@ impl Service {
     }
 
     /// add this process as a subgraph with a series of nodes
-    pub fn mermaid_add_service_links(&self, mermaid: &mut Mermaid, sog: &ServiceOperGraph) {
+    pub fn mermaid_add_service_links(
+        &self,
+        mermaid: &mut Mermaid,
+        sog: &ServiceOperGraph,
+        node_select: NodeSelector,
+    ) {
         let mut compact_link = CompactLink::new();
 
         self.operations.iter().for_each(|oper| {
             oper.calls.iter().for_each(|call| {
-                let src = format!("{}/{}", self.service, oper.oper);
                 let target = sog.get_service(call.to_service);
-                compact_link.add(
-                    CompKey::new(target),
-                    CompValue::new(call.count, call.line_type),
-                )
+                if node_select(target) {
+                    compact_link.add(
+                        CompKey::new(&target.service),
+                        CompValue::new(call.count, call.line_type),
+                    )
+                }
             })
         });
 

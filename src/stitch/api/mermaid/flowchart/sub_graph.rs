@@ -44,7 +44,7 @@ impl MermaidSubGraph {
         diagram.push(format!("{}end", INDENT_STR.get_indent_str(indent)));
 
         if self.serv_oper_type == ServiceOperationType::Emphasized {
-            diagram.push(format!("\tstyle {} fill:#008", self.service))
+            diagram.push(format!("\tstyle {} fill:#0f0", self.service))
         };
     }
 }

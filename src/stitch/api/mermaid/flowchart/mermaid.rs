@@ -52,7 +52,7 @@ impl Mermaid {
             .enumerate()
             .filter_map(|(idx, link)| {
                 if link.link_type == LinkType::Emphasized {
-                    Some(format!("{}", idx + 1))
+                    Some(format!("{}", idx))
                 } else {
                     None
                 }

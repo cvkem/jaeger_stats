@@ -1,6 +1,12 @@
 use super::{
-    super::flowchart::Mermaid, call_descriptor::CallDescriptor, link_type::LinkType, loc::Loc,
-    position::Position, service::Service, service_oper_type::ServiceOperationType,
+    super::flowchart::Mermaid,
+    call_descriptor::CallDescriptor,
+    link_type::LinkType,
+    loc::Loc,
+    node_select::{scope_to_node_selector, NodeSelector},
+    position::Position,
+    service::Service,
+    service_oper_type::ServiceOperationType,
 };
 use crate::stats::call_chain::Call;
 
@@ -132,12 +138,13 @@ impl ServiceOperGraph {
         self.0[serv_idx].get_operation_label(oper_idx)
     }
 
-    pub fn get_service(&self, serv_idx: usize) -> &str {
-        &self.0[serv_idx].service
+    /// get the 'Service' for this idx
+    pub fn get_service(&self, serv_idx: usize) -> &Service {
+        &self.0[serv_idx]
     }
 
     /// generate a detailled Mermaid diagram, which includes the operations and the outbound calls of each of the services.
-    fn mermaid_diagram_full(&self) -> String {
+    fn mermaid_diagram_full(&self, node_select: NodeSelector) -> String {
         let mut mermaid = Mermaid::new();
 
         self.0
@@ -151,25 +158,28 @@ impl ServiceOperGraph {
     }
 
     /// Get a compact Mermaid diagram only showing the services, and discarding the detail regarding the actual operation being called.
-    fn mermaid_diagram_compact(&self) -> String {
+    fn mermaid_diagram_compact(&self, node_select: NodeSelector) -> String {
         let mut mermaid = Mermaid::new();
 
         self.0
             .iter()
+            .filter(|serv| node_select(serv))
             .for_each(|p| p.mermaid_add_service(&mut mermaid));
         self.0
             .iter()
-            .for_each(|p| p.mermaid_add_service_links(&mut mermaid, self));
+            .filter(|serv| node_select(serv))
+            .for_each(|p| p.mermaid_add_service_links(&mut mermaid, self, node_select));
 
         mermaid.to_diagram()
     }
 
     /// Extract the mermaid diagram based on these imputs
-    pub fn mermaid_diagram(&self, range: String, compact: bool) -> String {
+    pub fn mermaid_diagram(&self, scope: String, compact: bool) -> String {
+        let node_select = scope_to_node_selector(&scope);
         if compact {
-            self.mermaid_diagram_compact()
+            self.mermaid_diagram_compact(node_select)
         } else {
-            self.mermaid_diagram_full()
+            self.mermaid_diagram_full(node_select)
         }
     }
 }

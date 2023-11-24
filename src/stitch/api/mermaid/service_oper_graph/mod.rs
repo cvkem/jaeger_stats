@@ -2,6 +2,7 @@ mod call_descriptor;
 mod compact_link;
 mod link_type;
 mod loc;
+mod node_select;
 mod operation;
 mod position;
 mod service;
