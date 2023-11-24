@@ -2,6 +2,7 @@ use super::{
     super::flowchart::{Mermaid, MermaidBasicNode, MermaidLink, MermaidSubGraph},
     compact_link::{CompKey, CompValue, CompactLink},
     operation::Operation,
+    position::Position,
     service_oper_graph::ServiceOperGraph,
     service_oper_type::ServiceOperationType,
 };
@@ -12,14 +13,22 @@ pub struct Service {
     pub service: String,
     pub serv_oper_type: ServiceOperationType,
     pub operations: Vec<Operation>,
+    pub position: Position,
 }
 
 impl Service {
-    pub fn new(service: String) -> Self {
+    /// Create a new service with the given name on the provided Position.
+    /// If Position is Centered the Service will be labelled as 'ServiceOperationType::Emphasized'
+    pub fn new(service: String, position: Position) -> Self {
+        let serv_oper_type = match position {
+            Position::Center => ServiceOperationType::Emphasized,
+            _ => ServiceOperationType::Default,
+        };
         Self {
             service,
-            serv_oper_type: ServiceOperationType::Default,
+            serv_oper_type,
             operations: Vec::new(),
+            position,
         }
     }
 

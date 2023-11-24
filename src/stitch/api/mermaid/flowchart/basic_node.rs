@@ -22,7 +22,7 @@ impl MermaidBasicNode {
             indent_str, self.service, self.service
         ));
         if self.serv_oper_type == ServiceOperationType::Emphasized {
-            diagram.push(format!("{}style {} fill:#00f", indent_str, self.service))
+            diagram.push(format!("{}style {} fill:#080", indent_str, self.service))
         };
     }
 }

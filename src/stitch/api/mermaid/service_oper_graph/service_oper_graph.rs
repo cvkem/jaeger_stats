@@ -1,6 +1,6 @@
 use super::{
     super::flowchart::Mermaid, call_descriptor::CallDescriptor, link_type::LinkType, loc::Loc,
-    service::Service, service_oper_type::ServiceOperationType,
+    position::Position, service::Service, service_oper_type::ServiceOperationType,
 };
 use crate::stats::call_chain::Call;
 
@@ -12,14 +12,14 @@ impl ServiceOperGraph {
         ServiceOperGraph(Vec::new())
     }
 
-    /// insert a new Service-operation pair and returns its location withig the ServiceOperGraph
-    fn add_service_operation(&mut self, call: Call) -> Loc {
-        let mut service = Service::new(call.process);
-        let proc_idx = self.0.len();
+    /// insert a new Service-operation pair and return its location within the ServiceOperGraph
+    fn add_service_operation(&mut self, call: Call, position: Position) -> Loc {
+        let mut service = Service::new(call.process, position);
+        let serv_idx = self.0.len();
         let oper_idx = service.add_operation(call.method, call.call_direction);
         self.0.push(service);
         Loc {
-            service_idx: proc_idx,
+            service_idx: serv_idx,
             oper_idx,
         }
     }
@@ -32,13 +32,13 @@ impl ServiceOperGraph {
     /// find the Service-Operation combination, and return the index-pair as a Location in the ServiceOperGraph or None
     fn get_service_operation_idx(&self, call: &Call) -> Option<Loc> {
         match self.get_service_idx(&call.process) {
-            Some(proc_idx) => match self.0[proc_idx]
+            Some(serv_idx) => match self.0[serv_idx]
                 .operations
                 .iter()
                 .position(|o| o.oper == call.method)
             {
                 Some(oper_idx) => Some(Loc {
-                    service_idx: proc_idx,
+                    service_idx: serv_idx,
                     oper_idx,
                 }),
                 None => None,
@@ -48,37 +48,47 @@ impl ServiceOperGraph {
     }
 
     /// find the Service-Operation combination, or insert it, and return the index-pair as a Location in the ServiceOperGraph
-    fn get_create_service_operation_idx(&mut self, call: Call) -> Loc {
-        if let Some(proc_idx) = self.get_service_idx(&call.process) {
-            match self.0[proc_idx]
+    fn get_create_service_operation_idx(&mut self, call: Call, position: Position) -> Loc {
+        if let Some(serv_idx) = self.get_service_idx(&call.process) {
+            let mut service = &mut self.0[serv_idx];
+            service.position = service.position.check_relevance(position);
+            match service
                 .operations
                 .iter()
                 .position(|o| o.oper == call.method)
             {
                 Some(oper_idx) => Loc {
-                    service_idx: proc_idx,
+                    service_idx: serv_idx,
                     oper_idx,
                 },
                 None => {
-                    let oper_idx = self.0[proc_idx].add_operation(call.method, call.call_direction);
+                    let oper_idx = self.0[serv_idx].add_operation(call.method, call.call_direction);
                     Loc {
-                        service_idx: proc_idx,
+                        service_idx: serv_idx,
                         oper_idx,
                     }
                 }
             }
         } else {
-            self.add_service_operation(call)
+            self.add_service_operation(call, position)
         }
     }
 
     /// Add a connection between 'from' and 'to'.
     /// In case of calls between services this is expected to be an outbound call from the sender (from) and an inbound call for the receiver.
     /// However, when from and to are located in the same service it is a connection is from the receiver (inbound) to the sender (outbound) as it is an internal pass-through.
-    pub fn add_connection(&mut self, from: Call, to: Call, count: f64) {
+    pub fn add_connection(
+        &mut self,
+        from: Call,
+        to: Call,
+        count: f64,
+        service: &str,
+        default_pos: Position,
+    ) {
         // determine the from and to and add them if they do not exist
-        let from = self.get_create_service_operation_idx(from);
-        let to = self.get_create_service_operation_idx(to);
+        let (from_pos, to_pos) = Position::find_positions(&from, &to, service, default_pos);
+        let from = self.get_create_service_operation_idx(from, from_pos);
+        let to = self.get_create_service_operation_idx(to, to_pos);
         // Add or update the link
         let to = CallDescriptor::new(to, count);
         self.0[from.service_idx].operations[from.oper_idx].upsert_link(to)
@@ -117,13 +127,13 @@ impl ServiceOperGraph {
         }
     }
 
-    /// get the name of a target defined by proc_idx and oper_idx within this Graph.
-    pub fn get_target(&self, proc_idx: usize, oper_idx: usize) -> String {
-        self.0[proc_idx].get_operation_label(oper_idx)
+    /// get the name of a target defined by serv_idx and oper_idx within this Graph.
+    pub fn get_target(&self, serv_idx: usize, oper_idx: usize) -> String {
+        self.0[serv_idx].get_operation_label(oper_idx)
     }
 
-    pub fn get_service(&self, proc_idx: usize) -> &str {
-        &self.0[proc_idx].service
+    pub fn get_service(&self, serv_idx: usize) -> &str {
+        &self.0[serv_idx].service
     }
 
     /// generate a detailled Mermaid diagram, which includes the operations and the outbound calls of each of the services.

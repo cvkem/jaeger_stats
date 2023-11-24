@@ -35,7 +35,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let scope = "full".to_string();
     let mermaid = sd.get_mermaid_diagram(PROC_OPER, Some(CALL_CHAIN_KEY), scope, true);
 
-    println!("The Mermaid-diagram for {}:\n{}", PROC_OPER, mermaid);
+    println!(
+        "The Mermaid-diagram for {}:\n-----------\n\n{}\n\n------------\n",
+        PROC_OPER, mermaid
+    );
     println!(
         "Elapsed time after handling requests: {}",
         now.elapsed().as_secs()

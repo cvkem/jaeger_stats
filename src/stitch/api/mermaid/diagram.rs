@@ -1,4 +1,4 @@
-use super::service_oper_graph::{LinkType, ServiceOperGraph, ServiceOperationType};
+use super::service_oper_graph::{LinkType, Position, ServiceOperGraph, ServiceOperationType};
 use crate::{stats::CChainStatsKey, Stitched};
 use regex::Regex;
 use std::collections::HashMap;
@@ -19,6 +19,11 @@ impl CountedPrefix {
     }
 }
 
+// split a service out of a service-oper string by spitting at the '/' (or returning the full str if no '/' is present)
+fn split_service(service_oper: &str) -> &str {
+    service_oper.split("/").next().unwrap()
+}
+
 /// Build the ServiceOperationGraph based on the stitched input 'data' and for the selected 'service_oper'.
 /// The input 'data' is a dataset of stitched data-point containings all traces though the graph and the statistics for the endpoint of this trace.
 /// In this function we reconstruct the original graph by taking the last step of each of the traces that pass through or end in 'service_oper'.
@@ -33,6 +38,7 @@ fn build_serv_oper_graph(data: &Stitched, service_oper: &str) -> ServiceOperGrap
         Regex::new(service_oper).expect("Failed to create regex for service_oper");
     let re_so_prefix = Regex::new(&format!("^.*{}", service_oper))
         .expect("Failed to create regex for service_oper_prefix");
+    let service = split_service(service_oper);
 
     // Stage-1: build the downstream graphs and collect the set of incoming paths
     let (mut sog, counted_prefix) = data
@@ -68,18 +74,19 @@ fn build_serv_oper_graph(data: &Stitched, service_oper: &str) -> ServiceOperGrap
             (ServiceOperGraph::new(), CountedPrefix::new()),
             |mut sog_cp, (prefix, from, to, count)| {
                 // add the connection to the graph
-                sog_cp.0.add_connection(from, to, count);
+                sog_cp.0.add_connection(from, to, count, service, Position::Outbound);
                 // add the counted prefix
                 sog_cp.1.add(prefix.as_str(), count);
                 sog_cp
             },
         );
 
-    // Stage 2: amend the graph with the upstream paths
+    // Stage 2: amend the graph with the upstream paths (inbound paths)
     counted_prefix.0.into_iter().for_each(|(k, v)| {
         let cc = CChainStatsKey::parse(&format!("{k} [Unknown] & &")).unwrap();
-        std::iter::zip(cc.call_chain.iter(), cc.call_chain.iter().skip(1))
-            .for_each(|(s1, s2)| sog.add_connection(s1.clone(), s2.clone(), 0.0));
+        std::iter::zip(cc.call_chain.iter(), cc.call_chain.iter().skip(1)).for_each(|(s1, s2)| {
+            sog.add_connection(s1.clone(), s2.clone(), 0.0, service, Position::Inbound)
+        });
     });
 
     sog
