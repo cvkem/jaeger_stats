@@ -4,12 +4,12 @@ use super::{super::service_oper_graph::LinkType, indent::INDENT_STR};
 pub struct MermaidLink {
     src: String,
     target: String,
-    value: f64,
+    value: Option<f64>,
     pub link_type: LinkType,
 }
 
 impl MermaidLink {
-    pub fn new(src: String, target: String, value: f64, link_type: LinkType) -> Self {
+    pub fn new(src: String, target: String, value: Option<f64>, link_type: LinkType) -> Self {
         Self {
             src,
             target,
@@ -19,19 +19,23 @@ impl MermaidLink {
     }
 
     pub fn to_diagram(&self, diagram: &mut Vec<String>, indent: usize) {
+        let value_str = match self.value {
+            Some(value) => format!("|{:.0}|", value),
+            None => String::new(),
+        };
         let link = match self.link_type {
             LinkType::Emphasized => format!(
-                "{}{} ==>|{}| {}",
+                "{}{} ==>{} {}",
                 INDENT_STR.get_indent_str(indent),
                 self.src,
-                self.value,
+                value_str,
                 self.target
             ),
             _ => format!(
-                "{}{} -->|{}| {}",
+                "{}{} -->{} {}",
                 INDENT_STR.get_indent_str(indent),
                 self.src,
-                self.value,
+                value_str,
                 self.target
             ),
         };

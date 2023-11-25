@@ -15,17 +15,23 @@ impl<'a> CompKey<'a> {
 
 #[derive(Clone, Copy)]
 pub struct CompValue {
-    pub count: f64,
+    pub count: Option<f64>,
     pub link_type: LinkType,
 }
 
 impl CompValue {
-    pub fn new(count: f64, link_type: LinkType) -> Self {
+    pub fn new(count: Option<f64>, link_type: LinkType) -> Self {
         Self { count, link_type }
     }
 
     fn merge(&mut self, other: CompValue) {
-        self.count += other.count;
+        self.count = self.count.and_then(|cnt| {
+            if let Some(other_cnt) = other.count {
+                Some(cnt + other_cnt)
+            } else {
+                None
+            }
+        });
         self.link_type = self.link_type.merge(other.link_type);
     }
 }

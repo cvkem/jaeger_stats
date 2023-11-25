@@ -4,6 +4,7 @@ use super::{
     link_type::LinkType,
     loc::Loc,
     node_select::{scope_to_node_selector, NodeSelector},
+    operation::Operation,
     position::Position,
     service::Service,
     service_oper_type::ServiceOperationType,
@@ -87,7 +88,7 @@ impl ServiceOperGraph {
         &mut self,
         from: Call,
         to: Call,
-        count: f64,
+        count: Option<f64>,
         service: &str,
         default_pos: Position,
     ) {
@@ -136,6 +137,11 @@ impl ServiceOperGraph {
     /// get the name of a target defined by serv_idx and oper_idx within this Graph.
     pub fn get_target(&self, serv_idx: usize, oper_idx: usize) -> String {
         self.0[serv_idx].get_operation_label(oper_idx)
+    }
+
+    /// get a shared reference to the operation defined by serv_idx and oper_idx within this Graph.
+    pub fn get_Operation(&self, serv_idx: usize, oper_idx: usize) -> &Operation {
+        self.0[serv_idx].get_operation(oper_idx)
     }
 
     /// get the 'Service' for this idx
