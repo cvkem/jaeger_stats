@@ -8,7 +8,7 @@ pub struct MermaidBasicNode {
 
 impl MermaidBasicNode {
     pub fn new(service: String, serv_oper_type: ServiceOperationType) -> Self {
-        /// we can not make service a &str as the string needs to be constructed from service and operation to call new (temporary does not live long enough)
+        // We can not make service a &str as the string needs to be constructed from service and operation to call new (temporary does not live long enough)
         Self {
             service,
             serv_oper_type,

@@ -2,7 +2,9 @@ use crate::utils::{self, Chapter};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Clone)]
+#[derive(
+    Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Clone, Copy,
+)]
 pub enum CallDirection {
     Inbound,
     Outbound,

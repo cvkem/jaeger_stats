@@ -33,7 +33,7 @@ impl Service {
         }
     }
 
-    /// push an Operation to the Servic and return the index
+    /// push an Operation to the Service and return the index
     pub fn add_operation(&mut self, oper: String, call_direction: CallDirection) -> usize {
         let oper_idx = self.operations.len();
         self.operations.push(Operation::new(oper, call_direction));
@@ -80,15 +80,21 @@ impl Service {
         let mut compact_link = CompactLink::new();
 
         self.operations.iter().for_each(|oper| {
-            oper.calls.iter().for_each(|call| {
-                let target = sog.get_service(call.to_service);
-                if node_select(target) {
-                    compact_link.add(
-                        CompKey::new(&target.service),
-                        CompValue::new(call.count, call.line_type),
-                    )
-                }
-            })
+            // calls from Inbound to Outbound are internal calls, so these should not be shown in the compact view
+            if oper.call_direction != CallDirection::Inbound {
+                oper.calls.iter().for_each(|call| {
+                    let target = sog.get_service(call.to_service);
+                    let target_oper = target.get_operation(call.to_oper);
+                    if target_oper.call_direction != CallDirection::Outbound {
+                        if node_select(target) {
+                            compact_link.add(
+                                CompKey::new(&target.service),
+                                CompValue::new(call.count, call.line_type),
+                            )
+                        }
+                    }
+                })
+            }
         });
 
         compact_link.0.into_iter().for_each(|(k, v)| {
@@ -104,5 +110,10 @@ impl Service {
     /// Get the label of an operation (or outbound call) of this process
     pub fn get_operation_label(&self, oper_idx: usize) -> String {
         format!("{}/{}", self.service, self.operations[oper_idx].oper)
+    }
+
+    /// Get shared reference to the operation
+    pub fn get_operation(&self, oper_idx: usize) -> &Operation {
+        &self.operations[oper_idx]
     }
 }

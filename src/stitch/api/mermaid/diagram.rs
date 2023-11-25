@@ -74,7 +74,7 @@ fn build_serv_oper_graph(data: &Stitched, service_oper: &str) -> ServiceOperGrap
             (ServiceOperGraph::new(), CountedPrefix::new()),
             |mut sog_cp, (prefix, from, to, count)| {
                 // add the connection to the graph
-                sog_cp.0.add_connection(from, to, count, service, Position::Outbound);
+                sog_cp.0.add_connection(from, to, Some(count), service, Position::Outbound);
                 // add the counted prefix
                 sog_cp.1.add(prefix.as_str(), count);
                 sog_cp
@@ -85,7 +85,7 @@ fn build_serv_oper_graph(data: &Stitched, service_oper: &str) -> ServiceOperGrap
     counted_prefix.0.into_iter().for_each(|(k, v)| {
         let cc = CChainStatsKey::parse(&format!("{k} [Unknown] & &")).unwrap();
         std::iter::zip(cc.call_chain.iter(), cc.call_chain.iter().skip(1)).for_each(|(s1, s2)| {
-            sog.add_connection(s1.clone(), s2.clone(), 0.0, service, Position::Inbound)
+            sog.add_connection(s1.clone(), s2.clone(), None, service, Position::Inbound)
         });
     });
 

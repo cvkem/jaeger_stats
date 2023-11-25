@@ -30,7 +30,18 @@ impl Operation {
             .iter()
             .position(|call| call.to_oper == to.to_oper && call.to_service == to.to_service)
         {
-            Some(idx) => self.calls[idx].count += to.count,
+            Some(idx) => {
+                self.calls[idx].count = match self.calls[idx].count {
+                    Some(count) => {
+                        if let Some(to_count) = to.count {
+                            Some(count + to_count)
+                        } else {
+                            None
+                        }
+                    }
+                    None => to.count,
+                }
+            }
             None => self.calls.push(to),
         }
     }
