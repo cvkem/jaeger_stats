@@ -1,5 +1,3 @@
-use crate::stats::call_chain::CallDirection;
-
 use super::{link_type::LinkType, loc::Loc};
 
 /// defines a position in the ProcessConnection, where the first index is the process and the second is the operation.
