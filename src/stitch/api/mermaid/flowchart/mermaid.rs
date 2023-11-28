@@ -58,10 +58,12 @@ impl Mermaid {
                 }
             })
             .collect();
-        diagram.push(format!(
-            "linkStyle {} stroke:#ff3,stroke-width:4px,color:red;",
-            highlighted.join(",")
-        ));
+        if !highlighted.is_empty() {
+            diagram.push(format!(
+                "linkStyle {} stroke:#ff3,stroke-width:4px,color:red;",
+                highlighted.join(",")
+            ));    
+        }
 
         diagram.join("\n")
     }
