@@ -1,6 +1,6 @@
 use super::{
     super::service_oper_graph::ServiceOperationType, basic_node::MermaidBasicNode,
-    indent::INDENT_STR, node::MermaidNode,
+    escape_name::escape_name, indent::INDENT_STR, node::MermaidNode,
 };
 
 /// A node with an inner structure representing nested nodes.
@@ -33,10 +33,11 @@ impl MermaidSubGraph {
     /// to_diagram
     /// TODO handle indentation
     pub fn to_diagram(&self, diagram: &mut Vec<String>, indent: usize) {
+        let esc_service = escape_name(&self.service);
         diagram.push(format!(
             "{}subgraph {}",
             INDENT_STR.get_indent_str(indent),
-            self.service
+            esc_service
         ));
         self.nodes
             .iter()
@@ -44,7 +45,7 @@ impl MermaidSubGraph {
         diagram.push(format!("{}end", INDENT_STR.get_indent_str(indent)));
 
         if self.serv_oper_type == ServiceOperationType::Emphasized {
-            diagram.push(format!("\tstyle {} fill:#0f0", self.service))
+            diagram.push(format!("\tstyle {} fill:#0f0", esc_service))
         };
     }
 }

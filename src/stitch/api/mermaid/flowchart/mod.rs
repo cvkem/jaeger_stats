@@ -1,4 +1,5 @@
 mod basic_node;
+mod escape_name;
 mod indent;
 mod link;
 mod mermaid;

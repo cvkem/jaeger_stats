@@ -1,4 +1,6 @@
-use super::{super::service_oper_graph::ServiceOperationType, indent::INDENT_STR};
+use super::{
+    super::service_oper_graph::ServiceOperationType, escape_name::escape_name, indent::INDENT_STR,
+};
 
 /// A basic node without any nested nodes&
 pub struct MermaidBasicNode {
@@ -17,12 +19,10 @@ impl MermaidBasicNode {
 
     pub fn to_diagram(&self, diagram: &mut Vec<String>, indent: usize) {
         let indent_str = INDENT_STR.get_indent_str(indent);
-        diagram.push(format!(
-            "{}{}([{}])",
-            indent_str, self.service, self.service
-        ));
+        let esc_service = escape_name(&self.service);
+        diagram.push(format!("{}{}([{}])", indent_str, esc_service, self.service));
         if self.serv_oper_type == ServiceOperationType::Emphasized {
-            diagram.push(format!("{}style {} fill:#080", indent_str, self.service))
+            diagram.push(format!("{}style {} fill:#080", indent_str, esc_service))
         };
     }
 }
