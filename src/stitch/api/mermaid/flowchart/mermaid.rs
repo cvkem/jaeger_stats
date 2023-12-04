@@ -60,7 +60,7 @@ impl Mermaid {
             .collect();
         if !highlighted.is_empty() {
             diagram.push(format!(
-                "linkStyle {} stroke:#006622,stroke-width:4px,color:#006622;",
+                "linkStyle {} stroke:#3333ff,stroke-width:4px,color:blue;",
                 highlighted.join(",")
             ));
         }
