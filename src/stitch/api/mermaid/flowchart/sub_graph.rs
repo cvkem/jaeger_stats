@@ -1,6 +1,6 @@
 use super::{
     super::service_oper_graph::ServiceOperationType, basic_node::MermaidBasicNode,
-    escape_name::escape_name, indent::INDENT_STR, node::MermaidNode,
+    escape_name::escape_mermaid_label, indent::INDENT_STR, node::MermaidNode,
 };
 
 /// A node with an inner structure representing nested nodes.
@@ -33,19 +33,27 @@ impl MermaidSubGraph {
     /// to_diagram
     /// TODO handle indentation
     pub fn to_diagram(&self, diagram: &mut Vec<String>, indent: usize) {
-        let esc_service = escape_name(&self.service);
-        diagram.push(format!(
-            "{}subgraph {}",
-            INDENT_STR.get_indent_str(indent),
-            esc_service
-        ));
+        let esc_service = escape_mermaid_label(&self.service);
+        let indent_str = INDENT_STR.get_indent_str(indent);
+        let subgraph_spec = match esc_service.as_ref() {
+            None => format!("{}subgraph {}", indent_str, self.service),
+            Some(esc_service) => format!(
+                "{}subgraph {} [\"{}\"]",
+                indent_str, esc_service, self.service
+            ),
+        };
+        diagram.push(subgraph_spec);
         self.nodes
             .iter()
             .for_each(|node| node.to_diagram(diagram, indent + 1));
         diagram.push(format!("{}end", INDENT_STR.get_indent_str(indent)));
 
         if self.serv_oper_type == ServiceOperationType::Emphasized {
-            diagram.push(format!("\tstyle {} fill:#0f0", esc_service))
+            let the_service = match esc_service.as_ref() {
+                Some(esc_service) => esc_service,
+                None => &self.service,
+            };
+            diagram.push(format!("\tstyle {} fill:#00b33c", the_service))
         };
     }
 }
