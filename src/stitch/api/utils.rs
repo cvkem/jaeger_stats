@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{BestFit, Stitched, StitchedLine, StitchedSet};
 use log::error;
-use regex::Regex;
+use regex::{self, Regex};
 use std::cmp::Ordering;
 
 const DEFAULT_RANK: f64 = -1.0; // indicates growth not defined
@@ -199,7 +199,8 @@ fn get_call_chain_list_end2end(
     all_chains: bool,
     inbound_idx_filter: Option<i64>,
 ) -> ProcessList {
-    let re_proc_oper = Regex::new(proc_oper).expect("Failed to create regex for proc_oper");
+    let esc_proc_oper = regex::escape(proc_oper);
+    let re_proc_oper = Regex::new(&esc_proc_oper).expect("Failed to create regex for proc_oper");
 
     let inbound_prefix_idx = InboundPrefixIdx::new(data, proc_oper);
 

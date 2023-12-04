@@ -1,6 +1,6 @@
 use super::service_oper_graph::{LinkType, Position, ServiceOperGraph, ServiceOperationType};
 use crate::{stats::CChainStatsKey, Stitched};
-use regex::Regex;
+use regex::{self, Regex};
 use std::collections::HashMap;
 
 struct CountedPrefix(HashMap<String, f64>);
@@ -34,9 +34,10 @@ fn split_service(service_oper: &str) -> &str {
 /// 1. find all paths in 'data' that touch 'service_oper' and construct the graph including the counts (statistics). In this stage we also collect that paths leading to 'service_oper'
 /// 2. The (deduplicated) set of all paths leading into 'service_oper' are used to construct all the upstream process-steps. However, we do not have count-statistics for these paths
 fn build_serv_oper_graph(data: &Stitched, service_oper: &str) -> ServiceOperGraph {
+    let esc_service_oper = regex::escape(service_oper);
     let re_service_oper =
-        Regex::new(service_oper).expect("Failed to create regex for service_oper");
-    let re_so_prefix = Regex::new(&format!("^.*{}", service_oper))
+        Regex::new(&esc_service_oper).expect("Failed to create regex for service_oper");
+    let re_so_prefix = Regex::new(&format!("^.*{}", esc_service_oper))
         .expect("Failed to create regex for service_oper_prefix");
     let service = split_service(service_oper);
 
