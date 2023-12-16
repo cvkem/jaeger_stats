@@ -140,11 +140,11 @@ pub fn get_process_list(data: &Stitched, metric: &str) -> ProcessList {
 }
 
 /// get an ordered list of call-chains ranked based on 'metric' that are inbound on a point.
-fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -> ProcessList {
+fn get_call_chain_list_inbound(data: &Stitched, service_oper: &str, metric: &str) -> ProcessList {
     let proc_list = match data
         .call_chain
         .iter()
-        .filter(|(k, _v)| k == proc_oper)
+        .filter(|(k, _v)| k == service_oper)
         .map(|(_k, v)| v)
         .next()
     {
@@ -183,7 +183,7 @@ fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -
                 .collect()
         }
         None => {
-            error!("Could not find section for proces_oper = '{proc_oper}'");
+            error!("Could not find section for proces_oper = '{service_oper}'");
             Vec::new()
         }
     };
@@ -194,25 +194,26 @@ fn get_call_chain_list_inbound(data: &Stitched, proc_oper: &str, metric: &str) -
 /// get an ordered list of call-chains ranked based on 'metric' that are end2end process (from end-point to leaf-process of the call-chain).
 fn get_call_chain_list_end2end(
     data: &Stitched,
-    proc_oper: &str,
+    service_oper: &str,
     metric: &str,
     all_chains: bool,
     inbound_idx_filter: Option<i64>,
 ) -> ProcessList {
-    let esc_proc_oper = regex::escape(proc_oper);
-    let re_proc_oper = Regex::new(&esc_proc_oper).expect("Failed to create regex for proc_oper");
+    let esc_service_oper = regex::escape(service_oper);
+    let re_service_oper =
+        Regex::new(&esc_service_oper).expect("Failed to create regex for service_oper");
 
-    let inbound_prefix_idx = InboundPrefixIdx::new(data, proc_oper);
+    let inbound_prefix_idx = InboundPrefixIdx::new(data, service_oper);
 
     let proc_list = data
         .call_chain
         .iter()
-        .filter(|(k, _ccd)| k != proc_oper) // these are already reported as inbound chains
+        .filter(|(k, _ccd)| k != service_oper) // these are already reported as inbound chains
         .flat_map(|(_k, ccd_vec)| {
             ccd_vec
                 .iter()
                 .filter(|ccd| all_chains || ccd.is_leaf)
-                .filter(|ccd| re_proc_oper.find(&ccd.full_key).is_some())
+                .filter(|ccd| re_service_oper.find(&ccd.full_key).is_some())
                 .filter_map(|ccd| {
                     // provide a rank based on the reverse of the index, as the highest rank should be in first position.
                     let rank = if metric.is_empty() {
@@ -250,15 +251,15 @@ fn get_call_chain_list_end2end(
 /// get an ordered list of call-chains ranked based on 'metric' that are inbound on a point.
 pub fn get_call_chain_list(
     data: &Stitched,
-    proc_oper: &str,
+    service_oper: &str,
     metric: &str,
     scope: &str,
     inbound_idx: Option<i64>,
 ) -> ProcessList {
     match scope {
-        "inbound" | "" => get_call_chain_list_inbound(data, proc_oper, metric), // default option
-        "end2end" => get_call_chain_list_end2end(data, proc_oper, metric, false, inbound_idx),
-        "all" => get_call_chain_list_end2end(data, proc_oper, metric, true, inbound_idx),
+        "inbound" | "" => get_call_chain_list_inbound(data, service_oper, metric), // default option
+        "end2end" => get_call_chain_list_end2end(data, service_oper, metric, false, inbound_idx),
+        "all" => get_call_chain_list_end2end(data, service_oper, metric, true, inbound_idx),
         scope => {
             error!("Unknown scope '{scope}' expected either 'inbound', 'end2end' or 'all'.");
             Vec::new()
@@ -350,7 +351,7 @@ impl ChartDataParameters {
 }
 
 /// the the chart-data for a specific Process-operation combination
-pub fn get_proc_oper_chart_data(
+pub fn get_service_oper_chart_data(
     data: &Stitched,
     labels: Vec<String>,
     process: &str,

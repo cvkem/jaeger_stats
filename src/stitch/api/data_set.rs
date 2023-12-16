@@ -96,7 +96,7 @@ impl StitchedDataSet {
         process: &str,
         metric: &str,
     ) -> Option<ChartDataParameters> {
-        utils::get_proc_oper_chart_data(&self.current, self.get_label_list(), process, metric)
+        utils::get_service_oper_chart_data(&self.current, self.get_label_list(), process, metric)
     }
 
     /// get a mermaid diagram that depicts the current selection based on proc_oper and optionally a call-chain.

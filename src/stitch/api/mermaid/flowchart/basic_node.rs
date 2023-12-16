@@ -25,7 +25,10 @@ impl MermaidBasicNode {
             Some(esc_service) => esc_service,
             None => &self.service,
         };
-        diagram.push(format!("{}{}([\"{}\"])", indent_str, the_service, self.service));
+        diagram.push(format!(
+            "{}{}([\"{}\"])",
+            indent_str, the_service, self.service
+        ));
         if self.serv_oper_type == ServiceOperationType::Emphasized {
             diagram.push(format!("{}style {} fill:#00802b", indent_str, the_service))
         };

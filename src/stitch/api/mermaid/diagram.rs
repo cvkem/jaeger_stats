@@ -101,7 +101,7 @@ fn mark_selected_call_chain(mut sog: ServiceOperGraph, call_chain_key: &str) -> 
     sog
 }
 
-/// Mark downstream nodes as reachable and do a count of the number of paths reachable over current path up to 'service_oper'
+/// Mark downstream nodes as reachable and do a count of the number of paths reachable over current path up to 'service_oper' that is under investigation
 fn mark_and_count_downstream(
     mut sog: ServiceOperGraph,
     service_oper: &str,
