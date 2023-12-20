@@ -58,6 +58,23 @@ impl Operation {
         }
     }
 
+    /// Update the LineType of the connector
+    pub fn update_inbound_path_count(&mut self, to: Loc, count: f64) {
+        match self
+            .calls
+            .iter()
+            .position(|call| call.to_oper == to.oper_idx && call.to_service == to.service_idx)
+        {
+            Some(idx) => {
+                self.calls[idx].inbound_path_count = self.calls[idx]
+                    .inbound_path_count
+                    .map_or(Some(count), |v| Some(v + count));
+                self.calls[idx].line_type = LinkType::Reachable;
+            }
+            None => panic!("Could not locate a connection to {to:?}"),
+        }
+    }
+
     /// update the serv_oper_type of the current operation
     pub fn update_serv_oper_type(&mut self, serv_oper_type: ServiceOperationType) {
         self.serv_oper_type = serv_oper_type

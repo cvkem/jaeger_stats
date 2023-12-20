@@ -74,7 +74,7 @@ pub struct Stitched {
     pub basic: StitchedSet,
     pub process_operation: Vec<(String, StitchedSet)>,
     ///  call-chain is keyed by the Process/Oper and the values is a series of call-chains that end in this process/Oper
-    /// The values is a Vector call-chains represeented by(String, String, Stitched
+    /// The values is a Vector call-chains represent all different paths (call-chains) that terminate in de Process/Oper of the key of this vector.
     pub call_chain: Vec<(String, Vec<CallChainData>)>,
 }
 

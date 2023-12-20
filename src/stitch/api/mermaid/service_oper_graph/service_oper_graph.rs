@@ -103,7 +103,7 @@ impl ServiceOperGraph {
 
     /// update the LineType of the given connection. The connection should exist, otherwise it is created.
     pub fn update_line_type(&mut self, from: &Call, to: &Call, line_type: LinkType) {
-        // determine the from and to and add them if they do not exist
+        // determine the from and to only if they exist
         let from_loc = self.get_service_operation_idx(from);
         let to_loc = self.get_service_operation_idx(to);
         // Update the link-type
@@ -131,6 +131,23 @@ impl ServiceOperGraph {
             Some(loc) => self.0[loc.service_idx].operations[loc.oper_idx]
                 .update_serv_oper_type(serv_oper_type),
             None => panic!("Could not find service '{service_name}' to update serv_oper_type"),
+        }
+    }
+
+    /// Update the inbound_path_count for the call from-to
+    pub fn update_inbound_path_count(&mut self, from: &Call, to: &Call, count: f64) {
+        // determine the from and to only if they exist
+        let from_loc = self.get_service_operation_idx(from);
+        let to_loc = self.get_service_operation_idx(to);
+        // Update the link-type
+        match (from_loc, to_loc) {
+            (Some(from), Some(to)) => self.0[from.service_idx].operations[from.oper_idx]
+                .update_inbound_path_count(to, count),
+            (None, None) => println!("Failed to find both {from:?} and {to:?}"),
+            (None, Some(_)) => {
+                println!("Failed to find from:{from:?} in update_inbound_path_count")
+            }
+            (Some(_), None) => println!("Failed to find to:{to:?} in update_inbound_path_count"),
         }
     }
 

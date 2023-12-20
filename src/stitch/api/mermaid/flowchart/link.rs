@@ -7,23 +7,32 @@ pub struct MermaidLink {
     src: String,
     target: String,
     value: Option<f64>,
+    value2: Option<f64>,
     pub link_type: LinkType,
 }
 
 impl MermaidLink {
-    pub fn new(src: String, target: String, value: Option<f64>, link_type: LinkType) -> Self {
+    pub fn new(
+        src: String,
+        target: String,
+        value: Option<f64>,
+        value2: Option<f64>,
+        link_type: LinkType,
+    ) -> Self {
         Self {
             src,
             target,
             value,
+            value2,
             link_type,
         }
     }
 
     pub fn to_diagram(&self, diagram: &mut Vec<String>, indent: usize) {
-        let value_str = match self.value {
-            Some(value) => format!("|{:.0}|", value),
-            None => String::new(),
+        let value_str = match (self.value, self.value2) {
+            (Some(value), Some(value2)) => format!("|{:.0}/{:.0}|", value, value2),
+            (Some(value), None) => format!("|{:.0}|", value),
+            (None, _) => String::new(),
         };
         let indent_str = INDENT_STR.get_indent_str(indent);
         let esc_src = escape_mermaid_label(&self.src);

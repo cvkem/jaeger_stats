@@ -6,6 +6,7 @@ pub struct CallDescriptor {
     pub to_service: usize,
     pub to_oper: usize,
     pub count: Option<f64>,
+    pub inbound_path_count: Option<f64>,
     pub line_type: LinkType,
 }
 
@@ -15,6 +16,7 @@ impl CallDescriptor {
             to_service: loc.service_idx,
             to_oper: loc.oper_idx,
             count,
+            inbound_path_count: None,
             line_type: LinkType::Default,
         }
     }

@@ -33,6 +33,31 @@ impl Mermaid {
         self.links.push(link)
     }
 
+    pub fn color_links_statement(&self, link_type: LinkType, color: &str) -> Option<String> {
+        // highlight the emphasized links
+        let highlighted: Vec<_> = self
+            .links
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, link)| {
+                if link.link_type == link_type {
+                    Some(format!("{}", idx))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        if !highlighted.is_empty() {
+            Some(format!(
+                "linkStyle {} stroke:{},stroke-width:4px,color:blue;",
+                highlighted.join(","),
+                color,
+            ))
+        } else {
+            None
+        }
+    }
+
     /// generate a detailled Mermaid diagram, which includes the operations and the outbound calls of each of the services.
     pub fn to_diagram(&self) -> String {
         let mut diagram = Vec::new();
@@ -45,25 +70,15 @@ impl Mermaid {
             .iter()
             .for_each(|link| link.to_diagram(&mut diagram, 1));
 
-        // highligh the emphasized links
-        let highlighted: Vec<_> = self
-            .links
-            .iter()
-            .enumerate()
-            .filter_map(|(idx, link)| {
-                if link.link_type == LinkType::Emphasized {
-                    Some(format!("{}", idx))
-                } else {
-                    None
-                }
-            })
-            .collect();
-        if !highlighted.is_empty() {
-            diagram.push(format!(
-                "linkStyle {} stroke:#3333ff,stroke-width:4px,color:blue;",
-                highlighted.join(",")
-            ));
-        }
+        // Highlight the emphasized links
+        if let Some(line) = self.color_links_statement(LinkType::Emphasized, "#3333ff") {
+            diagram.push(line);
+        };
+
+        // Highlight the reachable links
+        if let Some(line) = self.color_links_statement(LinkType::Reachable, "#99ccff") {
+            diagram.push(line);
+        };
 
         diagram.join("\n")
     }

@@ -16,22 +16,40 @@ impl<'a> CompKey<'a> {
 #[derive(Clone, Copy)]
 pub struct CompValue {
     pub count: Option<f64>,
+    pub count2: Option<f64>,
     pub link_type: LinkType,
 }
 
 impl CompValue {
-    pub fn new(count: Option<f64>, link_type: LinkType) -> Self {
-        Self { count, link_type }
+    pub fn new(count: Option<f64>, count2: Option<f64>, link_type: LinkType) -> Self {
+        Self {
+            count,
+            count2,
+            link_type,
+        }
     }
 
     fn merge(&mut self, other: CompValue) {
-        self.count = self.count.and_then(|cnt| {
-            if let Some(other_cnt) = other.count {
-                Some(cnt + other_cnt)
-            } else {
-                None
-            }
-        });
+        self.count = match (self.count, other.count) {
+            (Some(cnt), Some(ocnt)) => Some(cnt + ocnt),
+            (Some(cnt), None) => Some(cnt),
+            (None, Some(ocnt)) => Some(ocnt),
+            (None, None) => None,
+        };
+        self.count2 = match (self.count2, other.count2) {
+            (Some(cnt), Some(ocnt)) => Some(cnt + ocnt),
+            (Some(cnt), None) => Some(cnt),
+            (None, Some(ocnt)) => Some(ocnt),
+            (None, None) => None,
+        };
+
+        // self.count = self.count.and_then(|cnt| {
+        //     if let Some(other_cnt) = other.count {
+        //         Some(cnt + other_cnt)
+        //     } else {
+        //         None
+        //     }
+        // });
         self.link_type = self.link_type.merge(other.link_type);
     }
 }

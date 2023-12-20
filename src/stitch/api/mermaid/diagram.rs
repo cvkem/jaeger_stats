@@ -45,11 +45,10 @@ fn build_serv_oper_graph(data: &Stitched, service_oper: &str) -> ServiceOperGrap
     let (mut sog, counted_prefix) = data
         .call_chain
         .iter()
-        //            .filter(|(k, _ccd)| k != service_oper) // these are already reported as inbound chains
         .flat_map(|(_k, ccd_vec)| {
+            // _k is final service/operation and of the call-chain this is not relevant
             ccd_vec
                 .iter()
-                //                    .filter(|ccd| all_chains || ccd.is_leaf) // all-chains as we need statistics at each step
                 .filter(|ccd| re_service_oper.find(&ccd.full_key).is_some())
                 .filter_map(|ccd| {
                     // This closure only takes the last two steps of the path, as this transition is covered by the corresponding dataset
@@ -66,7 +65,10 @@ fn build_serv_oper_graph(data: &Stitched, service_oper: &str) -> ServiceOperGrap
                         // and return result
                         Some((prefix, from, to, count))
                     } else {
-                        println!("Skipping call-chain as it is consists of a single step 'ccd.full_key' (no link)");
+                        println!(
+                            "Skipping call-chain as it is consists of a single step '{}' (no link)",
+                            ccd.full_key
+                        );
                         None
                     }
                 })
@@ -75,7 +77,9 @@ fn build_serv_oper_graph(data: &Stitched, service_oper: &str) -> ServiceOperGrap
             (ServiceOperGraph::new(), CountedPrefix::new()),
             |mut sog_cp, (prefix, from, to, count)| {
                 // add the connection to the graph
-                sog_cp.0.add_connection(from, to, Some(count), service, Position::Outbound);
+                sog_cp
+                    .0
+                    .add_connection(from, to, Some(count), service, Position::Outbound);
                 // add the counted prefix
                 sog_cp.1.add(prefix.as_str(), count);
                 sog_cp
@@ -101,12 +105,50 @@ fn mark_selected_call_chain(mut sog: ServiceOperGraph, call_chain_key: &str) -> 
     sog
 }
 
+fn get_call_chain_prefix(service_oper: &str, call_chain_key: &str) -> String {
+    let esc_service_oper = regex::escape(service_oper);
+    let prefix = Regex::new(&format!("^.*{}", esc_service_oper)).expect("Failed to create a regex");
+    match prefix.find(call_chain_key) {
+        Some(result) => result.as_str().to_owned(),
+        None => panic!(
+            "Could not find service-oper '{service_oper}' in call-chain-key '{call_chain_key}'"
+        ),
+    }
+}
+
 /// Mark downstream nodes as reachable and do a count of the number of paths reachable over current path up to 'service_oper' that is under investigation
 fn mark_and_count_downstream(
     mut sog: ServiceOperGraph,
+    data: &Stitched,
     service_oper: &str,
     call_chain_key: &str,
 ) -> ServiceOperGraph {
+    let prefix = get_call_chain_prefix(service_oper, call_chain_key);
+
+    data.call_chain.iter().for_each(|(_k, ccd_vec)| {
+        // _k is final service/operation of the call-chain and this is not relevant
+        ccd_vec
+            .iter()
+            .filter(|ccd| ccd.full_key.starts_with(&prefix))
+            .for_each(|ccd| {
+                let cc = CChainStatsKey::parse(&ccd.full_key).unwrap();
+                if cc.call_chain.len() >= 2 {
+                    let skip = cc.call_chain.len() - 2;
+                    let mut cc = cc.call_chain.into_iter().skip(skip);
+                    let from = cc.next().unwrap();
+                    let to = cc.next().unwrap();
+                    let count = ccd.data.0.first().and_then(|data| data.data_avg).unwrap();
+
+                    // and update the reach_count
+                    sog.update_inbound_path_count(&from, &to, count);
+                } else {
+                    println!(
+                        "Skipping call-chain as it is consists of a single step '{}' (no link)",
+                        ccd.full_key
+                    );
+                }
+            });
+    });
     //TODO: to implement
     sog
 }
@@ -122,7 +164,7 @@ pub fn get_diagram(
     let sog = build_serv_oper_graph(data, service_oper);
 
     let mut sog = if let Some(call_chain_key) = call_chain_key {
-        let sog = mark_and_count_downstream(sog, service_oper, call_chain_key);
+        let sog = mark_and_count_downstream(sog, data, service_oper, call_chain_key);
 
         // Emphasize the selected path if the call_chain-key is provided
         mark_selected_call_chain(sog, call_chain_key)

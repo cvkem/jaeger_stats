@@ -59,7 +59,13 @@ impl Service {
             oper.calls.iter().for_each(|call| {
                 let src = format!("{}/{}", self.service, oper.oper);
                 let target = sog.get_target(call.to_service, call.to_oper);
-                mermaid.add_link(MermaidLink::new(src, target, call.count, call.line_type));
+                mermaid.add_link(MermaidLink::new(
+                    src,
+                    target,
+                    call.count,
+                    call.inbound_path_count,
+                    call.line_type,
+                ));
             })
         });
     }
@@ -89,7 +95,7 @@ impl Service {
                         if node_select(target) {
                             compact_link.add(
                                 CompKey::new(&target.service),
-                                CompValue::new(call.count, call.line_type),
+                                CompValue::new(call.count, call.inbound_path_count, call.line_type),
                             )
                         }
                     }
@@ -102,6 +108,7 @@ impl Service {
                 self.service.clone(),
                 k.target.to_string(),
                 v.count,
+                v.count2,
                 v.link_type,
             ))
         })
