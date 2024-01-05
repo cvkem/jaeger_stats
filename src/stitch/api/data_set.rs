@@ -1,7 +1,7 @@
+use crate::mermaid;
 use super::super::Stitched;
 use super::selection::get_derived_stitched;
 use super::{
-    mermaid,
     selection::get_full_selection,
     types::{ChartDataParameters, ProcessList, Selection, Table},
     utils,

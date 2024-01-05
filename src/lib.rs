@@ -1,5 +1,6 @@
 //#![allow(non_snake_case)]
 
+mod mermaid;
 mod processed;
 mod raw;
 mod stats;
