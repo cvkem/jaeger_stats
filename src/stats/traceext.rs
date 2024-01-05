@@ -1,21 +1,10 @@
 use crate::{
     processed::Trace,
-    stats::{
-        call_chain::{CChainEndPointCache, CChainStatsValue},
-        stats_rec::StatsRec,
-    },
-    utils::{self, Chapter},
+    stats::stats_rec::StatsRec,
+    utils,
 };
-use std::{
-    // error::Error,
-    // fs::File,
-    // io::Write,
-    collections::HashMap,
-    mem,
-    path::Path,
-};
+use std::path::Path;
 
-use super::{call_chain::CChainStats, stats_rec::BasicStatsRec};
 
 /// Collect statistics as a string and write it to a textfile in CSV format
 pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec) {

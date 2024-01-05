@@ -6,4 +6,4 @@ mod types;
 mod utils;
 
 pub use data_set::StitchedDataSet;
-pub use types::{ChartDataParameters, ChartLine, ProcessList, ProcessListItem, Selection, Table};
+pub use types::{ChartDataParameters, ChartLine, ProcessListItem, Selection, Table};
