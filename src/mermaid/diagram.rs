@@ -1,28 +1,11 @@
-use super::service_oper_graph::{LinkType, Position, ServiceOperGraph, ServiceOperationType};
+use super::{
+    counted_prefix::CountedPrefix,
+    service_oper_graph::{LinkType, Position, ServiceOperGraph, ServiceOperationType},
+    tt_utils::{mark_selected_call_chain, split_service}};
 use crate::{stats::CChainStatsKey, Stitched};
 use regex::{self, Regex};
-use std::collections::HashMap;
 
-struct CountedPrefix(HashMap<String, f64>);
 
-impl CountedPrefix {
-    fn new() -> Self {
-        Self(HashMap::new())
-    }
-
-    /// add a new prefix or increment the existing with 'count'
-    fn add(&mut self, prefix: &str, count: f64) {
-        self.0
-            .entry(prefix.to_owned())
-            .and_modify(|v| *v += count)
-            .or_insert(count);
-    }
-}
-
-// split a service out of a service-oper string by spitting at the '/' (or returning the full str if no '/' is present)
-fn split_service(service_oper: &str) -> &str {
-    service_oper.split("/").next().unwrap()
-}
 
 /// Build the ServiceOperationGraph based on the stitched input 'data' and for the selected 'service_oper'.
 /// The input 'data' is a dataset of stitched data-point containings all traces though the graph and the statistics for the endpoint of this trace.
@@ -97,13 +80,6 @@ fn build_serv_oper_graph(data: &Stitched, service_oper: &str) -> ServiceOperGrap
     sog
 }
 
-/// Mark the selected path in the ServiceOperGraph and return the updated graph
-fn mark_selected_call_chain(mut sog: ServiceOperGraph, call_chain_key: &str) -> ServiceOperGraph {
-    let cck = CChainStatsKey::parse(call_chain_key).unwrap();
-    std::iter::zip(cck.call_chain.iter(), cck.call_chain.iter().skip(1))
-        .for_each(|(from, to)| sog.update_line_type(from, to, LinkType::Emphasized));
-    sog
-}
 
 fn get_call_chain_prefix(service_oper: &str, call_chain_key: &str) -> String {
     let esc_service_oper = regex::escape(service_oper);
