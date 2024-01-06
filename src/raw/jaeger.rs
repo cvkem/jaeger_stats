@@ -35,7 +35,10 @@ impl JaegerTag {
     /// Extract the string-value or fail.
     pub fn get_string(&self) -> String {
         let serde_json::Value::String(val) = &self.value else {
-            panic!("The key '{}' does not contain a string. Value = {:?}", self.key, self.value);
+            panic!(
+                "The key '{}' does not contain a string. Value = {:?}",
+                self.key, self.value
+            );
         };
         val.to_owned()
     }
@@ -52,14 +55,20 @@ impl JaegerTag {
     /// Extract the string-value and transform to u32 or fail.
     pub fn to_u32(&self) -> u32 {
         let Ok(val) = self.get_string().trim().parse() else {
-            panic!("Can no translate key '{}' to u32 {:?}", self.key, self.value);
+            panic!(
+                "Can no translate key '{}' to u32 {:?}",
+                self.key, self.value
+            );
         };
         val
     }
 
     pub fn get_i16(&self) -> i16 {
         let serde_json::Value::Number(val) = &self.value else {
-            panic!("The key '{}' does not contain a number. Value = {:?}", self.key, self.value);
+            panic!(
+                "The key '{}' does not contain a number. Value = {:?}",
+                self.key, self.value
+            );
         };
         match val.as_i64() {
             Some(val) => val as i16,
@@ -72,7 +81,10 @@ impl JaegerTag {
 
     pub fn get_i32(&self) -> i32 {
         let serde_json::Value::Number(val) = &self.value else {
-            panic!("The key '{}' does not contain a number. Value = {:?}", self.key, self.value);
+            panic!(
+                "The key '{}' does not contain a number. Value = {:?}",
+                self.key, self.value
+            );
         };
         match val.as_i64() {
             Some(val) => val as i32,

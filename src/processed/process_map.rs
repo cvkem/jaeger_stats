@@ -21,7 +21,9 @@ pub struct Process {
 impl Process {
     /// Extend the Process with a servername from Json
     fn with_servername(&mut self, data: &Value) {
-        let Value::String(name) = data else {panic!("Expected servicename to be a String")};
+        let Value::String(name) = data else {
+            panic!("Expected servicename to be a String")
+        };
         self.name = name.to_owned();
     }
 
@@ -31,7 +33,9 @@ impl Process {
             // expect an array of tags
             Value::Array(val) => {
                 for tag in val.iter() {
-                    let Value::String(key) = tag.get("key").unwrap() else { panic!("key is not a string"); };
+                    let Value::String(key) = tag.get("key").unwrap() else {
+                        panic!("key is not a string");
+                    };
                     let val = if let Value::String(val) = tag.get("value").unwrap() {
                         val.to_owned()
                     } else {

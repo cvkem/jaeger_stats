@@ -1,4 +1,3 @@
-use crate::mermaid;
 use super::super::Stitched;
 use super::selection::get_derived_stitched;
 use super::{
@@ -6,6 +5,7 @@ use super::{
     types::{ChartDataParameters, ProcessList, Selection, Table},
     utils,
 };
+use crate::mermaid;
 use log::{error, info};
 use std::{path::Path, sync::Arc};
 use thiserror;
@@ -107,7 +107,26 @@ impl StitchedDataSet {
         scope: String,
         compact: bool,
     ) -> String {
-        mermaid::get_diagram(&self.current, proc_oper, call_chain_key, scope, compact)
+        let trace_tree = self
+            .current
+            .call_chain
+            .iter()
+            .map(|(k, ccd)| {
+                let trace_data = ccd
+                    .iter()
+                    .map(|ccd| {
+                        mermaid::TraceData::new(
+                            &ccd.full_key,
+                            ccd.rooted,
+                            ccd.is_leaf,
+                            ccd.data.0.first().and_then(|data| data.data_avg).unwrap(),
+                        )
+                    })
+                    .collect();
+                (k.clone(), trace_data)
+            })
+            .collect();
+        mermaid::TraceTree(trace_tree).get_diagram(proc_oper, call_chain_key, scope, compact)
     }
 
     pub fn get_call_chain_chart_data(

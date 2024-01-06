@@ -82,7 +82,7 @@ impl Call {
         let split = Regex::new(r"^([^/]+)/(.+)$").unwrap();
         let Some(caps) = split.captures(service_operation) else {
             println!("Failed to split '{service_operation}' in a service and an operations separated by a '/'");
-            return None
+            return None;
         };
         let (_, [service, operation]) = caps.extract();
         Some(Call {

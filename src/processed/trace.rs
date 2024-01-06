@@ -76,16 +76,13 @@ pub fn extract_traces(jt: JaegerTrace) -> Vec<Trace> {
 
 fn find_full_duration(ji: &JaegerItem) -> (i64, i64) {
     // compute start-time based on start_time of earliest span
-    let Some(start_dt) = ji.spans
-        .iter()
-        .map(|jspan| jspan.startTime)
-        .min()
-    else {
+    let Some(start_dt) = ji.spans.iter().map(|jspan| jspan.startTime).min() else {
         panic!("Could not find an earliest span");
     };
 
     // compute start-time based on highest value of start_time+duration over all spans.
-    let Some(end_dt) = ji.spans
+    let Some(end_dt) = ji
+        .spans
         .iter()
         .map(|jspan| jspan.startTime + jspan.duration)
         .max()

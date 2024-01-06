@@ -120,8 +120,8 @@ impl CChainStatsKey {
             .split('|')
             .map(|s| {
                 let Some((proc, meth_dir)) = s.trim().split_once('/') else {
-                        panic!("Failed to unpack '{s}' in a process/operation pair.");
-                    };
+                    panic!("Failed to unpack '{s}' in a process/operation pair.");
+                };
                 let (meth, call_direction) = match meth_dir.split_once('[') {
                     Some((meth, dir)) => {
                         let dir = &dir[0..(dir.len() - 1)];

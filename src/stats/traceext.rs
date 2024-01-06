@@ -1,10 +1,5 @@
-use crate::{
-    processed::Trace,
-    stats::stats_rec::StatsRec,
-    utils,
-};
+use crate::{processed::Trace, stats::stats_rec::StatsRec, utils};
 use std::path::Path;
-
 
 /// Collect statistics as a string and write it to a textfile in CSV format
 pub fn write_stats_to_csv_file(csv_file: &str, stats: &StatsRec) {

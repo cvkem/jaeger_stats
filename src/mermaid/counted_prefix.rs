@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-
 pub struct CountedPrefix(pub HashMap<String, f64>);
 
 impl CountedPrefix {

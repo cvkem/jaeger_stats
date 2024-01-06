@@ -57,7 +57,7 @@ fn create_trace_statistics(
 fn write_cumulative_trace_stats(csv_file: PathBuf, cumm_stats: StatsRec, output_ext: &str) {
     // write some cumulative statistics to a CSV-file for Excel analysis.
     stats::write_stats_to_csv_file(csv_file.to_str().unwrap(), &cumm_stats);
-    
+
     // write the full cumulative data to file based on output_ext (either json or bin_code)
     file::write_stats(csv_file.to_str().unwrap(), cumm_stats, output_ext);
 }
