@@ -1,4 +1,4 @@
-use crate::{stats::StatsRec, utils::read_lines};
+use crate::{stats::StatsRec, utils::{read_lines, extend_with_base_path, extract_base_path}};
 use serde::{Deserialize, Serialize};
 use std::{error::Error, ffi::OsString, path::Path};
 
@@ -59,37 +59,11 @@ impl StitchList {
     }
 
     fn add_path(&mut self, base_path: &Path, path: Option<&str>) {
-        match path {
-            Some(path) => {
-                // skip comments at the tail of the path-string
-                let mut path = match path.find('#') {
-                    Some(pos) => path[0..pos].trim(),
-                    None => path,
-                };
-                // correct base-path for ".." on path
-                let mut base_path = base_path.to_path_buf();
-                while path.starts_with("../") || path.starts_with(r"..\") {
-                    path = &path[3..];
-                    if !base_path.pop() {
-                        panic!("can not backtrack via .. beyond the root basepath {base_path:?} for path {path}");
-                    }
-                }
-
-                base_path.push(Path::new(path));
-                println!("base_path now is {base_path:?}");
-                base_path
-                    .canonicalize()
-                    .map_err(|err| {
-                        eprintln!(
-                            "\nFailed to handle path {base_path:?}. File probably does not exist!!"
-                        );
-                        err
-                    })
-                    .unwrap();
-                self.paths.push(Some(base_path.into_os_string()));
-            }
-            None => self.paths.push(None),
-        }
+        let path = match path {
+            Some(path) => Some(extend_with_base_path(base_path, path)),
+            None => None,
+        };
+        self.paths.push(path);
     }
 
     /// Reading all data of a stitchlist in a Vector.
@@ -113,12 +87,7 @@ impl StitchList {
 
     /// Read a stitch-list file and return a struct showing the contents.
     pub fn read_stitch_list(path: &Path) -> Result<StitchList, Box<dyn Error>> {
-        let base_path = path
-            .canonicalize()
-            .unwrap_or_else(|err| panic!("Failed to make canonical stitch-list-path. Path '{}' probably does not exist!\n\tError: {err}", path.display()))
-            .parent()
-            .expect("Could not extract base_path of stitch-list")
-            .to_path_buf();
+        let base_path = extract_base_path(path);
 
         Ok(read_lines(path)?.fold(StitchList::new(), |mut sl, l| {
             let l = l.unwrap();

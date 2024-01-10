@@ -22,7 +22,7 @@ pub use self::{
         datetime_micros_str, datetime_millis_str, datetime_to_micros, micros_to_datetime,
         set_tz_offset_minutes,
     },
-    file::{extend_create_folder, read_lines, write_string_to_file},
+    file::{extend_create_folder, extend_with_base_path, extract_base_path, read_lines, write_string_to_file},
     fs::canonicalize_path,
     hash::{hash, string_hash},
     rate::{calc_rate, set_show_rate_output},

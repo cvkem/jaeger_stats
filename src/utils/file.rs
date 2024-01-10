@@ -1,5 +1,6 @@
 use std::{
     error::Error,
+    ffi::OsString,
     fs::{self, File},
     io::{self, BufRead, Write},
     path::{Path, PathBuf},
@@ -38,4 +39,51 @@ pub fn extend_create_folder(folder: &Path, subfolder: &str) -> PathBuf {
         fs::create_dir(ext_folder.clone()).expect("failed to create folder");
     }
     ext_folder
+}
+
+
+/// extract the base-path from a path containing a file, or the parent of a folder.
+pub fn extract_base_path(path: &Path) -> PathBuf {
+    path
+        .canonicalize()
+        .unwrap_or_else(|err| panic!("Failed to find the canonical path. Path '{}' probably does not exist!\n\tError: {err}", path.display()))
+        .parent()
+        .expect("Could not extract base_path of stitch-list")
+        .to_path_buf()
+}
+
+
+/// extend a path with a base-path. 
+pub fn extend_with_base_path(base_path: &Path, path: &str) -> OsString {
+
+    if path.starts_with('/') || path.starts_with('\\') {
+        panic!("Can not extend a path that starts with {}", path.chars().next().unwrap());
+    }
+    // skip comments at the tail of the path-string
+    let mut path = match path.find('#') {
+        Some(pos) => path[0..pos].trim(),
+        None => path,
+    };
+    // correct base-path for ".." on path
+    let mut base_path = base_path.to_path_buf();
+    while path.starts_with("../") || path.starts_with(r"..\") {
+        path = &path[3..];
+        if !base_path.pop() {
+            panic!("can not backtrack via .. beyond the root basepath {base_path:?} for path {path}");
+        }
+    }
+
+    base_path.push(Path::new(path));
+    println!("base_path now is {base_path:?}");
+    base_path
+        .canonicalize()
+        .map_err(|err| {
+            eprintln!(
+                "\nFailed to handle path {base_path:?}. File probably does not exist!!"
+            );
+            err
+        })
+        .unwrap();
+
+    base_path.into_os_string()
 }
