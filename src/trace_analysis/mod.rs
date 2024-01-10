@@ -7,6 +7,7 @@ use crate::{
 use std::path::{Path, PathBuf};
 
 mod dedup;
+mod mermaid;
 mod stats;
 mod write;
 
@@ -25,6 +26,8 @@ pub fn analyze_file_or_folder(
     cc_path: &str,
     trace_output: bool,
     output_ext: &str,
+    display_service_oper: Option<&str>,
+    display_call_chain: Option<&str>,
 ) -> PathBuf {
     // Read raw jaeger-traces and process them to clean traces.
     let (traces, num_files, folder) =
@@ -55,6 +58,18 @@ pub fn analyze_file_or_folder(
         traces.iter().for_each(|trace| trace.write_trace());
     }
 
-    stats::process_and_fix_traces(folder.clone(), traces, bsr, cc_path, output_ext);
+    let stats_rec = stats::process_and_fix_traces(folder.clone(), traces, bsr, cc_path, output_ext);
+
+    let compact = false;
+    let scope = "FULL".to_string();
+    if let Some(display_service_oper) = display_service_oper {
+        stats_rec.write_mermaid_diagram(
+            &folder,
+            &display_service_oper,
+            display_call_chain,
+            scope,
+            compact,
+        )
+    }
     folder
 }

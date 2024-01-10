@@ -4,6 +4,8 @@ use std::path::Path;
 
 /// Parsing and analyzing Jaeger traces
 
+const EMPTY_ARG: &str = "--";
+
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -29,6 +31,20 @@ struct Args {
     /// The output-extension determines the output-types are 'json' and 'bincode' (which is also used as the file-extension).
     #[arg(short, long, default_value_t = String::from("json"))]
     output_ext: String,
+
+    #[arg(short, long, default_value_t = String::from(EMPTY_ARG))]
+    display_service_oper: String,
+
+    #[arg(long, default_value_t = String::from(EMPTY_ARG))]
+    display_call_chain: String,
+}
+
+fn to_opt_str(s: &String) -> Option<&str> {
+    if &s[..] != EMPTY_ARG {
+        Some(s.as_str())
+    } else {
+        None
+    }
 }
 
 fn main() {
@@ -50,7 +66,10 @@ fn main() {
         &args.call_chain_folder,
         args.trace_output,
         &args.output_ext,
+        to_opt_str(&args.display_service_oper),
+        to_opt_str(&args.display_call_chain),
     );
+    println!("{:?}", args.display_service_oper);
     path.push("report.txt");
     write_report(path.to_str().unwrap());
 }

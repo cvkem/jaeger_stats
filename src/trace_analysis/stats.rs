@@ -168,7 +168,7 @@ pub fn process_and_fix_traces(
     mut bsr: BasicStatsRec,
     cc_path: &str,
     output_ext: &str,
-) {
+) -> StatsRec {
     let total_traces = traces.len();
 
     let stats_folder = utils::extend_create_folder(&folder, "Stats");
@@ -226,7 +226,7 @@ pub fn process_and_fix_traces(
     // writing out the version with corrected call-chains.
     let mut csv_file = stats_folder.clone();
     csv_file.push("cummulative_trace_stats.csv");
-    write_cumulative_trace_stats(csv_file, cumm_stats, output_ext);
+    write_cumulative_trace_stats(csv_file, cumm_stats.clone(), output_ext);
 
     println!();
     utils::report(Chapter::Summary, format!("Processed {total_traces} traces covering {} end-points  (on average {:.1} traces per end-point).",
@@ -240,4 +240,5 @@ pub fn process_and_fix_traces(
             100.0 * bsr.num_incomplete_traces as f64 / total_traces as f64
         ),
     );
+    cumm_stats
 }

@@ -5,6 +5,8 @@ use std::{fs, io};
 
 use super::StatsRecJson;
 
+/// The dump of the file consumes the StatsRec data, as it needs to be turned into a StatsRecJson.
+/// TODO: consider whether it is possible to make a StartRecJson based on References (to allow for an efficient write-operation without consuming the input StatsRec)
 pub fn dump_file(file_name: &str, stats: StatsRec) {
     let f = fs::File::create(file_name).expect("Failed to open file");
     let writer = io::BufWriter::new(f);
