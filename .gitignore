@@ -16,6 +16,7 @@ Cargo.lock
 *.json
 *.bincode
 *.txt
+*.mermaid
 ble*
 *.stitch
 .venv/

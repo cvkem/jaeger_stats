@@ -41,7 +41,6 @@ pub fn extend_create_folder(folder: &Path, subfolder: &str) -> PathBuf {
     ext_folder
 }
 
-
 /// extract the base-path from a path containing a file, or the parent of a folder.
 pub fn extract_base_path(path: &Path) -> PathBuf {
     path
@@ -52,12 +51,17 @@ pub fn extract_base_path(path: &Path) -> PathBuf {
         .to_path_buf()
 }
 
+pub fn current_folder() -> PathBuf {
+    Path::new(".").canonicalize().unwrap().to_path_buf()
+}
 
-/// extend a path with a base-path. 
+/// extend a path with a base-path.
 pub fn extend_with_base_path(base_path: &Path, path: &str) -> OsString {
-
     if path.starts_with('/') || path.starts_with('\\') {
-        panic!("Can not extend a path that starts with {}", path.chars().next().unwrap());
+        panic!(
+            "Can not extend a path that starts with {}",
+            path.chars().next().unwrap()
+        );
     }
     // skip comments at the tail of the path-string
     let mut path = match path.find('#') {
@@ -69,7 +73,9 @@ pub fn extend_with_base_path(base_path: &Path, path: &str) -> OsString {
     while path.starts_with("../") || path.starts_with(r"..\") {
         path = &path[3..];
         if !base_path.pop() {
-            panic!("can not backtrack via .. beyond the root basepath {base_path:?} for path {path}");
+            panic!(
+                "can not backtrack via .. beyond the root basepath {base_path:?} for path {path}"
+            );
         }
     }
 
@@ -78,9 +84,7 @@ pub fn extend_with_base_path(base_path: &Path, path: &str) -> OsString {
     base_path
         .canonicalize()
         .map_err(|err| {
-            eprintln!(
-                "\nFailed to handle path {base_path:?}. File probably does not exist!!"
-            );
+            eprintln!("\nFailed to handle path {base_path:?}. File probably does not exist!!");
             err
         })
         .unwrap();

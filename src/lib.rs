@@ -5,7 +5,7 @@ mod processed;
 mod raw;
 mod stats;
 mod trace_analysis;
-mod utils;
+pub mod utils;
 
 mod graph;
 mod stitch;
@@ -17,8 +17,8 @@ pub use raw::{
 };
 pub use stats::{chained_stats, file::StatsRecJson, CChainEndPointCache, StatsRec};
 pub use utils::{
-    datetime_micros_str, datetime_millis_str, datetime_to_micros, hash, micros_to_datetime, report,
-    set_comma_float, set_tz_offset_minutes, string_hash, write_report,
+    current_folder, datetime_micros_str, datetime_millis_str, datetime_to_micros, hash,
+    micros_to_datetime, report, set_comma_float, set_tz_offset_minutes, string_hash, write_report,
 };
 
 pub use stitch::{

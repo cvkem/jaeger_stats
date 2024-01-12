@@ -36,6 +36,11 @@ path = "src/main/stitch.rs"
 name = "show_traces"
 path = "src/main/show_traces.rs"
 
+
+[[bin]]
+name = "mermaid"
+path = "src/main/mermaid.rs"
+
 [[bin]]
 name = "dotgraph"
 path = "src/main/dotgraph.rs"

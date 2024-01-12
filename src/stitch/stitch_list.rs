@@ -1,4 +1,7 @@
-use crate::{stats::StatsRec, utils::{read_lines, extend_with_base_path, extract_base_path}};
+use crate::{
+    stats::StatsRec,
+    utils::{extend_with_base_path, extract_base_path, read_lines},
+};
 use serde::{Deserialize, Serialize};
 use std::{error::Error, ffi::OsString, path::Path};
 

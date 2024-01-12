@@ -393,17 +393,31 @@ impl StatsRec {
         (total_cc, unrooted_cc)
     }
 
-    /// resturns a hashset containing all call-chains (string-keys)
+    /// returns a hashset containing all call-chains (string-keys)
     pub fn call_chain_set(&self) -> HashSet<String> {
         let cc_keys = self.call_chain_list();
         HashSet::from_iter(cc_keys.into_iter())
     }
 
-    /// returns a hashset containing all call-chains (string-keys)
+    /// returns an ordered containing all call-chains (string-keys)
     pub fn call_chain_sorted(&self) -> Vec<String> {
         let mut cc_keys = self.call_chain_list();
         cc_keys.sort_unstable();
         cc_keys
+    }
+
+    /// get the ordered list of all process/oper combinations
+    pub fn get_proc_oper_list(&self) -> Vec<String> {
+        self.stats
+            .iter()
+            .flat_map(|(service, v)| {
+                v.operation
+                    .0
+                    .iter()
+                    .map(|(oper, _v)| format!("{service}/{oper}"))
+                    .collect::<Vec<String>>()
+            })
+            .collect()
     }
 
     pub fn fix_call_chain(&mut self, cchain_cache: &mut CChainEndPointCache) -> usize {
