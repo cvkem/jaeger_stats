@@ -1,10 +1,11 @@
-use clap::Parser;
-use jaeger_stats::{utils, StatsRec};
+use clap::{Parser, ValueEnum};
+use jaeger_stats::{EdgeValue, utils, MermaidScope, StatsRec};
 use std::path::Path;
 
-/// Parsing and analyzing Jaeger traces
+/// Parsing and analyzin}g Jaeger traces
 
 const EMPTY_ARG: &str = "--";
+
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -13,11 +14,23 @@ struct Args {
     #[arg(long, default_value_t = String::from("/home/cees/ehome/230717_1122_druk/Stats/cummulative_trace_stats.json"))]
     input: String,
 
+    #[arg(short, long, value_enum, default_value_t = EdgeValue::Count)]
+    edge_value: EdgeValue,
+
     #[arg(short, long, default_value_t = String::from("bspc-productinzicht/geefProducten"))]
     service_oper: String,
 
     #[arg(long, default_value_t = String::from(EMPTY_ARG))]
     call_chain: String,
+
+    #[clap(long, short, action)]
+    display: bool,
+
+    #[clap(long, short, action)]
+    compact: bool,
+
+    #[arg(short, long, value_enum, default_value_t = MermaidScope::Full)]
+    scope: MermaidScope,
 }
 
 fn to_opt_str(s: &String) -> Option<&str> {
@@ -48,21 +61,24 @@ fn main() {
         )
     });
 
-    let po = traces.get_proc_oper_list();
-    println!("Service-Operation:\n{}\n\n", get_numbered_lines(po));
+    println!("The edge_value: {:?}", args.edge_value);
 
-    let cc = traces.call_chain_sorted();
-    println!("Call-chains:\n{}\n\n", get_numbered_lines(cc));
+    if args.display {
+        let po = traces.get_proc_oper_list();
+        println!("Service-Operation:\n{}\n\n", get_numbered_lines(po));
 
-    let compact = false;
-    let scope = "FULL".to_string();
+        let cc = traces.call_chain_sorted();
+        println!("Call-chains:\n{}\n\n", get_numbered_lines(cc));
+    }
+
     let folder = utils::current_folder();
     println!("found folder = {}", folder.to_str().unwrap());
     traces.write_mermaid_diagram(
         &folder,
         &args.service_oper,
         to_opt_str(&args.call_chain),
-        scope,
-        compact,
+        args.edge_value,
+        args.scope,
+        args.compact,
     )
 }

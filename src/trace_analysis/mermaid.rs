@@ -1,4 +1,4 @@
-use crate::{mermaid, stats::StatsRec, utils};
+use crate::{mermaid, stats::StatsRec, utils, EdgeValue};
 use std::path::PathBuf;
 
 impl StatsRec {
@@ -8,7 +8,8 @@ impl StatsRec {
         folder: &PathBuf,
         proc_oper: &str,
         call_chain_key: Option<&str>,
-        scope: String,
+        edge_value: EdgeValue,
+        scope: mermaid::MermaidScope,
         compact: bool,
     ) {
         let trace_tree = self

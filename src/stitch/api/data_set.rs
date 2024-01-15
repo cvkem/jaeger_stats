@@ -3,7 +3,7 @@ use super::selection::get_derived_stitched;
 use super::{
     selection::get_full_selection,
     types::{ChartDataParameters, ProcessList, Selection, Table},
-    utils,
+    utils, TraceScope,
 };
 use crate::mermaid;
 use log::{error, info};
@@ -85,7 +85,7 @@ impl StitchedDataSet {
         &self,
         proc_oper: &str,
         metric: &str,
-        scope: &str,
+        scope: TraceScope,
         inbound_idx: Option<i64>,
     ) -> ProcessList {
         utils::get_call_chain_list(&self.current, proc_oper, metric, scope, inbound_idx)
@@ -104,7 +104,7 @@ impl StitchedDataSet {
         &self,
         proc_oper: &str,
         call_chain_key: Option<&str>,
-        scope: String,
+        scope: mermaid::MermaidScope,
         compact: bool,
     ) -> String {
         let trace_tree = self

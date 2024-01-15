@@ -1,5 +1,6 @@
 use super::{
     super::flowchart::Mermaid,
+    super::MermaidScope,
     call_descriptor::CallDescriptor,
     link_type::LinkType,
     loc::Loc,
@@ -197,8 +198,8 @@ impl ServiceOperGraph {
     }
 
     /// Extract the mermaid diagram based on these imputs
-    pub fn mermaid_diagram(&self, scope: String, compact: bool) -> String {
-        let node_select = scope_to_node_selector(&scope);
+    pub fn mermaid_diagram(&self, scope: MermaidScope, compact: bool) -> String {
+        let node_select = scope_to_node_selector(scope);
         if compact {
             self.mermaid_diagram_compact(node_select)
         } else {

@@ -1,4 +1,5 @@
 use crate::{
+    mermaid::MermaidScope,
     processed, raw,
     stats::{self as crate_stats, BasicStatsRec, TraceExtVec},
     utils,
@@ -7,9 +8,12 @@ use crate::{
 use std::path::{Path, PathBuf};
 
 mod dedup;
+mod edge_value;
 mod mermaid;
 mod stats;
 mod write;
+
+pub use edge_value::EdgeValue;
 
 /// analyze_file_or_folder does the full analysis over a single Jaeger json-file, or a folder that contains a set of json files.
 /// All files should be at top-level, so this tool does not inspect sub-folders for json-files (which would not work in fact as sub-folders might contain statistics in json format.).
@@ -60,13 +64,16 @@ pub fn analyze_file_or_folder(
 
     let stats_rec = stats::process_and_fix_traces(folder.clone(), traces, bsr, cc_path, output_ext);
 
+    // Assume some default parameters
     let compact = false;
-    let scope = "FULL".to_string();
+    let scope = MermaidScope::Full;
+    let edge_value = EdgeValue::Count;
     if let Some(display_service_oper) = display_service_oper {
         stats_rec.write_mermaid_diagram(
             &folder,
             &display_service_oper,
             display_call_chain,
+            edge_value,
             scope,
             compact,
         )

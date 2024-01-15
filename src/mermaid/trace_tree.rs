@@ -3,6 +3,7 @@ use super::{
     service_oper_graph::{Position, ServiceOperGraph, ServiceOperationType},
     trace_data::TraceData,
     tt_utils::{get_call_chain_prefix, mark_selected_call_chain, split_service},
+    MermaidScope,
 };
 use crate::stats::CChainStatsKey;
 use regex::{self, Regex};
@@ -35,7 +36,7 @@ impl TraceTree {
             .expect("Failed to create regex for service_oper_prefix");
         let service = split_service(service_oper);
 
-        // Stage-1: build the downstream graphs and collect the set of incoming paths
+        // Stage-1: build the downstream graphs and collect the set of incoming paths via the counted_prefix
         let (mut sog, counted_prefix) = self.0
             .iter()
             .flat_map(|(_k, ccd_vec)| {
@@ -134,7 +135,7 @@ impl TraceTree {
         &self,
         service_oper: &str,
         call_chain_key: Option<&str>,
-        scope: String,
+        scope: MermaidScope,
         compact: bool,
     ) -> String {
         let sog = self.build_serv_oper_graph(service_oper);

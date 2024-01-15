@@ -1,6 +1,7 @@
 use super::{
     inbound_prefix_idx::InboundPrefixIdx,
     types::{ChartDataParameters, ChartLine, ProcessList, ProcessListItem, Table},
+    TraceScope,
 };
 use crate::{BestFit, Stitched, StitchedLine, StitchedSet};
 use log::error;
@@ -253,16 +254,16 @@ pub fn get_call_chain_list(
     data: &Stitched,
     service_oper: &str,
     metric: &str,
-    scope: &str,
+    scope: TraceScope,
     inbound_idx: Option<i64>,
 ) -> ProcessList {
     match scope {
-        "inbound" | "" => get_call_chain_list_inbound(data, service_oper, metric), // default option
-        "end2end" => get_call_chain_list_end2end(data, service_oper, metric, false, inbound_idx),
-        "all" => get_call_chain_list_end2end(data, service_oper, metric, true, inbound_idx),
-        scope => {
-            error!("Unknown scope '{scope}' expected either 'inbound', 'end2end' or 'all'.");
-            Vec::new()
+        TraceScope::Inbound => get_call_chain_list_inbound(data, service_oper, metric), // default option
+        TraceScope::End2end => {
+            get_call_chain_list_end2end(data, service_oper, metric, false, inbound_idx)
+        }
+        TraceScope::All => {
+            get_call_chain_list_end2end(data, service_oper, metric, true, inbound_idx)
         }
     }
 }
