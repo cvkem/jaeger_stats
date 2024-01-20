@@ -1,11 +1,10 @@
 use clap::{Parser, ValueEnum};
-use jaeger_stats::{EdgeValue, utils, MermaidScope, StatsRec};
+use jaeger_stats::{utils, EdgeValue, MermaidScope, StatsRec};
 use std::path::Path;
 
 /// Parsing and analyzin}g Jaeger traces
 
 const EMPTY_ARG: &str = "--";
-
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]

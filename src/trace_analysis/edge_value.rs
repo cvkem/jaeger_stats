@@ -12,7 +12,6 @@ pub enum EdgeValue {
     MaxMillis,
 }
 
-
 const COUNT: &str = "COUNT";
 const AVGMILLIS: &str = "AVGMILLIS";
 const MEDIANMILLIS: &str = "MEDIANMILLIS";
@@ -37,18 +36,20 @@ impl ToString for EdgeValue {
     }
 }
 
-impl From<&str> for EdgeValue {
-    fn from(s: &str) -> Self {
+impl TryFrom<&str> for EdgeValue {
+    type Error = &'static str;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
         match &s.to_uppercase()[..] {
-            COUNT => Self::Count,
-            AVGMILLIS => Self::AvgMillis,
-            MEDIANMILLIS => Self::MedianMillis,
-            P75MILLIS => Self::P75Millis,
-            P90MILLIS => Self::P90Millis,
-            P95MILLIS => Self::P95Millis,
-            P99MILLIS => Self::P99Millis,
-            MAXMILLIS => Self::MaxMillis,
-            scope => panic!("Could not derived EdgeValue for {scope}.  Expected Full, Centered, Inbound or Outbound")
+            COUNT => Ok(Self::Count),
+            AVGMILLIS => Ok(Self::AvgMillis),
+            MEDIANMILLIS => Ok(Self::MedianMillis),
+            P75MILLIS => Ok(Self::P75Millis),
+            P90MILLIS => Ok(Self::P90Millis),
+            P95MILLIS => Ok(Self::P95Millis),
+            P99MILLIS => Ok(Self::P99Millis),
+            MAXMILLIS => Ok(Self::MaxMillis),
+            _ => Err("Could not derive EdgeValue for input.  Expected Full, Centered, Inbound or Outbound")
         }
     }
 }

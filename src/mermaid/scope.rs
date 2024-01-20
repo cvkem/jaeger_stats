@@ -24,14 +24,18 @@ impl ToString for MermaidScope {
     }
 }
 
-impl From<&str> for MermaidScope {
-    fn from(s: &str) -> Self {
+impl TryFrom<&str> for MermaidScope {
+    type Error = &'static str;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
         match &s.to_uppercase()[..] {
-            FULL => Self::Full,
-            CENTERED => Self::Centered,
-            INBOUND => Self::Inbound,
-            OUTBOUND => Self::Outbound,
-            scope => panic!("Could not derived MermaidScope for {scope}.  Expected Full, Centered, Inbound or Outbound")
+            FULL => Ok(Self::Full),
+            CENTERED => Ok(Self::Centered),
+            INBOUND => Ok(Self::Inbound),
+            OUTBOUND => Ok(Self::Outbound),
+            // TODO: find solution to generate static strings from a normal string (with cache-lookup to prevent duplicates)
+            //scope => Err(&format!("Could not derived MermaidScope for {scope}.  Expected Full, Centered, Inbound or Outbound"))
+            scope => Err("Could not derive MermaidScope for input.  Expected Full, Centered, Inbound or Outbound")
         }
     }
 }
