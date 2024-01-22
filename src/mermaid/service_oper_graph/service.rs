@@ -62,7 +62,7 @@ impl Service {
                 mermaid.add_link(MermaidLink::new(
                     src,
                     target,
-                    call.count,
+                    call.edge_value,
                     call.inbound_path_count,
                     call.line_type,
                 ));
@@ -95,7 +95,11 @@ impl Service {
                         if node_select(target) {
                             compact_link.add(
                                 CompKey::new(&target.service),
-                                CompValue::new(call.count, call.inbound_path_count, call.line_type),
+                                CompValue::new(
+                                    call.edge_value,
+                                    call.inbound_path_count,
+                                    call.line_type,
+                                ),
                             )
                         }
                     }

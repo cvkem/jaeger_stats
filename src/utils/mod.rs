@@ -1,5 +1,6 @@
 //! set of auxiliary functions (datetime conversion, log-reporting, file-operations and hashing)
 //!
+mod aggregate_data;
 mod comma_float;
 mod counted;
 mod csv_file;
@@ -13,6 +14,7 @@ mod report;
 mod time_stats;
 
 pub use self::{
+    aggregate_data::{AdditiveData, AggregateData, AverageData},
     comma_float::{
         floats_ref_to_string, floats_to_string, format_float, format_float_opt, set_comma_float,
     },

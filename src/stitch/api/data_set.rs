@@ -115,11 +115,31 @@ impl StitchedDataSet {
                 let trace_data = ccd
                     .iter()
                     .map(|ccd| {
+                        let count: u64 = ccd
+                            .data
+                            .0
+                            .first()
+                            .and_then(|data| data.data_avg)
+                            .unwrap()
+                            .round() as u64;
+                        let avg_duration_millis = ccd
+                            .data
+                            .0
+                            .iter()
+                            .filter(|x| x.label == "avg_duration_millis")
+                            .next()
+                            .and_then(|data| data.data_avg)
+                            .expect("avg-duration missing");
                         mermaid::TraceData::new(
                             &ccd.full_key,
                             ccd.rooted,
                             ccd.is_leaf,
-                            ccd.data.0.first().and_then(|data| data.data_avg).unwrap(),
+                            count,
+                            avg_duration_millis,
+                            None,
+                            None,
+                            None,
+                            None,
                         )
                     })
                     .collect();

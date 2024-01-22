@@ -31,15 +31,15 @@ impl Operation {
             .position(|call| call.to_oper == to.to_oper && call.to_service == to.to_service)
         {
             Some(idx) => {
-                self.calls[idx].count = match self.calls[idx].count {
+                self.calls[idx].edge_value = match self.calls[idx].edge_value {
                     Some(count) => {
-                        if let Some(to_count) = to.count {
+                        if let Some(to_count) = to.edge_value {
                             Some(count + to_count)
                         } else {
                             None
                         }
                     }
-                    None => to.count,
+                    None => to.edge_value,
                 }
             }
             None => self.calls.push(to),

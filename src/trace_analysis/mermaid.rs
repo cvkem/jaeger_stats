@@ -1,5 +1,22 @@
-use crate::{mermaid, stats::StatsRec, utils, EdgeValue};
+use crate::{
+    mermaid, stats::call_chain::CChainStatsValue, stats::StatsRec, utils, utils::TimeStats,
+    EdgeValue,
+};
 use std::path::PathBuf;
+
+//type<A> TraceDataFactory = dyn Fn(&str) -> mermaid::TraceData<A>
+
+// fn get_edge_aggregator(edge_value: EdgeValue, ccv: &CChainStatsValue) -> Box<dyn AggregateData> {
+//     match edge_value {
+//         EdgeValue::Count => Box::new(AdditiveData::new(ccv.count as u64, ccv.count as f64)),
+//         EdgeValue::AvgMillis => Box::new(AverageData::new(ccv.count as u64, TimeStats(&ccv.duration_micros).get_avg_millis())),
+//         EdgeValue::P75Millis => Box::new(AverageData::new(ccv.count as u64, TimeStats(&ccv.duration_micros).get_p_millis(0.75).expect("p75 not available"))),
+//         EdgeValue::P90Millis => Box::new(AverageData::new(ccv.count as u64, TimeStats(&ccv.duration_micros).get_p_millis(0.90).expect("p90 not available"))),
+//         EdgeValue::P95Millis => Box::new(AverageData::new(ccv.count as u64, TimeStats(&ccv.duration_micros).get_p_millis(0.85).expect("p95 not available"))),
+//         EdgeValue::P99Millis => Box::new(AverageData::new(ccv.count as u64, TimeStats(&ccv.duration_micros).get_p_millis(0.99).expect("p99 not available"))),
+//         _ => unimplemented!()
+//     }
+// }
 
 impl StatsRec {
     /// get a mermaid diagram that depicts the current selection based on proc_oper and optionally a call-chain.
@@ -22,7 +39,25 @@ impl StatsRec {
                     .iter()
                     .map(|(cck, ccv)| {
                         let key = cck.call_chain_key();
-                        mermaid::TraceData::new(&key, ccv.rooted, cck.is_leaf, ccv.count as f64)
+                        let count = ccv.count as u64;
+                        let avg_duration_millis = TimeStats(&ccv.duration_micros).get_avg_millis();
+                        let p75_millis = TimeStats(&ccv.duration_micros).get_p_millis(0.75);
+                        let p90_millis = TimeStats(&ccv.duration_micros).get_p_millis(0.90);
+                        let p95_millis = TimeStats(&ccv.duration_micros).get_p_millis(0.95);
+                        let p99_millis = TimeStats(&ccv.duration_micros).get_p_millis(0.99);
+
+                        // TODO: Made switch to aggregator at the wrong site. this is still a tree. Move it to get_diagram
+                        mermaid::TraceData::new(
+                            &key,
+                            ccv.rooted,
+                            cck.is_leaf,
+                            count,
+                            avg_duration_millis,
+                            p75_millis,
+                            p90_millis,
+                            p95_millis,
+                            p99_millis,
+                        )
                     })
                     .collect();
                 (service_oper.clone(), trace_data)
@@ -30,6 +65,7 @@ impl StatsRec {
             .collect();
 
         let diagram =
+            //TODO: do aggregation here
             mermaid::TraceTree(trace_tree).get_diagram(proc_oper, call_chain_key, scope, compact);
 
         write_diagram(folder, proc_oper, diagram);

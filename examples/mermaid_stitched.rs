@@ -1,12 +1,12 @@
 use clap::Parser;
 use jaeger_stats::{
-    BestFit, ChartDataParameters, ChartLine, ProcessListItem, Stitched, StitchedDataSet,
-    StitchedLine, StitchedSet,
+    BestFit, ChartDataParameters, ChartLine, MermaidScope, ProcessListItem, Stitched,
+    StitchedDataSet, StitchedLine, StitchedSet,
 };
 use log::{error, info};
 use serde::Serialize;
 use serde_json;
-use std::{error::Error, fs, io, time::Instant};
+use std::{error::Error, time::Instant};
 
 const SHOW_STDOUT: bool = false;
 
@@ -14,7 +14,7 @@ const SHOW_STDOUT: bool = false;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// A single json input-file that should be analysed to collect all tags
+    /// A single stitched.bincode (or stitched.json) that should be analysed to collect all tags
     input: String,
 }
 
@@ -23,8 +23,10 @@ const CALL_CHAIN_KEY: &str = "retail-gateway/GET:/services/apic-productinzicht/a
 
 fn show_mermaid(sd: &StitchedDataSet, scope: &str, compact: bool) {
     let now = Instant::now();
-    let mermaid =
-        sd.get_mermaid_diagram(PROC_OPER, Some(CALL_CHAIN_KEY), scope.to_string(), compact);
+
+    let mermaid_scope = MermaidScope::try_from(scope).expect("Invalid scope passed");
+
+    let mermaid = sd.get_mermaid_diagram(PROC_OPER, Some(CALL_CHAIN_KEY), mermaid_scope, compact);
 
     println!("The Mermaid-diagram for {PROC_OPER} and scope '{scope}' and compact={compact}:\n-----------\n\n{mermaid}\n\n------------\n");
     println!(

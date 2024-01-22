@@ -58,7 +58,7 @@ impl ServiceOperGraph {
     /// find the Service-Operation combination, or insert it, and return the index-pair as a Location in the ServiceOperGraph
     fn get_create_service_operation_idx(&mut self, call: Call, position: Position) -> Loc {
         if let Some(serv_idx) = self.get_service_idx(&call.process) {
-            let mut service = &mut self.0[serv_idx];
+            let service = &mut self.0[serv_idx];
             service.position = service.position.check_relevance(position);
             match service
                 .operations
@@ -82,14 +82,14 @@ impl ServiceOperGraph {
         }
     }
 
-    /// Add a connection between 'from' and 'to'.
+    /// Add a connection between 'from' and 'to' where the incoming edge is labeled with edge_value.
     /// In case of calls between services this is expected to be an outbound call from the sender (from) and an inbound call for the receiver.
     /// However, when from and to are located in the same service it is a connection is from the receiver (inbound) to the sender (outbound) as it is an internal pass-through.
     pub fn add_connection(
         &mut self,
         from: Call,
         to: Call,
-        count: Option<f64>,
+        edge_value: Option<f64>,
         service: &str,
         default_pos: Position,
     ) {
@@ -98,7 +98,7 @@ impl ServiceOperGraph {
         let from = self.get_create_service_operation_idx(from, from_pos);
         let to = self.get_create_service_operation_idx(to, to_pos);
         // Add or update the link
-        let to = CallDescriptor::new(to, count);
+        let to = CallDescriptor::new(to, edge_value);
         self.0[from.service_idx].operations[from.oper_idx].upsert_link(to)
     }
 

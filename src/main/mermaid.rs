@@ -1,4 +1,4 @@
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use jaeger_stats::{utils, EdgeValue, MermaidScope, StatsRec};
 use std::path::Path;
 
@@ -10,13 +10,13 @@ const EMPTY_ARG: &str = "--";
 #[command(author, version, about, long_about = None)]
 struct Args {
     // file of folder to parse
-    #[arg(long, default_value_t = String::from("/home/cees/ehome/230717_1122_druk/Stats/cummulative_trace_stats.json"))]
+    //    #[arg(long, default_value_t = String::from("/home/cees/ehome/230717_1122_druk/Stats/cummulative_trace_stats.json"))]
     input: String,
 
     #[arg(short, long, value_enum, default_value_t = EdgeValue::Count)]
     edge_value: EdgeValue,
 
-    #[arg(short, long, default_value_t = String::from("bspc-productinzicht/geefProducten"))]
+    #[arg(short, long)] // "bspc-productinzicht/geefProducten"))]
     service_oper: String,
 
     #[arg(long, default_value_t = String::from(EMPTY_ARG))]
@@ -28,7 +28,7 @@ struct Args {
     #[clap(long, short, action)]
     compact: bool,
 
-    #[arg(short, long, value_enum, default_value_t = MermaidScope::Full)]
+    #[arg(long, value_enum, default_value_t = MermaidScope::Full)]
     scope: MermaidScope,
 }
 

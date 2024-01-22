@@ -3,7 +3,7 @@ use std::{collections::HashMap, iter};
 
 #[derive(Default, Debug)]
 pub enum ProcessNodeType {
-    /// represents a prcoess that is directly exposed (via an API gateway), so this is the starting point of a service-process
+    /// represents a process that is directly exposed (via an API gateway), so this is the starting point of a service-process
     EndPoint,
     /// an internal service that supports (public) services (endpoints)
     Intermediate,

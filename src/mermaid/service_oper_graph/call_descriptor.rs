@@ -5,7 +5,7 @@ use super::{link_type::LinkType, loc::Loc};
 pub struct CallDescriptor {
     pub to_service: usize,
     pub to_oper: usize,
-    pub count: Option<f64>,
+    pub edge_value: Option<f64>,
     pub inbound_path_count: Option<f64>,
     pub line_type: LinkType,
 }
@@ -15,7 +15,7 @@ impl CallDescriptor {
         Self {
             to_service: loc.service_idx,
             to_oper: loc.oper_idx,
-            count,
+            edge_value: count,
             inbound_path_count: None,
             line_type: LinkType::Default,
         }

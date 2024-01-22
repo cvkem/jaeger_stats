@@ -52,7 +52,8 @@ impl TraceTree {
                             let mut cc = cc.call_chain.into_iter().skip(skip);
                             let from = cc.next().unwrap();
                             let to = cc.next().unwrap();
-                            let count = ccd.count;
+                            // TODO: select the right value
+                            let count = ccd.count as f64;
 
                             let prefix = re_so_prefix.find(&ccd.full_key).expect("Prefix not found");
 
@@ -114,7 +115,9 @@ impl TraceTree {
                         let mut cc = cc.call_chain.into_iter().skip(skip);
                         let from = cc.next().unwrap();
                         let to = cc.next().unwrap();
-                        let count = ccd.count;
+
+                        // TODO: pick value based on the selected edge_value
+                        let count = ccd.count as f64;
 
                         // and update the reach_count
                         sog.update_inbound_path_count(&from, &to, count);

@@ -10,17 +10,37 @@ pub struct TraceData {
     /// This Call-chain ends at a leaf, and thus covers a full chain (provided it is rooted)
     pub is_leaf: bool,
     /// The number of times this path is traversed
-    pub count: f64,
+    pub count: u64,
+    pub avg_duration_millis: f64,
+    pub p75_millis: Option<f64>,
+    pub p90_millis: Option<f64>,
+    pub p95_millis: Option<f64>,
+    pub p99_millis: Option<f64>,
 }
 
 impl TraceData {
-    pub fn new(full_key: &String, rooted: bool, is_leaf: bool, count: f64) -> Self {
+    pub fn new(
+        full_key: &String,
+        rooted: bool,
+        is_leaf: bool,
+        count: u64,
+        avg_duration_millis: f64,
+        p75_millis: Option<f64>,
+        p90_millis: Option<f64>,
+        p95_millis: Option<f64>,
+        p99_millis: Option<f64>,
+    ) -> Self {
         let full_key = full_key.clone();
         Self {
             full_key,
             rooted,
             is_leaf,
             count,
+            avg_duration_millis,
+            p75_millis,
+            p90_millis,
+            p95_millis,
+            p99_millis,
         }
     }
 }
