@@ -66,7 +66,7 @@ impl StatsRec {
 
         let diagram =
             //TODO: do aggregation here
-            mermaid::TraceTree(trace_tree).get_diagram(proc_oper, call_chain_key, scope, compact);
+            mermaid::TraceTree(trace_tree).get_diagram(proc_oper, call_chain_key, edge_value, scope, compact);
 
         write_diagram(folder, proc_oper, diagram);
     }

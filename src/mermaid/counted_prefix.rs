@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-pub struct CountedPrefix(pub HashMap<String, f64>);
+pub struct CountedPrefix(pub HashMap<String, u64>);
 
 impl CountedPrefix {
     pub fn new() -> Self {
@@ -8,7 +8,7 @@ impl CountedPrefix {
     }
 
     /// add a new prefix or increment the existing with 'count'
-    pub fn add(&mut self, prefix: &str, count: f64) {
+    pub fn add(&mut self, prefix: &str, count: u64) {
         self.0
             .entry(prefix.to_owned())
             .and_modify(|v| *v += count)

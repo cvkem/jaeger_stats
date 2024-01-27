@@ -2,7 +2,10 @@ use super::{
     call_descriptor::CallDescriptor, link_type::LinkType, loc::Loc,
     service_oper_type::ServiceOperationType,
 };
-use crate::stats::call_chain::CallDirection;
+use crate::{
+    mermaid::trace_data::TraceDataStats,
+    stats::call_chain::{Call, CallDirection},
+};
 
 /// Used to store outbound
 #[derive(Debug)]
@@ -24,25 +27,14 @@ impl Operation {
     }
 
     /// Insert a link to the CallDescriptor 'to', or update it if is exists by adding the count of the 'to' CallDescriptor
-    pub fn upsert_link(&mut self, to: CallDescriptor) {
+    pub fn upsert_link(&mut self, to: Loc, data: &TraceDataStats) {
         match self
             .calls
             .iter()
-            .position(|call| call.to_oper == to.to_oper && call.to_service == to.to_service)
+            .position(|call| call.to_oper == to.oper_idx && call.to_service == to.service_idx)
         {
-            Some(idx) => {
-                self.calls[idx].edge_value = match self.calls[idx].edge_value {
-                    Some(count) => {
-                        if let Some(to_count) = to.edge_value {
-                            Some(count + to_count)
-                        } else {
-                            None
-                        }
-                    }
-                    None => to.edge_value,
-                }
-            }
-            None => self.calls.push(to),
+            Some(idx) => self.calls[idx].update(data),
+            None => self.calls.push(CallDescriptor::new(to, data)),
         }
     }
 
@@ -59,16 +51,14 @@ impl Operation {
     }
 
     /// Update the LineType of the connector
-    pub fn update_inbound_path_count(&mut self, to: Loc, count: f64) {
+    pub fn update_inbound_path_count(&mut self, to: Loc, edge_data: &TraceDataStats) {
         match self
             .calls
             .iter()
             .position(|call| call.to_oper == to.oper_idx && call.to_service == to.service_idx)
         {
             Some(idx) => {
-                self.calls[idx].inbound_path_count = self.calls[idx]
-                    .inbound_path_count
-                    .map_or(Some(count), |v| Some(v + count));
+                self.calls[idx].add_inbound_stats(edge_data);
                 self.calls[idx].line_type = LinkType::Reachable;
             }
             None => panic!("Could not locate a connection to {to:?}"),
