@@ -1,5 +1,6 @@
 mod call_descriptor;
 mod compact_link;
+mod edge_value_selector;
 mod link_type;
 mod loc;
 mod node_select;

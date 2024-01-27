@@ -2,10 +2,7 @@ use super::{
     call_descriptor::CallDescriptor, link_type::LinkType, loc::Loc,
     service_oper_type::ServiceOperationType,
 };
-use crate::{
-    mermaid::trace_data::TraceDataStats,
-    stats::call_chain::{Call, CallDirection},
-};
+use crate::{mermaid::trace_data::TraceDataStats, stats::call_chain::CallDirection};
 
 /// Used to store outbound
 #[derive(Debug)]

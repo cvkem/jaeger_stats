@@ -28,7 +28,7 @@ impl TraceTree {
     /// This is a two stage-process.
     /// 1. find all paths in 'data' that touch 'service_oper' and construct the graph including the edge_value statistics (often counts). In this stage we also collect that paths leading to 'service_oper'
     /// 2. The (deduplicated) set of all paths leading into 'service_oper' are used to construct all the upstream process-steps. However, we do not have edge_value-statistics for these paths
-    fn build_serv_oper_graph(&self, service_oper: &str, edge_value: EdgeValue) -> ServiceOperGraph {
+    fn build_serv_oper_graph(&self, service_oper: &str) -> ServiceOperGraph {
         let esc_service_oper = regex::escape(service_oper);
         let re_service_oper =
             Regex::new(&esc_service_oper).expect("Failed to create regex for service_oper");
@@ -37,7 +37,7 @@ impl TraceTree {
         let service = split_service(service_oper);
 
         // Stage-1: build the downstream graphs and collect the set of incoming paths via the counted_prefix
-        let (mut sog, counted_prefix) = self.0
+        let (sog, counted_prefix) = self.0
             .iter()
             .flat_map(|(_k, ccd_vec)| {
                 // _k is final service/operation of the call-chain, which is not needed here
@@ -67,7 +67,7 @@ impl TraceTree {
                     })
             })
             .fold(
-                (ServiceOperGraph::new(edge_value), CountedPrefix::new()),
+                (ServiceOperGraph::new(), CountedPrefix::new()),
                 |mut sog_cp, (prefix, from, to, edge_data)| {
                     // add the connection to the graph
                     sog_cp
@@ -79,15 +79,16 @@ impl TraceTree {
                 },
             );
 
-        // Stage 2: amend the graph with the upstream paths (inbound paths)
-        counted_prefix.0.into_iter().for_each(|(k, v)| {
-            let cc = CChainStatsKey::parse(&format!("{k} [Unknown] & &")).unwrap();
-            std::iter::zip(cc.call_chain.iter(), cc.call_chain.iter().skip(1)).for_each(
-                |(s1, s2)| {
-                    sog.add_connection(s1.clone(), s2.clone(), None, service, Position::Inbound)
-                },
-            );
-        });
+        println!("TODO: skipped stage 2 in TraceTree.build_serv_oper_graph. FIX IT!!");
+        // // Stage 2: amend the graph with the upstream paths (inbound paths)
+        // counted_prefix.0.into_iter().for_each(|(k, v)| {
+        //     let cc = CChainStatsKey::parse(&format!("{k} [Unknown] & &")).unwrap();
+        //     std::iter::zip(cc.call_chain.iter(), cc.call_chain.iter().skip(1)).for_each(
+        //         |(s1, s2)| {
+        //             sog.add_connection(s1.clone(), s2.clone(), None, service, Position::Inbound)
+        //         },
+        //     );
+        // });
 
         sog
     }
@@ -137,7 +138,7 @@ impl TraceTree {
         scope: MermaidScope,
         compact: bool,
     ) -> String {
-        let sog = self.build_serv_oper_graph(service_oper, edge_value);
+        let sog = self.build_serv_oper_graph(service_oper);
 
         let mut sog = if let Some(call_chain_key) = call_chain_key {
             let sog = self.mark_and_count_downstream(sog, service_oper, call_chain_key);
@@ -149,6 +150,6 @@ impl TraceTree {
         };
 
         sog.update_service_operation_type(service_oper, ServiceOperationType::Emphasized);
-        sog.mermaid_diagram(scope, compact)
+        sog.mermaid_diagram(scope, compact, edge_value)
     }
 }

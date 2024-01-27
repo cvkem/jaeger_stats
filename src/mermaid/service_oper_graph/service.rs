@@ -1,13 +1,14 @@
 use super::{
     super::flowchart::{Mermaid, MermaidBasicNode, MermaidLink, MermaidSubGraph},
     compact_link::{CompKey, CompValue, CompactLink},
+    edge_value_selector::EdgeValueSelector,
     node_select::NodeSelector,
     operation::Operation,
     position::Position,
     service_oper_graph::ServiceOperGraph,
     service_oper_type::ServiceOperationType,
 };
-use crate::stats::call_chain::CallDirection;
+use crate::{stats::call_chain::CallDirection, EdgeValue};
 
 #[derive(Debug)]
 pub struct Service {
@@ -54,18 +55,28 @@ impl Service {
     }
 
     /// add this process as a subgraph with a series of nodes
-    pub fn mermaid_add_service_oper_links(&self, mermaid: &mut Mermaid, sog: &ServiceOperGraph) {
+    pub fn mermaid_add_service_oper_links(
+        &self,
+        mermaid: &mut Mermaid,
+        sog: &ServiceOperGraph,
+        node_select: NodeSelector,
+        get_edge_value: EdgeValueSelector,
+    ) {
         self.operations.iter().for_each(|oper| {
             oper.calls.iter().for_each(|call| {
                 let src = format!("{}/{}", self.service, oper.oper);
-                let target = sog.get_target(call.to_service, call.to_oper);
-                mermaid.add_link(MermaidLink::new(
-                    src,
-                    target,
-                    call.edge_value,
-                    call.inbound_path_count,
-                    call.line_type,
-                ));
+                let target_service = sog.get_service(call.to_service);
+                let serv_oper_label = sog.get_target(call.to_service, call.to_oper);
+                // if target is visible the inbound edge should be visible? Or should we require source to be visble too?
+                if node_select(target_service) {
+                    mermaid.add_link(MermaidLink::new(
+                        src,
+                        serv_oper_label,
+                        get_edge_value(Some(&call.stats)),
+                        get_edge_value(call.inbound_path_stats.as_ref()),
+                        call.line_type,
+                    ));
+                }
             })
         });
     }
@@ -82,6 +93,7 @@ impl Service {
         mermaid: &mut Mermaid,
         sog: &ServiceOperGraph,
         node_select: NodeSelector,
+        get_edge_value: EdgeValueSelector,
     ) {
         let mut compact_link = CompactLink::new();
 
@@ -92,12 +104,13 @@ impl Service {
                     let target = sog.get_service(call.to_service);
                     let target_oper = target.get_operation(call.to_oper);
                     if target_oper.call_direction != CallDirection::Outbound {
+                        // if target is visible the inbound edge should be visible? Or should we require source to be visble too?
                         if node_select(target) {
                             compact_link.add(
                                 CompKey::new(&target.service),
                                 CompValue::new(
-                                    call.edge_value,
-                                    call.inbound_path_count,
+                                    get_edge_value(Some(&call.stats)),
+                                    get_edge_value(call.inbound_path_stats.as_ref()),
                                     call.line_type,
                                 ),
                             )
