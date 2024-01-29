@@ -5,7 +5,7 @@ use super::{
     tt_utils::{get_call_chain_prefix, mark_selected_call_chain, split_service},
     MermaidScope,
 };
-use crate::{stats::CChainStatsKey, EdgeValue};
+use crate::{stats::{CChainStatsKey, LeafServiceOper}, EdgeValue};
 use regex::{self, Regex};
 use std::collections::HashMap;
 
@@ -16,7 +16,7 @@ use std::collections::HashMap;
 /// This trace-tree will only contain the call-chains and does not extract the process-oper statistics, as that data is not needed (would be a duplicate).
 ///
 /// NOTE: it seems that the String-key of the hashmap is not used. So TraceTree could be replaced by a Vec<TraceData> instead. (to be double-checked)   
-pub struct TraceTree(pub HashMap<String, Vec<TraceData>>);
+pub struct TraceTree(pub HashMap<LeafServiceOper, Vec<TraceData>>);
 
 impl TraceTree {
     /// Build the ServiceOperationGraph based on the TraceTree (Stiched or StatsRec data) and for the selected 'service_oper'.

@@ -1,3 +1,5 @@
+use crate::stats::CChainStatsKey;
+
 #[derive(Clone, Copy)]
 /// Contains the contains the count and the statistics for a TraceData struct
 pub struct TraceDataStats {
@@ -8,11 +10,22 @@ pub struct TraceDataStats {
     pub p90_millis: Option<f64>,
     pub p95_millis: Option<f64>,
     pub p99_millis: Option<f64>,
+    // add min-milis, max-millis & median-millis
 }
+
+
+// pub struct TraceStep {
+//     pub service: String,
+//     pub operation: String,
+// }
+
+//type TracePath = Vec<TraceStep>;
+type TracePath = CChainStatsKey;
 
 pub struct TraceData {
     /// unique key constructed by the concatenation of all steps of the trace.
     pub full_key: String,
+    pub trace_path: TracePath,
     // /// Key constructed from the inbound calls only (outbound calls, such as GET and POST are omitted). This key is likely unique, but is not guaranteed to be unique
     // #[serde(alias = "inboud_process_key")]
     // // fix as we had a typo in the past. I doubt whether this alias is needed.
@@ -38,6 +51,7 @@ impl TraceData {
         p99_millis: Option<f64>,
     ) -> Self {
         let full_key = full_key.clone();
+        let trace_path = CChainStatsKey::parse(&full_key).unwrap_or_else(|err| panic!("Failed to parse CChainKey: '{full_key}'\nGot error '{err:?}'"));
         let data = TraceDataStats {
             count,
             avg_duration_millis,
@@ -48,6 +62,7 @@ impl TraceData {
         };
         Self {
             full_key,
+            trace_path,
             rooted,
             is_leaf,
             data,

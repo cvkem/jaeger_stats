@@ -13,7 +13,7 @@ pub use {
     call_chain::{CChainEndPointCache, CChainStatsKey},
     operation_stats::OperationStats,
     proc_oper_stats::{ProcOperStats, ProcOperStatsValue},
-    stats_rec::{chained_stats, BasicStatsRec, StatsRec, Version},
+    stats_rec::{chained_stats, BasicStatsRec, LeafServiceOper, StatsRec, Version},
     traceext::{build_trace_ext, write_stats_to_csv_file, TraceExt},
     traceextvec::TraceExtVec,
 };

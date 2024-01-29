@@ -50,6 +50,8 @@ impl Default for Version {
     }
 }
 
+pub type LeafServiceOper = String;
+
 #[derive(Debug, Default, Clone)]
 pub struct StatsRec {
     /// version numbering to handle diversity of analyzed data-sets.
@@ -86,7 +88,7 @@ pub struct StatsRec {
     /// List of processes that perform caching, which is an input parameter to this analysis
     pub caching_processes: Vec<String>,
     /// Statistis per leaf-process (end-point of the chain of processes)
-    pub stats: HashMap<String, OperationStats>, // hashmap based on the leaf process (as that is the initial level of reporting)
+    pub stats: HashMap<LeafServiceOper, OperationStats>, // hashmap based on the leaf process (as that is the initial level of reporting)
 }
 
 impl From<StatsRecJson> for StatsRec {
