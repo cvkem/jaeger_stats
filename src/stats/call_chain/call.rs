@@ -61,7 +61,7 @@ impl CallDirection {
 #[derive(Hash, Eq, PartialEq, PartialOrd, Ord, Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Call {
     pub process: String, // should be called Service
-    pub method: String,  // should be called Operation. However, does that impact existing datafiles? To be solved by Serde-Aliases. But this is not in StatsRec and nog in Stitched.
+    pub method: String,  // should be called Operation. However, does that impact existing datafiles? To be solved by Serde-Aliases. But this is not in StatsRec and nog in Stiched.
     #[serde(default)]
     pub call_direction: CallDirection,
 }

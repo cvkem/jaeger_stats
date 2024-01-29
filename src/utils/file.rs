@@ -55,19 +55,36 @@ pub fn current_folder() -> PathBuf {
     Path::new(".").canonicalize().unwrap().to_path_buf()
 }
 
+/// check if is path is a root-path (starts with '/' or '\')
+pub fn is_rooted_path(path: &str) -> bool {
+    path.starts_with('/') || path.starts_with('\\')
+}
+
+
+/// Remove end-of-line comments and trim whitespace
+fn clean_path_str(path: &str) -> &str {
+    match path.find('#') {
+        Some(pos) => path[0..pos].trim(),
+        None => path,
+    }
+}
+
+/// Translate a str to a clean OsString
+pub fn clean_os_string(path: &str) -> OsString {
+    clean_path_str(path).to_string().into()
+}
+
 /// extend a path with a base-path.
 pub fn extend_with_base_path(base_path: &Path, path: &str) -> OsString {
-    if path.starts_with('/') || path.starts_with('\\') {
+    if  is_rooted_path(path) {
         panic!(
             "Can not extend a path that starts with {}",
             path.chars().next().unwrap()
         );
     }
     // skip comments at the tail of the path-string
-    let mut path = match path.find('#') {
-        Some(pos) => path[0..pos].trim(),
-        None => path,
-    };
+    let mut path = clean_path_str(path);
+
     // correct base-path for ".." on path
     let mut base_path = base_path.to_path_buf();
     while path.starts_with("../") || path.starts_with(r"..\") {
