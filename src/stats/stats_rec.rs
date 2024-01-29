@@ -493,7 +493,7 @@ pub fn chained_stats(trace: &Trace) -> HashMap<String, u32> {
         let proc = span.get_process_str();
         let parents_str = get_call_chain(idx, spans)
             .into_iter()
-            .fold(String::new(), |a, b| a + &b.process + &b.method + " | ");
+            .fold(String::new(), |a, b| a + &b.service + &b.operation + " | ");
         let proc_method = format!("{parents_str}{proc}/{}", span.operation_name);
         stats
             .entry(proc_method)

@@ -38,7 +38,7 @@ pub struct CChainStatsKey {
 impl CChainStatsKey {
     /// get the method of the current call (last call in the call-chain)
     pub fn get_method(&self) -> &str {
-        &self.call_chain[self.call_chain.len() - 1].method
+        &self.call_chain[self.call_chain.len() - 1].operation
     }
 
     // /// get the endpoint-key of this Chain
@@ -130,8 +130,8 @@ impl CChainStatsKey {
                     None => (meth_dir, CallDirection::Unknown),
                 };
                 Call {
-                    process: proc.trim().to_owned(),
-                    method: meth.trim().to_owned(),
+                    service: proc.trim().to_owned(),
+                    operation: meth.trim().to_owned(),
                     call_direction,
                 }
             })
@@ -291,7 +291,7 @@ impl CChainStatsValue {
                 .call_chain
                 .last()
                 .expect("Call chain is empty!")
-                .process
+                .service
         );
         let caching_process = &ps_key.caching_process;
         let percentage = self.count as f64 / n;

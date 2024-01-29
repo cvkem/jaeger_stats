@@ -13,8 +13,8 @@ pub fn get_call_chain(idx: usize, spans: &Spans) -> CallChain {
         let method = span.operation_name.to_owned();
         let call_direction = span.span_kind.as_ref().into();
         Call {
-            process,
-            method,
+            service: process,
+            operation: method,
             call_direction,
         }
     }

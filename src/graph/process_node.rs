@@ -98,8 +98,8 @@ impl ProcessNodes {
 
     pub fn add_call_chain(&mut self, call_chain: &CallChain, count: i32) {
         let initial_call = Call {
-            process: "User".to_owned(),
-            method: "method".to_owned(),
+            service: "User".to_owned(),
+            operation: "method".to_owned(),
             call_direction: CallDirection::Outbound,
         };
         iter::once(&initial_call)
@@ -114,17 +114,19 @@ impl ProcessNodes {
             .for_each(|(_pred, call)| {
                 // work in progress: pred will be used
                 let amend = |pn: &mut ProcessNode| match call.call_direction {
-                    CallDirection::Outbound => pn.add_method(call.method.clone(), count),
-                    CallDirection::Inbound => pn.add_operation(call.method.clone(), count),
-                    CallDirection::Unknown => pn.add_direction_unknown(call.method.clone(), count), // panic!("Unknown call-direction, this should have been fixed earlier!")
+                    CallDirection::Outbound => pn.add_method(call.operation.clone(), count),
+                    CallDirection::Inbound => pn.add_operation(call.operation.clone(), count),
+                    CallDirection::Unknown => {
+                        pn.add_direction_unknown(call.operation.clone(), count)
+                    } // panic!("Unknown call-direction, this should have been fixed earlier!")
                 };
                 self.0
-                    .entry(call.process.clone())
+                    .entry(call.service.clone())
                     .and_modify(|pn| {
                         amend(pn);
                     })
                     .or_insert_with(|| {
-                        let mut pn = ProcessNode::new(call.process.clone());
+                        let mut pn = ProcessNode::new(call.service.clone());
                         amend(&mut pn);
                         pn
                     });

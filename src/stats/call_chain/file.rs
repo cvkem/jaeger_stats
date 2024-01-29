@@ -49,7 +49,9 @@ pub fn caching_process_label(caching_process: &Vec<String>, call_chain: &CallCha
 
     call_chain.iter().for_each(
         |Call {
-             process, method, ..
+             service: process,
+             operation: method,
+             ..
          }| {
             match &method[..] {
                 "GET" | "POST" | "HEAD" | "QUERY" => (), // ignore these methods as the inbound call has been matched already. (prevent duplicates of cached names)

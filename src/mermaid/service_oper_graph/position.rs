@@ -27,7 +27,7 @@ impl Position {
         service: &str,
         default_pos: Position,
     ) -> (Self, Self) {
-        match (&from.process[..] == service, &to.process[..] == service) {
+        match (&from.service[..] == service, &to.service[..] == service) {
             (true, true) => (Position::Center, Position::Center),
             (true, false) => (Position::Center, Position::OutboundCenter),
             (false, true) => (Position::InboundCenter, Position::Center),

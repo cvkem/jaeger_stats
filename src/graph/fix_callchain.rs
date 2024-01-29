@@ -10,7 +10,7 @@ pub fn fix_call_chain(call_chain: &CallChain) -> CallChain {
         .cloned()
         .enumerate()
         .scan("".to_owned(), |last_proc, (idx, mut call)| {
-            if call.process == *last_proc {
+            if call.service == *last_proc {
                 if call.call_direction == CallDirection::Inbound {
                     issues.push(idx);
                 };
@@ -18,7 +18,7 @@ pub fn fix_call_chain(call_chain: &CallChain) -> CallChain {
                 Some(call)
             } else {
                 last_proc.clear();
-                last_proc.push_str(&call.process[..]);
+                last_proc.push_str(&call.service[..]);
                 if call.call_direction == CallDirection::Outbound {
                     issues.push(idx);
                 } else {

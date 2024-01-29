@@ -24,9 +24,9 @@ impl ServiceOperGraph {
 
     /// insert a new Service-operation pair and return its location within the ServiceOperGraph
     fn add_service_operation(&mut self, call: Call, position: Position) -> Loc {
-        let mut service = Service::new(call.process, position);
+        let mut service = Service::new(call.service, position);
         let serv_idx = self.0.len();
-        let oper_idx = service.add_operation(call.method, call.call_direction);
+        let oper_idx = service.add_operation(call.operation, call.call_direction);
         self.0.push(service);
         Loc {
             service_idx: serv_idx,
@@ -41,11 +41,11 @@ impl ServiceOperGraph {
 
     /// find the Service-Operation combination, and return the index-pair as a Location in the ServiceOperGraph or None
     fn get_service_operation_idx(&self, call: &Call) -> Option<Loc> {
-        match self.get_service_idx(&call.process) {
+        match self.get_service_idx(&call.service) {
             Some(serv_idx) => match self.0[serv_idx]
                 .operations
                 .iter()
-                .position(|o| o.oper == call.method)
+                .position(|o| o.oper == call.operation)
             {
                 Some(oper_idx) => Some(Loc {
                     service_idx: serv_idx,
@@ -59,20 +59,21 @@ impl ServiceOperGraph {
 
     /// find the Service-Operation combination, or insert it, and return the index-pair as a Location in the ServiceOperGraph
     fn get_create_service_operation_idx(&mut self, call: Call, position: Position) -> Loc {
-        if let Some(serv_idx) = self.get_service_idx(&call.process) {
+        if let Some(serv_idx) = self.get_service_idx(&call.service) {
             let service = &mut self.0[serv_idx];
             service.position = service.position.check_relevance(position);
             match service
                 .operations
                 .iter()
-                .position(|o| o.oper == call.method)
+                .position(|o| o.oper == call.operation)
             {
                 Some(oper_idx) => Loc {
                     service_idx: serv_idx,
                     oper_idx,
                 },
                 None => {
-                    let oper_idx = self.0[serv_idx].add_operation(call.method, call.call_direction);
+                    let oper_idx =
+                        self.0[serv_idx].add_operation(call.operation, call.call_direction);
                     Loc {
                         service_idx: serv_idx,
                         oper_idx,

@@ -13,7 +13,6 @@ pub struct TraceDataStats {
     // add min-milis, max-millis & median-millis
 }
 
-
 // pub struct TraceStep {
 //     pub service: String,
 //     pub operation: String,
@@ -51,7 +50,9 @@ impl TraceData {
         p99_millis: Option<f64>,
     ) -> Self {
         let full_key = full_key.clone();
-        let trace_path = CChainStatsKey::parse(&full_key).unwrap_or_else(|err| panic!("Failed to parse CChainKey: '{full_key}'\nGot error '{err:?}'"));
+        let trace_path = CChainStatsKey::parse(&full_key).unwrap_or_else(|err| {
+            panic!("Failed to parse CChainKey: '{full_key}'\nGot error '{err:?}'")
+        });
         let data = TraceDataStats {
             count,
             avg_duration_millis,

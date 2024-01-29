@@ -60,7 +60,6 @@ pub fn is_rooted_path(path: &str) -> bool {
     path.starts_with('/') || path.starts_with('\\')
 }
 
-
 /// Remove end-of-line comments and trim whitespace
 fn clean_path_str(path: &str) -> &str {
     match path.find('#') {
@@ -76,7 +75,7 @@ pub fn clean_os_string(path: &str) -> OsString {
 
 /// extend a path with a base-path.
 pub fn extend_with_base_path(base_path: &Path, path: &str) -> OsString {
-    if  is_rooted_path(path) {
+    if is_rooted_path(path) {
         panic!(
             "Can not extend a path that starts with {}",
             path.chars().next().unwrap()

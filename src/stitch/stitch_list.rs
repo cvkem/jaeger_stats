@@ -1,6 +1,8 @@
 use crate::{
     stats::StatsRec,
-    utils::{clean_os_string, extend_with_base_path, extract_base_path, is_rooted_path, read_lines},
+    utils::{
+        clean_os_string, extend_with_base_path, extract_base_path, is_rooted_path, read_lines,
+    },
 };
 use serde::{Deserialize, Serialize};
 use std::{error::Error, ffi::OsString, path::Path};
@@ -63,7 +65,11 @@ impl StitchList {
 
     fn add_path(&mut self, base_path: &Path, path: Option<&str>) {
         let path = match path {
-            Some(path) => Some(if is_rooted_path(path) { clean_os_string(path) } else {extend_with_base_path(base_path, path)}),
+            Some(path) => Some(if is_rooted_path(path) {
+                clean_os_string(path)
+            } else {
+                extend_with_base_path(base_path, path)
+            }),
             None => None,
         };
         self.paths.push(path);

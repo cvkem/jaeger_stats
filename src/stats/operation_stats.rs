@@ -168,7 +168,7 @@ impl OperationStats {
 fn get_duplicates(names: &CallChain) -> Vec<String> {
     let mut duplicates = Vec::new();
     for idx in 0..names.len() {
-        let proc = &names[idx].process;
+        let proc = &names[idx].service;
         let mut j = 0;
         loop {
             if j >= duplicates.len() {
@@ -185,7 +185,7 @@ fn get_duplicates(names: &CallChain) -> Vec<String> {
         //  nme does not exist in duplicates yet, so find it in names
         let mut j = idx + 2; // Step by 2 as we want to prevent matching sub-sequent GET calls
         loop {
-            if j >= names.len() || names[j].process == *proc {
+            if j >= names.len() || names[j].service == *proc {
                 break;
             }
             j += 1;

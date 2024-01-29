@@ -5,7 +5,10 @@ use super::{
     tt_utils::{get_call_chain_prefix, mark_selected_call_chain, split_service},
     MermaidScope,
 };
-use crate::{stats::{CChainStatsKey, LeafServiceOper}, EdgeValue};
+use crate::{
+    stats::{CChainStatsKey, LeafServiceOper},
+    EdgeValue,
+};
 use regex::{self, Regex};
 use std::collections::HashMap;
 
