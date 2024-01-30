@@ -146,7 +146,7 @@ impl StitchedDataSet {
                 (k.clone(), trace_data)
             })
             .collect();
-        mermaid::TraceTree(trace_tree).get_diagram(
+        mermaid::TracePaths(trace_tree).get_diagram(
             proc_oper,
             call_chain_key,
             crate::EdgeValue::Count,
