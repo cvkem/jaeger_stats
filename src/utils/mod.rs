@@ -26,7 +26,8 @@ pub use self::{
     },
     file::{
         clean_os_string, current_folder, extend_create_folder, extend_with_base_path,
-        extract_base_path, is_rooted_path, read_lines, write_string_to_file,
+        extend_with_base_path_opt, extract_base_path, is_rooted_path, read_lines,
+        write_string_to_file,
     },
     fs::canonicalize_path,
     hash::{hash, string_hash},

@@ -73,37 +73,48 @@ pub fn clean_os_string(path: &str) -> OsString {
     clean_path_str(path).to_string().into()
 }
 
-/// extend a path with a base-path.
+/// extend a path with a base-path. However, path is not allowed to be an absolute path (rooted-path) as these can not be extended.
 pub fn extend_with_base_path(base_path: &Path, path: &str) -> OsString {
     if is_rooted_path(path) {
         panic!(
-            "Can not extend a path that starts with {}",
+            "Can not extend a path that starts with '{}'",
             path.chars().next().unwrap()
         );
-    }
+    };
+    extend_with_base_path_opt(base_path, path)
+}
+
+/// extend a path with a base-path
+pub fn extend_with_base_path_opt(base_path: &Path, path: &str) -> OsString {
     // skip comments at the tail of the path-string
     let mut path = clean_path_str(path);
 
-    // correct base-path for ".." on path
-    let mut base_path = base_path.to_path_buf();
-    while path.starts_with("../") || path.starts_with(r"..\") {
-        path = &path[3..];
-        if !base_path.pop() {
-            panic!(
-                "can not backtrack via .. beyond the root basepath {base_path:?} for path {path}"
-            );
+    if is_rooted_path(path) {
+        // absolute paths (rooted paths) can not be extended
+        path.to_string().into()
+    } else {
+        // correct base-path for ".." on path
+        let mut base_path_buf = base_path.to_path_buf();
+        let orig_path = path;
+        while path.starts_with("../") || path.starts_with(r"..\") {
+            path = &path[3..];
+            if !base_path_buf.pop() {
+                panic!(
+                    "can not backtrack via .. beyond the root basepath {base_path:?} for path {path}"
+                );
+            }
         }
+
+        base_path_buf.push(Path::new(path));
+        println!("base_path now is {base_path_buf:?}");
+        base_path_buf
+            .canonicalize()
+            .map_err(|err| {
+                eprintln!("\nFailed to handle path {base_path:?}. File probably does not exist!!");
+                err
+            })
+            .unwrap();
+
+        base_path_buf.into_os_string()
     }
-
-    base_path.push(Path::new(path));
-    println!("base_path now is {base_path:?}");
-    base_path
-        .canonicalize()
-        .map_err(|err| {
-            eprintln!("\nFailed to handle path {base_path:?}. File probably does not exist!!");
-            err
-        })
-        .unwrap();
-
-    base_path.into_os_string()
 }
