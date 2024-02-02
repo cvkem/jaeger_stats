@@ -31,7 +31,7 @@ pub struct TraceData {
     // pub inbound_process_key: String,
     /// This process refers back to the (identified) root of the full trace
     pub rooted: bool,
-    /// This Call-chain ends at a leaf, and thus covers a full chain (provided it is rooted)
+    /// This Call-chain ends at a leaf, and thus covers a full chain (provided it is also rooted)
     pub is_leaf: bool,
     /// the statistical data about this step in a trace
     pub data: TraceDataStats,

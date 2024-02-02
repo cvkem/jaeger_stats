@@ -2,11 +2,14 @@ use super::{
     counted_prefix::CountedPrefix,
     service_oper_graph::{Position, ServiceOperGraph, ServiceOperationType},
     trace_data::TraceData,
-    tt_utils::{get_call_chain_prefix, mark_selected_call_chain, split_service},
+    tt_utils::{
+        get_call_chain_prefix, mark_selected_call_chain, split_service, split_service_operation,
+    },
     MermaidScope,
 };
 use crate::{
-    stats::{CChainStatsKey, LeafServiceOper},
+    mermaid::trace_forrest::TraceForrest,
+    stats::{CChainStatsKey, LeafService},
     EdgeValue,
 };
 use regex::{self, Regex};
@@ -19,10 +22,42 @@ use std::collections::HashMap;
 /// This trace-tree will only contain the call-chains and does not extract the process-oper statistics, as that data is not needed (would be a duplicate).
 ///
 /// NOTE: this structure contains a collection of paths, but is not yet a TraceTree as it does not merge joined prefixes of paths to a single prefix (real tree structure)   
-pub struct TracePaths(pub HashMap<LeafServiceOper, Vec<TraceData>>);
-
+pub struct TracePaths(pub HashMap<LeafService, Vec<TraceData>>);
 
 impl TracePaths {
+    /// Build the ServiceOperationGraph based on the TraceTree (Stiched or StatsRec data) and for the selected 'service_oper'.
+    /// The input 'data' is a dataset of stitched data-point containings all traces though the graph and the statistics for the endpoint of this trace.
+    /// In this function we reconstruct the original graph by taking the last step of each of the traces that pass through or end in 'service_oper'.
+    /// The statistic collected is the average number of traces that pass through a node.
+    /// Some nodes are reachable via multiple paths, in that case the sum is used to aggegate the counts.
+    ///
+    /// This is a two stage-process.
+    /// 1. find all paths in 'data' that touch 'service_oper' and construct the graph including the edge_value statistics (often counts). In this stage we also collect that paths leading to 'service_oper'
+    /// 2. The (deduplicated) set of all paths leading into 'service_oper' are used to construct all the upstream process-steps. However, we do not have edge_value-statistics for these paths
+    fn build_serv_oper_graph2(&self, service_oper: &str) -> ServiceOperGraph {
+        let (service, oper_opt) = split_service_operation(service_oper);
+        let trace_tree = match self.0.get(service) {
+            Some(paths) => {
+                let paths = if let Some(oper) = oper_opt {
+                    // next deref is needed otherwise we get the wrong type
+                    paths
+                        .iter()
+                        .filter(|td| td.trace_path.get_method() == oper)
+                        .collect::<Vec<_>>()
+                } else {
+                    // no operation defined so return all paths.
+                    paths.iter().collect()
+                };
+                TraceForrest::build_trace_tree(paths)
+            }
+            None => panic!("Failure to find the paths that terminate in service '{service}'."),
+        };
+
+        println!("{trace_tree:#?}");
+
+        unimplemented!();
+        ServiceOperGraph::new()
+    }
 
     /// Build the ServiceOperationGraph based on the TraceTree (Stiched or StatsRec data) and for the selected 'service_oper'.
     /// The input 'data' is a dataset of stitched data-point containings all traces though the graph and the statistics for the endpoint of this trace.
@@ -143,7 +178,7 @@ impl TracePaths {
         scope: MermaidScope,
         compact: bool,
     ) -> String {
-        let sog = self.build_serv_oper_graph(service_oper);
+        let sog = self.build_serv_oper_graph2(service_oper);
 
         let mut sog = if let Some(call_chain_key) = call_chain_key {
             let sog = self.mark_and_count_downstream(sog, service_oper, call_chain_key);

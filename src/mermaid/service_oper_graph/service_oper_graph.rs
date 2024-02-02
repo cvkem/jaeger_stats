@@ -14,7 +14,7 @@ use super::{
 use crate::{mermaid::trace_data::TraceDataStats, stats::call_chain::Call, EdgeValue};
 
 /// A ServiceOperGraph is a vector of service that each contain a vector of Operations. Each Operation collects data on the set of outbound calls.
-/// This data-structure tracks all links that exist between a caller and calllees. 
+/// This data-structure tracks all links that exist between a caller and calllees.
 #[derive(Debug)]
 pub struct ServiceOperGraph(Vec<Service>);
 

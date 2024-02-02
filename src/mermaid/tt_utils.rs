@@ -7,6 +7,14 @@ pub fn split_service(service_oper: &str) -> &str {
     service_oper.split("/").next().unwrap()
 }
 
+// split a a service-oper string by spitting at the '/' and returnning the tuple `(service, Some(operation))`  (or returning the `(Service, None)`` if no '/' is present)
+pub fn split_service_operation(service_oper: &str) -> (&str, Option<&str>) {
+    let mut parts = service_oper.split("/");
+    let service = parts.next().unwrap();
+    let oper_opt = parts.next();
+    (service, oper_opt)
+}
+
 pub fn get_call_chain_prefix(service_oper: &str, call_chain_key: &str) -> String {
     let esc_service_oper = regex::escape(service_oper);
     let prefix =
