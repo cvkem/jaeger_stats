@@ -8,7 +8,7 @@ use crate::stats::call_chain::Call;
 // }
 
 #[derive(Debug)]
-/// TraceTrace is used to contain a series of (partial) overlapping paths and extends them to a tree-structured, such that joined segments (prefixes) as shown a a single path.
+/// TraceForrest is used to contain a series of (partial) overlapping paths and extends them to a tree-structured, such that joined segments (prefixes) as shown a a single path.
 pub struct TraceForrest<'a>(pub Vec<TraceNode<'a>>);
 
 impl<'a> TraceForrest<'a> {
@@ -22,46 +22,42 @@ impl<'a> TraceForrest<'a> {
         trace_tree
     }
 
-    // /// add a call to this TraceTree at the current level
-    // fn find_insert_trace_node(&mut self, call: &'a Call) -> &mut TraceNode {
-    //     let trace_node = self.0
-    //         .iter_mut()
-    //         .filter(|tn| tn.service == call.service && tn.operation == call.operation)
-    //         .next();
-    //     let trace_node = match trace_node {
-    //         Some(tn) => tn,
-    //         None => {
-    //             let tn = TraceNode::new(call);
-    //             self.0.push(tn);
-    //             &mut self.0[ self.0.len()]
-    //         }
-    //     };
-    //     trace_node
-    // }
+    /// find the index of a tracenode that corresponds to Call at this level in the traceTree and return the index (or None)
+    fn find_trace_node_idx(&self, call: &Call) -> Option<usize> {
+        self.0
+            .iter()
+            .enumerate()
+            .filter(|(_, tn)| tn.service == call.service && tn.operation == call.operation)
+            .next()
+            .map(|(idx, _tn)| idx)
+    }
+
+    /// aadd a new node to the Forrest based on Call
+    fn add_node<'b>(&mut self, call: &'b Call) -> usize 
+    where 'b: 'a {
+        let last_idx = self.0.len();
+        self.0.push(TraceNode::new(call));
+        last_idx
+    }
 
     /// add a full path to this TraceTree (via recursion)
     fn add_path(&mut self, path: &'a [Call]) {
-        if !path.is_empty() {
-            //            let node = self.find_insert_trace_node(&path[0]);
-            // code included to circumvent lifetime issues.
+        // set up the loop
+        let mut trace_tree = self;
+        let mut path = path;
 
-            let call = &path[0];
-            let trace_node = self
-                .0
-                .iter_mut()
-                .filter(|tn| tn.service == call.service && tn.operation == call.operation)
-                .next();
-            let trace_node = match trace_node {
-                Some(tn) => tn,
-                None => {
-                    let tn = TraceNode::new(call);
-                    self.0.push(tn);
-                    let tail_pos = self.0.len() - 1;
-                    &mut self.0[tail_pos]
-                }
+        while !path.is_empty() {
+            let head = &path[0];
+
+            // find node, or inssert new trace-node if not present.
+            let idx = match trace_tree.find_trace_node_idx(head) {
+                Some(idx) => idx,
+                None => trace_tree.add_node(head)
             };
 
-            trace_node.callees.add_path(&path[1..]);
+            // move to next level
+            trace_tree = &mut trace_tree.0[idx].callees;
+            path = &path[1..];
         }
     }
 }

@@ -25,7 +25,7 @@ impl AggregateData for AdditiveData {
     fn add(&mut self, count: u64, value: Option<f64>) {
         if let Some(value) = value {
             self.count += count;
-            self.cumulator.map_or(value, |v| v + value);
+            self.cumulator = Some(self.cumulator.map_or(value, |v| v + value));
         };
     }
 

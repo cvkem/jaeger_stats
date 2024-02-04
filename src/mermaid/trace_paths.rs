@@ -36,13 +36,14 @@ impl TracePaths {
     /// 2. The (deduplicated) set of all paths leading into 'service_oper' are used to construct all the upstream process-steps. However, we do not have edge_value-statistics for these paths
     fn build_serv_oper_graph2(&self, service_oper: &str) -> ServiceOperGraph {
         let (service, oper_opt) = split_service_operation(service_oper);
+        // find all paths that end in this 'service' and build a trace-tree out of it (filtered on the 'operation')
         let trace_tree = match self.0.get(service) {
             Some(paths) => {
                 let paths = if let Some(oper) = oper_opt {
                     // next deref is needed otherwise we get the wrong type
                     paths
                         .iter()
-                        .filter(|td| td.trace_path.get_method() == oper)
+                        .filter(|td| td.trace_path.get_operation() == oper)
                         .collect::<Vec<_>>()
                 } else {
                     // no operation defined so return all paths.
