@@ -59,7 +59,7 @@ impl ServiceOperGraph {
     }
 
     /// find the Service-Operation combination, or insert it, and return the index-pair as a Location in the ServiceOperGraph
-    fn get_create_service_operation_idx(&mut self, call: Call, position: Position) -> Loc {
+    fn get_create_service_operation_idx(&mut self, call: &Call, position: Position) -> Loc {
         if let Some(serv_idx) = self.get_service_idx(&call.service) {
             let service = &mut self.0[serv_idx];
             service.position = service.position.check_relevance(position);
@@ -74,7 +74,7 @@ impl ServiceOperGraph {
                 },
                 None => {
                     let oper_idx =
-                        self.0[serv_idx].add_operation(call.operation, call.call_direction);
+                        self.0[serv_idx].add_operation(call.operation.clone(), call.call_direction);
                     Loc {
                         service_idx: serv_idx,
                         oper_idx,
@@ -82,7 +82,7 @@ impl ServiceOperGraph {
                 }
             }
         } else {
-            self.add_service_operation(call, position)
+            self.add_service_operation(call.clone(), position)
         }
     }
 
@@ -91,16 +91,16 @@ impl ServiceOperGraph {
     /// However, when from and to are located in the same service it is a connection is from the receiver (inbound) to the sender (outbound) as it is an internal pass-through.
     pub fn add_connection(
         &mut self,
-        from: Call,
-        to: Call,
+        from: &Call,
+        to: &Call,
         data: &TraceDataStats,
-        service: &str,
+        service: &str, // used to dtermine the relative position in the call-graph of the current edge
         default_pos: Position,
     ) {
         // determine the from and to and add them if they do not exist
         let (from_pos, to_pos) = Position::find_positions(&from, &to, service, default_pos);
-        let from = self.get_create_service_operation_idx(from, from_pos);
-        let to = self.get_create_service_operation_idx(to, to_pos);
+        let from = self.get_create_service_operation_idx(&from, from_pos);
+        let to = self.get_create_service_operation_idx(&to, to_pos);
         // Add new link or update the existing link with the data
         self.0[from.service_idx].operations[from.oper_idx].upsert_link(to, data)
     }

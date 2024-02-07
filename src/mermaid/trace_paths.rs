@@ -1,7 +1,7 @@
 use super::{
-    counted_prefix::CountedPrefix,
     service_oper_graph::{Position, ServiceOperGraph, ServiceOperationType},
     trace_data::TraceData,
+    trace_forrest::EmbeddingKind,
     tt_utils::{
         get_call_chain_prefix, mark_selected_call_chain, split_service, split_service_operation,
     },
@@ -12,7 +12,7 @@ use crate::{
     stats::{CChainStatsKey, LeafService},
     EdgeValue,
 };
-use regex::{self, Regex};
+use regex;
 use std::collections::HashMap;
 
 /// The trace-tree is used to build the Mermaid-charts.
@@ -25,19 +25,10 @@ use std::collections::HashMap;
 pub struct TracePaths(pub HashMap<LeafService, Vec<TraceData>>);
 
 impl TracePaths {
-    /// Build the ServiceOperationGraph based on the TraceTree (Stiched or StatsRec data) and for the selected 'service_oper'.
-    /// The input 'data' is a dataset of stitched data-point containings all traces though the graph and the statistics for the endpoint of this trace.
-    /// In this function we reconstruct the original graph by taking the last step of each of the traces that pass through or end in 'service_oper'.
-    /// The statistic collected is the average number of traces that pass through a node.
-    /// Some nodes are reachable via multiple paths, in that case the sum is used to aggegate the counts.
-    ///
-    /// This is a two stage-process.
-    /// 1. find all paths in 'data' that touch 'service_oper' and construct the graph including the edge_value statistics (often counts). In this stage we also collect that paths leading to 'service_oper'
-    /// 2. The (deduplicated) set of all paths leading into 'service_oper' are used to construct all the upstream process-steps. However, we do not have edge_value-statistics for these paths
-    fn build_serv_oper_graph2(&self, service_oper: &str) -> ServiceOperGraph {
+    fn build_trace_forrest(&self, service_oper: &str) -> TraceForrest {
         let (service, oper_opt) = split_service_operation(service_oper);
         // find all paths that end in this 'service' and build a trace-tree out of it (filtered on the 'operation')
-        let trace_tree = match self.0.get(service) {
+        match self.0.get(service) {
             Some(paths) => {
                 let paths = if let Some(oper) = oper_opt {
                     // next deref is needed otherwise we get the wrong type
@@ -49,15 +40,10 @@ impl TracePaths {
                     // no operation defined so return all paths.
                     paths.iter().collect()
                 };
-                TraceForrest::build_trace_tree(paths)
+                TraceForrest::build_trace_forrest(paths)
             }
             None => panic!("Failure to find the paths that terminate in service '{service}'."),
-        };
-
-        println!("{trace_tree:#?}");
-
-        unimplemented!();
-        ServiceOperGraph::new()
+        }
     }
 
     /// Build the ServiceOperationGraph based on the TraceTree (Stiched or StatsRec data) and for the selected 'service_oper'.
@@ -67,37 +53,32 @@ impl TracePaths {
     /// Some nodes are reachable via multiple paths, in that case the sum is used to aggegate the counts.
     ///
     /// This is a two stage-process.
-    /// 1. find all paths in 'data' that touch 'service_oper' and construct the graph including the edge_value statistics (often counts). In this stage we also collect that paths leading to 'service_oper'
-    /// 2. The (deduplicated) set of all paths leading into 'service_oper' are used to construct all the upstream process-steps. However, we do not have edge_value-statistics for these paths
+    /// 1. find all paths in 'data' that end in 'service_oper' and construct a traceForrest (filter for all paths that reach and pass 'service_oper'.)
+    /// 2. Build the ServiceOperGraph for all paths that are 'embedded' or 'extend' the TraceForrest generated in step 1.
     fn build_serv_oper_graph(&self, service_oper: &str) -> ServiceOperGraph {
-        let esc_service_oper = regex::escape(service_oper);
-        let re_service_oper =
-            Regex::new(&esc_service_oper).expect("Failed to create regex for service_oper");
-        let re_so_prefix = Regex::new(&format!("^.*{}", esc_service_oper))
-            .expect("Failed to create regex for service_oper_prefix");
-        let service = split_service(service_oper);
+        let trace_forrest = self.build_trace_forrest(service_oper);
 
+        //println!("{trace_forrest:#?}");
+        let service = split_service(service_oper);
         // Stage-1: build the downstream graphs and collect the set of incoming paths via the counted_prefix
-        let (sog, counted_prefix) = self.0
+        let sog = self.0
             .iter()
             .flat_map(|(_k, ccd_vec)| {
                 // _k is final service/operation of the call-chain, which is not needed here
                 ccd_vec
                     .iter()
-                    .filter(|ccd| re_service_oper.find(&ccd.full_key).is_some())
-                    .filter_map(|ccd| {
-                        // This closure only takes the last two steps of the path, as this transition is covered by the corresponding dataset
-                        let cc = CChainStatsKey::parse(&ccd.full_key).unwrap();
-                        if cc.call_chain.len() >= 2 {
-                            let skip = cc.call_chain.len() - 2;
-                            let mut cc = cc.call_chain.into_iter().skip(skip);
+                    .map(|ccd| (trace_forrest.embedding(&ccd.trace_path.call_chain), ccd))
+                    .filter(|(embedding, cck)| *embedding != EmbeddingKind::None)
+                    .filter_map(|(embedding, ccd)| {
+                        let call_chain = &ccd.trace_path.call_chain;
+                        if call_chain.len() >= 2 {
+                            let skip = call_chain.len() - 2;
+                            let mut cc = call_chain.into_iter().skip(skip);
                             let from = cc.next().unwrap();
                             let to = cc.next().unwrap();
 
-                            let prefix = re_so_prefix.find(&ccd.full_key).expect("Prefix not found");
-
                             // and result as tuple for to be folded
-                            Some((prefix, from, to, &ccd.data))
+                            Some((embedding, from, to, &ccd.data))
                         } else {
                             println!(
                                 "Skipping call-chain as it is consists of a single step '{}' (no link)",
@@ -108,28 +89,20 @@ impl TracePaths {
                     })
             })
             .fold(
-                (ServiceOperGraph::new(), CountedPrefix::new()),
-                |mut sog_cp, (prefix, from, to, edge_data)| {
+                ServiceOperGraph::new(),
+                |mut sog, (embedding, from, to, edge_data)| {
                     // add the connection to the graph
-                    sog_cp
-                        .0
-                        .add_connection(from, to, edge_data, service, Position::Outbound);
-                    // add the counted prefix
-                    sog_cp.1.add(prefix.as_str(), edge_data.count);
-                    sog_cp
+                    let default_pos = match embedding {
+                        EmbeddingKind::Embedded => Position::Inbound,
+                        EmbeddingKind::Extended => Position::Outbound,
+                        EmbeddingKind::None => panic!("EmbeddingKind::None is not valid here.")
+                    };
+                    sog
+                        // TODO: remove the clone operations (and fix downstream)
+                        .add_connection(&from, &to, edge_data, service, default_pos);
+                    sog
                 },
             );
-
-        println!("TODO: skipped stage 2 in TraceTree.build_serv_oper_graph. FIX IT!!");
-        // // Stage 2: amend the graph with the upstream paths (inbound paths)
-        // counted_prefix.0.into_iter().for_each(|(k, v)| {
-        //     let cc = CChainStatsKey::parse(&format!("{k} [Unknown] & &")).unwrap();
-        //     std::iter::zip(cc.call_chain.iter(), cc.call_chain.iter().skip(1)).for_each(
-        //         |(s1, s2)| {
-        //             sog.add_connection(s1.clone(), s2.clone(), None, service, Position::Inbound)
-        //         },
-        //     );
-        // });
 
         sog
     }
@@ -179,8 +152,9 @@ impl TracePaths {
         scope: MermaidScope,
         compact: bool,
     ) -> String {
-        let sog = self.build_serv_oper_graph2(service_oper);
+        let sog = self.build_serv_oper_graph(service_oper);
 
+        // If a callchain-key is specified we mark the this call-chain and add the additional statistics.
         let mut sog = if let Some(call_chain_key) = call_chain_key {
             let sog = self.mark_and_count_downstream(sog, service_oper, call_chain_key);
 
