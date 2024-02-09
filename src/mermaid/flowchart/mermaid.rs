@@ -1,5 +1,5 @@
 use super::{
-    super::service_oper_graph::{LinkType, ServiceOperationType},
+    super::service_oper_graph::LinkType,
     basic_node::MermaidBasicNode,
     link::MermaidLink,
     node::MermaidNode,

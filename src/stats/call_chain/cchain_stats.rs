@@ -329,7 +329,7 @@ impl CChainStats {
         Self(HashMap::new())
     }
 
-    pub fn merge(&mut self, to_merge: CChainStats) {
+    pub fn merge(&mut self, _to_merge: CChainStats) {
         todo!()
     }
 }

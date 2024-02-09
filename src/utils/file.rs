@@ -95,7 +95,6 @@ pub fn extend_with_base_path_opt(base_path: &Path, path: &str) -> OsString {
     } else {
         // correct base-path for ".." on path
         let mut base_path_buf = base_path.to_path_buf();
-        let orig_path = path;
         while path.starts_with("../") || path.starts_with(r"..\") {
             path = &path[3..];
             if !base_path_buf.pop() {

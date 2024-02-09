@@ -54,7 +54,7 @@ impl CCReportItems {
         keys.into_iter()
             .fold(
                 (Vec::<CCKey>::new(), String::new()),
-                |(mut acc, curr_po), (proc_oper, cck, cnt, rooted)| {
+                |(mut acc, curr_po), (proc_oper, cck, _cnt, rooted)| {
                     let item = (cck, rooted); // the CChainStatsKey and a bool showing whether this chain is rooted.
                     if proc_oper == curr_po {
                         let len = acc.len();

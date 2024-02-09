@@ -2,6 +2,7 @@ use super::{Averages, DataPoint, DataSet};
 use log::error;
 use serde::{Deserialize, Serialize};
 
+#[allow(non_snake_case)]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LinearRegression {
     pub slope: f64,
@@ -26,7 +27,9 @@ impl LinearRegression {
             let avg_xy = get_average_xy(&data);
             let (slope, y_intercept) = get_slope_intercept(&data, &avg_xy);
 
+            #[allow(non_snake_case)]
             let R_squared = get_R_squared(&data, &avg_xy, slope, y_intercept);
+            #[allow(non_snake_case)]
             let L1_deviation = get_L1_deviation(&data, slope, y_intercept);
 
             let avg_growth_per_period = {
@@ -100,6 +103,7 @@ fn get_slope_intercept(data: &DataSet, avg_xy: &Averages) -> (f64, f64) {
     (slope, y_intercept)
 }
 
+#[allow(non_snake_case)]
 fn get_R_squared(data: &DataSet, avg_xy: &Averages, slope: f64, y_intercept: f64) -> f64 {
     let sum_expect_sqr: f64 = data
         .iter()
@@ -116,6 +120,7 @@ fn get_R_squared(data: &DataSet, avg_xy: &Averages, slope: f64, y_intercept: f64
     }
 }
 
+#[allow(non_snake_case)]
 fn get_L1_deviation(data: &DataSet, slope: f64, y_intercept: f64) -> f64 {
     let sum_L1: f64 = data
         .iter()

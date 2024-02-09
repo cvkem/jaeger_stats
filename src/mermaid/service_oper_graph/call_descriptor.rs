@@ -19,7 +19,6 @@ pub struct CallDescriptorStats {
 
 impl CallDescriptorStats {
     fn new(data: &TraceDataStats) -> Self {
-        let count = data.count;
         Self {
             count: data.count,
             avg_duration_millis: AverageData::new(data.count, Some(data.avg_duration_millis)),

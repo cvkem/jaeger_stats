@@ -1,22 +1,8 @@
 use crate::{
-    mermaid, stats::call_chain::CChainStatsValue, stats::StatsRec, utils, utils::TimeStats,
+    mermaid, stats::StatsRec, utils, utils::TimeStats,
     EdgeValue,
 };
 use std::path::PathBuf;
-
-//type<A> TraceDataFactory = dyn Fn(&str) -> mermaid::TraceData<A>
-
-// fn get_edge_aggregator(edge_value: EdgeValue, ccv: &CChainStatsValue) -> Box<dyn AggregateData> {
-//     match edge_value {
-//         EdgeValue::Count => Box::new(AdditiveData::new(ccv.count as u64, ccv.count as f64)),
-//         EdgeValue::AvgMillis => Box::new(AverageData::new(ccv.count as u64, TimeStats(&ccv.duration_micros).get_avg_millis())),
-//         EdgeValue::P75Millis => Box::new(AverageData::new(ccv.count as u64, TimeStats(&ccv.duration_micros).get_p_millis(0.75).expect("p75 not available"))),
-//         EdgeValue::P90Millis => Box::new(AverageData::new(ccv.count as u64, TimeStats(&ccv.duration_micros).get_p_millis(0.90).expect("p90 not available"))),
-//         EdgeValue::P95Millis => Box::new(AverageData::new(ccv.count as u64, TimeStats(&ccv.duration_micros).get_p_millis(0.85).expect("p95 not available"))),
-//         EdgeValue::P99Millis => Box::new(AverageData::new(ccv.count as u64, TimeStats(&ccv.duration_micros).get_p_millis(0.99).expect("p99 not available"))),
-//         _ => unimplemented!()
-//     }
-// }
 
 impl StatsRec {
     /// get a mermaid diagram that depicts the current selection based on proc_oper and optionally a call-chain.

@@ -7,7 +7,7 @@ mod read_jaeger;
 mod write;
 
 pub use self::{
-    file_tracker::{FileTracker, FILE_TRACKER},
+    file_tracker::FILE_TRACKER,
     jaeger::{JaegerItem, JaegerLog, JaegerSpan, JaegerTags, JaegerTrace},
     read_folder::{read_file_or_folder, read_process_file_or_folder},
     read_jaeger::read_jaeger_trace_file,

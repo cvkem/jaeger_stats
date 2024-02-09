@@ -1,12 +1,10 @@
 use super::{
     super::flowchart::Mermaid,
     super::MermaidScope,
-    call_descriptor::CallDescriptor,
     edge_value_selector::{edge_value_to_selector, EdgeValueSelector},
     link_type::LinkType,
     loc::Loc,
     node_select::{scope_to_node_selector, NodeSelector},
-    operation::Operation,
     position::Position,
     service::Service,
     service_oper_type::ServiceOperationType,
@@ -180,10 +178,10 @@ impl ServiceOperGraph {
         self.0[serv_idx].get_operation_label(oper_idx)
     }
 
-    /// get a shared reference to the operation defined by serv_idx and oper_idx within this Graph.
-    pub fn get_Operation(&self, serv_idx: usize, oper_idx: usize) -> &Operation {
-        self.0[serv_idx].get_operation(oper_idx)
-    }
+    // /// get a shared reference to the operation defined by serv_idx and oper_idx within this Graph.
+    // pub fn get_operation(&self, serv_idx: usize, oper_idx: usize) -> &Operation {
+    //     self.0[serv_idx].get_operation(oper_idx)
+    // }
 
     /// get the 'Service' for this idx
     pub fn get_service(&self, serv_idx: usize) -> &Service {

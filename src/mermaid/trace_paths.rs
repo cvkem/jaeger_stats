@@ -12,7 +12,6 @@ use crate::{
     stats::{CChainStatsKey, LeafService},
     EdgeValue,
 };
-use regex;
 use std::collections::HashMap;
 
 /// The trace-tree is used to build the Mermaid-charts.
@@ -68,7 +67,7 @@ impl TracePaths {
                 ccd_vec
                     .iter()
                     .map(|ccd| (trace_forrest.embedding(&ccd.trace_path.call_chain), ccd))
-                    .filter(|(embedding, cck)| *embedding != EmbeddingKind::None)
+                    .filter(|(embedding, _)| *embedding != EmbeddingKind::None)
                     .filter_map(|(embedding, ccd)| {
                         let call_chain = &ccd.trace_path.call_chain;
                         if call_chain.len() >= 2 {

@@ -8,7 +8,7 @@ use super::{
     service_oper_graph::ServiceOperGraph,
     service_oper_type::ServiceOperationType,
 };
-use crate::{stats::call_chain::CallDirection, EdgeValue};
+use crate::{stats::call_chain::CallDirection};
 
 #[derive(Debug)]
 pub struct Service {

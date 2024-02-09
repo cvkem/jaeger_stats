@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Mutex};
 
+#[allow(dead_code)]
 /// Generates a series of ID with the prefix followed by an underscore and number, so prefix proc will return 'proc_0', 'proc_1'
 pub struct IdGenerator {
     prefix: String,
@@ -7,11 +8,13 @@ pub struct IdGenerator {
 }
 
 impl IdGenerator {
+    #[allow(dead_code)]
     pub fn new(prefix: String) -> Self {
         let nr = Mutex::new(0);
         Self { prefix, nr }
     }
 
+    #[allow(dead_code)]
     pub fn get_id(&mut self) -> String {
         let mut guard = self.nr.lock().unwrap();
         let nr = *guard;
@@ -21,12 +24,14 @@ impl IdGenerator {
 }
 
 /// IdMapper maps strings to clean id's that can be used safely in the dot-language.
+#[allow(dead_code)]
 pub struct IdMapper {
     id_generator: IdGenerator,
     mapping: HashMap<String, String>,
 }
 
 impl IdMapper {
+    #[allow(dead_code)]
     pub fn new(prefix: String) -> Self {
         let id_generator = IdGenerator::new(prefix);
         let mapping = HashMap::new();
@@ -52,6 +57,7 @@ impl IdMapper {
     //     }
     //}
 
+    #[allow(dead_code)]
     pub fn map_key(&mut self, key: &str) -> &str {
         self.mapping
             .entry(key.to_owned())

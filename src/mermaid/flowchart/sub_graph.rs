@@ -20,10 +20,10 @@ impl MermaidSubGraph {
         }
     }
 
-    /// add a subgraph, a container that can contain nested simple nodes and subgraphs
-    pub fn add_subgraph(&mut self, sg: MermaidSubGraph) {
-        self.nodes.push(MermaidNode::SubGraph(sg))
-    }
+    // /// add a subgraph, a container that can contain nested simple nodes and subgraphs
+    // pub fn add_subgraph(&mut self, sg: MermaidSubGraph) {
+    //     self.nodes.push(MermaidNode::SubGraph(sg))
+    // }
 
     /// add a simples node (without any nested nodes)
     pub fn add_node(&mut self, node: MermaidBasicNode) {

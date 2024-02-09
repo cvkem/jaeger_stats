@@ -35,7 +35,7 @@ impl TryFrom<&str> for MermaidScope {
             OUTBOUND => Ok(Self::Outbound),
             // TODO: find solution to generate static strings from a normal string (with cache-lookup to prevent duplicates)
             //scope => Err(&format!("Could not derived MermaidScope for {scope}.  Expected Full, Centered, Inbound or Outbound"))
-            scope => Err("Could not derive MermaidScope for input.  Expected Full, Centered, Inbound or Outbound")
+            _scope => Err("Could not derive MermaidScope for input.  Expected Full, Centered, Inbound or Outbound")
         }
     }
 }

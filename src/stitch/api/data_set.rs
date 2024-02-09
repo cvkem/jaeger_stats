@@ -10,6 +10,7 @@ use log::{error, info};
 use std::{path::Path, sync::Arc};
 use thiserror;
 
+#[allow(non_camel_case_types)]
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     // correct propagation requires a clean-up of upstream error-handling

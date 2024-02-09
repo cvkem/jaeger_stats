@@ -11,5 +11,5 @@ pub use self::{
     call_chain::{get_call_chain, CallChain},
     cchain_cache::CChainEndPointCache,
     cchain_stats::{CChainStats, CChainStatsKey, CChainStatsValue},
-    file::{caching_process_label, call_chain_key, cchain_filename},
+    file::{caching_process_label, call_chain_key},
 };
