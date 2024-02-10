@@ -121,15 +121,12 @@ impl CChainEndPointCache {
 impl Drop for CChainEndPointCache {
     /// write all dirty cache entries to a file
     fn drop(&mut self) {
-        mem::take(&mut self.cache)
-            .into_iter()
-            .for_each(|(k, v)| match v {
-                Some(v) => {
-                    if v.is_dirty() {
-                        v.write_call_chain(self.path.clone(), &k);
-                    }
+        mem::take(&mut self.cache).into_iter().for_each(|(k, v)| {
+            if let Some(v) = v {
+                if v.is_dirty() {
+                    v.write_call_chain(self.path.clone(), &k);
                 }
-                None => (),
-            });
+            }
+        });
     }
 }

@@ -106,12 +106,11 @@ fn extract_jaeger_traces(jt: JaegerTrace) -> Vec<JaegerTrace> {
         Some(err) if err.is_empty() => (),
         Some(err) => {
             // TODO:  send this to the report file instead of just console
-            println!("Discovered errors: {err:?}");
-            ()
+            println!("Discovered errors: {err:?}")
         }
     };
 
-    jt.data.into_iter().map(|ji| JaegerTrace::new(ji)).collect()
+    jt.data.into_iter().map(JaegerTrace::new).collect()
 }
 
 /// read a series of raw Jaeger-traces from a file or a folder

@@ -28,7 +28,7 @@ impl InboundPrefixIdx {
             .iter()
             .enumerate()
             .map(|(idx, ccd)| {
-                let parts: Vec<_> = ccd.full_key.split("&").collect();
+                let parts: Vec<_> = ccd.full_key.split('&').collect();
                 if parts.len() != 3 {
                     panic!(
                         "full-key was split in {} parts, i.e. {parts:?} (3 parts expected)",
@@ -74,12 +74,7 @@ impl InboundPrefixIdx {
     /// Get the matching prefix, or return 0
     /// this list representing a mapping has been constructured based on a specific 'proc_oper' value.
     pub fn get_idx(&self, full_key: &str) -> i64 {
-        match self
-            .0
-            .iter()
-            .filter(|iit| full_key.starts_with(&iit.prefix))
-            .next()
-        {
+        match self.0.iter().find(|iit| full_key.starts_with(&iit.prefix)) {
             Some(iit) => iit.idx,
             None => 0, // no match found
         }

@@ -54,7 +54,7 @@ impl POReportItems {
         keys
     }
 
-    pub fn extract_dataset<'a>(data: &'a Vec<Option<StatsRec>>, po_key: &'a Key) -> POData<'a> {
+    pub fn extract_dataset<'a>(data: &'a [Option<StatsRec>], po_key: &'a Key) -> POData<'a> {
         // a ref to the extract the three values that are needed for the analysis being:
         //    1. the complete MethodStatsValue record
         //    2. the number of files in the analysis

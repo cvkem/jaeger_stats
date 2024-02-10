@@ -11,7 +11,7 @@ use std::{
 };
 
 /// deterimine the cchain folder based upon cc_path if this is an absolute path. If cc_path is a relative path it will be located as a sub-folder of 'folder'.
-fn get_cchain_folder(folder: &PathBuf, cc_path: &str) -> PathBuf {
+fn get_cchain_folder(folder: &Path, cc_path: &str) -> PathBuf {
     // Cchain-folder for input and output are set to the same folder.
     utils::report(Chapter::Details, format!("Input for cc_path = {cc_path}"));
     let cc_path = {
@@ -19,7 +19,7 @@ fn get_cchain_folder(folder: &PathBuf, cc_path: &str) -> PathBuf {
         if cc_path_full.is_absolute() {
             cc_path_full
         } else {
-            utils::extend_create_folder(&folder, cc_path)
+            utils::extend_create_folder(folder, cc_path)
         }
     };
     let cchain_folder = cc_path.to_path_buf();
@@ -79,7 +79,7 @@ fn write_cumulative_trace_stats(csv_file: PathBuf, cumm_stats: StatsRec, output_
 ///     * the number of incomplete traces
 ///     * the number of fixes applied to these incomplete traces (beware that some traces have multiple issues, and not all incomplete traces have been resolved)
 fn write_end_point_stats_and_correct_incomplete(
-    stats_folder: &PathBuf,
+    stats_folder: &Path,
     traces: Vec<TraceExt>, // moving data in and extracting later to prevent the need to copy data. Really needed??
     cchain_cache: &mut CChainEndPointCache,
     bsr: BasicStatsRec,
@@ -104,7 +104,7 @@ fn write_end_point_stats_and_correct_incomplete(
     traces_by_endpoint.into_iter()
     .for_each(|(k, traces)| {
         let num_files = TraceExtVec(&traces).num_files();
-        let mut csv_file = stats_folder.clone();
+        let mut csv_file = stats_folder.to_path_buf();
         csv_file.push(format!("{k}.csv"));
         // The traces that are have 'missing_trace_ids' are the traces that are incomplete, and thus seem to have multiple roots due to the fact
         // that some spans without a parent actually were spans refering a missing span (and not a real root)

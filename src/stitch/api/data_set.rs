@@ -8,7 +8,6 @@ use super::{
 use crate::mermaid;
 use log::{error, info};
 use std::{path::Path, sync::Arc};
-use thiserror;
 
 #[allow(non_camel_case_types)]
 #[derive(thiserror::Error, Debug)]
@@ -127,8 +126,7 @@ impl StitchedDataSet {
                             .data
                             .0
                             .iter()
-                            .filter(|x| x.label == "avg_duration_millis")
-                            .next()
+                            .find(|x| x.label == "avg_duration_millis")
                             .and_then(|data| data.data_avg)
                             .expect("avg-duration missing");
                         mermaid::TraceData::new(

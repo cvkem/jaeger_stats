@@ -1,5 +1,4 @@
 use clap::Parser;
-use jaeger_stats;
 use std::path::Path;
 
 /// Show the Jaeger-traces, or a selection of jaeger-traces, as Pretty-printed JSON in UTF-8 format.

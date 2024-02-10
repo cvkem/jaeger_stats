@@ -32,9 +32,9 @@ struct Args {
     scope: MermaidScope,
 }
 
-fn to_opt_str(s: &String) -> Option<&str> {
-    if &s[..] != EMPTY_ARG {
-        Some(s.as_str())
+fn to_opt_str(s: &str) -> Option<&str> {
+    if s != EMPTY_ARG {
+        Some(s)
     } else {
         None
     }

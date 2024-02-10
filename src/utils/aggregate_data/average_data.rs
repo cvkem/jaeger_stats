@@ -30,10 +30,8 @@ impl AggregateData for AverageData {
 
     /// get the aggregate value
     fn get_value(&self) -> Option<f64> {
-        match self.cumulator {
-            Some(cumulator) => Some(cumulator / self.count as f64),
-            None => None,
-        }
+        self.cumulator
+            .map(|cumulator| cumulator / self.count as f64)
     }
 
     /// get the count of values

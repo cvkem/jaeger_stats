@@ -38,8 +38,9 @@ pub struct TraceData {
 }
 
 impl TraceData {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
-        full_key: &String,
+        full_key: &str,
         rooted: bool,
         is_leaf: bool,
         count: u64,
@@ -49,7 +50,7 @@ impl TraceData {
         p95_millis: Option<f64>,
         p99_millis: Option<f64>,
     ) -> Self {
-        let full_key = full_key.clone();
+        let full_key = full_key.to_owned();
         let trace_path = CChainStatsKey::parse(&full_key).unwrap_or_else(|err| {
             panic!("Failed to parse CChainKey: '{full_key}'\nGot error '{err:?}'")
         });

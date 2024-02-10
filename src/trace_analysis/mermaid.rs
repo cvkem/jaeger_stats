@@ -1,14 +1,11 @@
-use crate::{
-    mermaid, stats::StatsRec, utils, utils::TimeStats,
-    EdgeValue,
-};
-use std::path::PathBuf;
+use crate::{mermaid, stats::StatsRec, utils, utils::TimeStats, EdgeValue};
+use std::path::Path;
 
 impl StatsRec {
     /// get a mermaid diagram that depicts the current selection based on proc_oper and optionally a call-chain.
     pub fn write_mermaid_diagram(
         &self,
-        folder: &PathBuf,
+        folder: &Path,
         proc_oper: &str,
         call_chain_key: Option<&str>,
         edge_value: EdgeValue,
@@ -58,8 +55,8 @@ impl StatsRec {
     }
 }
 
-fn write_diagram(folder: &PathBuf, proc_oper: &str, diagram: String) {
-    let mut file_path = folder.clone();
+fn write_diagram(folder: &Path, proc_oper: &str, diagram: String) {
+    let mut file_path = folder.to_path_buf();
 
     let clean_proc_oper = proc_oper.replace(['/', '\\'], "_"); // The / is not allowed in a file-path
     file_path.push(format!("{}.mermaid", clean_proc_oper));

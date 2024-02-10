@@ -33,26 +33,22 @@ fn get_stitch_sources(original: &Stitched, selection: &Vec<bool>) -> StitchSourc
 }
 
 /// get a copy of the process_operation data for a specific selection
-fn get_proc_oper_selection(
-    original: &Stitched,
-    selection: &Vec<bool>,
-) -> Vec<(String, StitchedSet)> {
+fn get_proc_oper_selection(original: &Stitched, selection: &[bool]) -> Vec<(String, StitchedSet)> {
     original
         .process_operation
         .iter()
-        .filter_map(
-            |(k, stitched_set)| match stitched_set.get_selection(selection) {
-                Some(selection) => Some((k.to_owned(), selection)),
-                None => None,
-            },
-        )
+        .filter_map(|(k, stitched_set)| {
+            stitched_set
+                .get_selection(selection)
+                .map(|selection| (k.to_owned(), selection))
+        })
         .collect()
 }
 
 /// get a copy of the call_chain data for a specific selection
 fn get_call_chain_selection(
     original: &Stitched,
-    selection: &Vec<bool>,
+    selection: &[bool],
 ) -> Vec<(String, Vec<CallChainData>)> {
     original
         .call_chain

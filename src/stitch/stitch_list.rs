@@ -62,10 +62,7 @@ impl StitchList {
     }
 
     fn add_path(&mut self, base_path: &Path, path: Option<&str>) {
-        let path = match path {
-            Some(path) => Some(extend_with_base_path_opt(base_path, path)),
-            None => None,
-        };
+        let path = path.map(|path| extend_with_base_path_opt(base_path, path));
         self.paths.push(path);
     }
 

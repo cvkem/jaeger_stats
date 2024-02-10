@@ -5,10 +5,10 @@ use super::{
     node_select::NodeSelector,
     operation::Operation,
     position::Position,
-    service_oper_graph::ServiceOperGraph,
     service_oper_type::ServiceOperationType,
+    sog::ServiceOperGraph,
 };
-use crate::{stats::call_chain::CallDirection};
+use crate::stats::call_chain::CallDirection;
 
 #[derive(Debug)]
 pub struct Service {

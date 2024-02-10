@@ -53,17 +53,16 @@ impl CallChainData {
 
     /// Get a subset of selected data-points for each of the stiched lines in the stitched set, or None if the selection does not contain any f64 values (only None)
     /// assume that the size of the selection was checked by the upstream process (the caller).
-    pub fn get_selection(&self, selection: &Vec<bool>) -> Option<Self> {
-        match self.data.get_selection(selection) {
-            Some(data) => Some(CallChainData {
+    pub fn get_selection(&self, selection: &[bool]) -> Option<Self> {
+        self.data
+            .get_selection(selection)
+            .map(|data| CallChainData {
                 full_key: self.full_key.to_owned(),
                 inbound_process_key: self.inbound_process_key.to_owned(),
                 rooted: self.rooted,
                 is_leaf: self.is_leaf,
                 data,
-            }),
-            None => None,
-        }
+            })
     }
 }
 

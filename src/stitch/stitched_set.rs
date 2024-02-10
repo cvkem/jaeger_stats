@@ -29,8 +29,8 @@ impl StitchedSet {
                 .map(|sl| sl.label.to_uppercase())
                 .unwrap_or("NO DATA".to_owned());
             [count_label, "NUM_FILLED".to_string()]
-                .to_vec()
-                .into_iter()
+                .iter()
+                .cloned()
                 .chain(headers)
                 .collect()
         } else {
@@ -56,10 +56,7 @@ impl StitchedSet {
     fn prefix_with_counts(&self, data: impl Iterator<Item = Option<f64>>) -> Vec<Option<f64>> {
         // NOTE: here we assume first line always is a count-metric
         let count = self.0.first().and_then(|data| data.data_avg);
-        let num_filled_columns = self
-            .0
-            .first()
-            .and_then(|data| Some(data.num_filled_columns as f64));
+        let num_filled_columns = self.0.first().map(|data| data.num_filled_columns as f64);
         let prefix = [count, num_filled_columns].to_vec();
         prefix.into_iter().chain(data).collect()
     }
@@ -81,12 +78,12 @@ impl StitchedSet {
     }
 
     pub fn get_metric_stitched_line(&self, metric: &str) -> Option<&StitchedLine> {
-        self.0.iter().filter(|line| &line.label == metric).next()
+        self.0.iter().find(|line| line.label == metric)
     }
 
     /// Get a subset of selected data-points for each of the stiched lines in the stitched set, or None if the selection does not contain any f64 values (only None)
     /// assume that the size of the selection was checked by the upstream process (the caller).
-    pub fn get_selection(&self, selection: &Vec<bool>) -> Option<Self> {
+    pub fn get_selection(&self, selection: &[bool]) -> Option<Self> {
         let data: Vec<_> = self
             .0
             .iter()

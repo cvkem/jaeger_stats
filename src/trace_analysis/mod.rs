@@ -71,7 +71,7 @@ pub fn analyze_file_or_folder(
     if let Some(display_service_oper) = display_service_oper {
         stats_rec.write_mermaid_diagram(
             &folder,
-            &display_service_oper,
+            display_service_oper,
             display_call_chain,
             edge_value,
             scope,

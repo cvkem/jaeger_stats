@@ -24,7 +24,7 @@ pub struct Anomalies {
 }
 
 impl Anomalies {
-    pub fn anomalies(line: &StitchedLine, pars: &AnomalyParameters) -> Option<Anomalies> {
+    pub fn new_opt(line: &StitchedLine, pars: &AnomalyParameters) -> Option<Anomalies> {
         line.lin_regr.as_ref().and_then(|_lin_reg| {
             let scaled_slope = line.scaled_slope().and_then(|sslope| {
                 if sslope > pars.scaled_slope_bound {

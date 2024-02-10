@@ -41,7 +41,7 @@ pub fn read_cchain_file(path: &Path) -> Result<EndPointCChains, Box<dyn Error>> 
 }
 
 /// the label shows whether cached processes are in the call-chain and if so returns a suffix to represent it.
-pub fn caching_process_label(caching_process: &Vec<String>, call_chain: &CallChain) -> String {
+pub fn caching_process_label(caching_process: &[String], call_chain: &CallChain) -> String {
     if caching_process.is_empty() {
         return "".to_owned();
     }

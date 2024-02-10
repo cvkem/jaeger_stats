@@ -66,6 +66,6 @@ impl<'a> CompactLink<'a> {
         self.0
             .entry(key)
             .and_modify(|value| value.merge(c_value))
-            .or_insert(c_value.clone());
+            .or_insert(c_value);
     }
 }

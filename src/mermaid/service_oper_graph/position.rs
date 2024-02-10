@@ -10,6 +10,7 @@ use crate::stats::call_chain::Call;
 /// These output formats are needed:
 ///   * to prevent that views grow to large to be visible (easy zooming in on the relevant parts)
 ///   * to allow for generation of tailored diagrams for inclusion in architect documentation.
+#[allow(dead_code)] // might contain unused variants
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Position {
     Unknown, // or do not change position
@@ -31,7 +32,7 @@ impl Position {
             (true, true) => (Position::Center, Position::Center),
             (true, false) => (Position::Center, Position::OutboundCenter),
             (false, true) => (Position::InboundCenter, Position::Center),
-            (false, false) => (default_pos.clone(), default_pos),
+            (false, false) => (default_pos, default_pos),
         }
     }
 

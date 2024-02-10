@@ -1,19 +1,13 @@
 use super::JaegerTrace;
 use crate::utils;
-use serde_json;
-use std::{
-    collections::HashSet,
-    fs::File,
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashSet, fs::File, io::Write, path::Path};
 
 /// write a single trace as a pretty-printed json to a folder given in 'path' and use the trace_id as the file_base.
-fn write_trace(trace_folder: &PathBuf, jt: &JaegerTrace) {
+fn write_trace(trace_folder: &Path, jt: &JaegerTrace) {
     assert!(!jt.data.is_empty(), "Can not write an empty JaegerTrace");
     let file_path = {
         let file_name = format!("{}.json", jt.data[0].traceID);
-        let mut trace_folder = trace_folder.clone();
+        let mut trace_folder = trace_folder.to_path_buf();
         trace_folder.push(file_name);
         trace_folder.into_os_string()
     };
@@ -47,7 +41,7 @@ fn write_trace(trace_folder: &PathBuf, jt: &JaegerTrace) {
 pub fn write_traces(folder: &Path, traces: Vec<JaegerTrace>, trace_ids: &str) -> u32 {
     let trace_ids: HashSet<String> = trace_ids
         .split(',')
-        .filter(|s| *s != "") // drop the empty strings
+        .filter(|s| !s.is_empty()) // drop the empty strings
         .map(|s| s.to_owned())
         .collect();
     let selected = |jt: &&JaegerTrace| {

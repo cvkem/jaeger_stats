@@ -45,8 +45,8 @@ pub fn get_label_list(data: &Stitched) -> Vec<String> {
                 Some((_full, [_year, month, day])) => {
                     let month = get_month_description(month);
                     // remove the 0-prefix if it exists
-                    let day = if day.chars().next() == Some('0') {
-                        &day[1..]
+                    let day = if let Some(day) = day.strip_prefix('0') {
+                        day
                     } else {
                         day
                     };
@@ -361,8 +361,7 @@ pub fn get_service_oper_chart_data(
     match data
         .process_operation
         .iter()
-        .filter(|(proc, _)| proc == process)
-        .next()
+        .find(|(proc, _)| proc == process)
     {
         Some((proc, st_set)) => st_set
             .get_metric_stitched_line(metric)

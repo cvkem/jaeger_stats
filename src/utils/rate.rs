@@ -12,12 +12,12 @@ pub fn set_show_rate_output(val: bool) {
 const POINTS_NEEDED_FOR_RATE: i32 = 10;
 
 /// returns an average and a median rate (after dropping the outliers)
-pub fn calc_rate(data: &Vec<i64>, num_outliers: i32) -> Option<(f64, f64)> {
+pub fn calc_rate(data: &[i64], num_outliers: i32) -> Option<(f64, f64)> {
     assert!(num_outliers >= 0);
     if data.len() as i32 - num_outliers - 2 - POINTS_NEEDED_FOR_RATE < 0 {
         return None;
     }
-    let mut data = data.clone();
+    let mut data = data.to_owned();
     data.sort_unstable();
     // compute the gaps (moving from N to N-1 datapoints)
     for i in 0..(data.len() - 1) {

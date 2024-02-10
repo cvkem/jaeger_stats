@@ -1,9 +1,6 @@
 use super::{
-    super::service_oper_graph::LinkType,
-    basic_node::MermaidBasicNode,
-    link::MermaidLink,
-    node::MermaidNode,
-    sub_graph::MermaidSubGraph,
+    super::service_oper_graph::LinkType, basic_node::MermaidBasicNode, link::MermaidLink,
+    node::MermaidNode, sub_graph::MermaidSubGraph,
 };
 
 pub struct Mermaid {

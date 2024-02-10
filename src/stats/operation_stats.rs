@@ -58,7 +58,7 @@ impl OperationStats {
         idx: usize,
         span: &Span,
         spans: &Spans,
-        caching_process: &Vec<String>,
+        caching_process: &[String],
         root_call: &str,
     ) {
         match &span.span_kind {
@@ -90,7 +90,7 @@ impl OperationStats {
         self.operation
             .0
             .entry(method.to_owned())
-            .and_modify(|oper_stat| update_proc_oper_value(oper_stat))
+            .and_modify(update_proc_oper_value)
             .or_insert_with(|| {
                 let mut oper_stat = ProcOperStatsValue::default();
                 update_proc_oper_value(&mut oper_stat);
@@ -133,7 +133,7 @@ impl OperationStats {
             .0
             .entry(ps_key)
             // next part could be made more dry via an update-closure
-            .and_modify(|ps| update_ps_val(ps))
+            .and_modify(update_ps_val)
             .or_insert_with(|| {
                 let mut ps = CChainStatsValue::new(depth, looped, rooted);
                 update_ps_val(&mut ps);

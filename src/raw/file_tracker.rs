@@ -17,10 +17,10 @@ impl FileTracker {
             !self.files.is_empty(),
             "Add at least one filename before getting an index"
         );
-        self.files.len() as usize - 1
+        self.files.len() - 1
     }
 
-    #[allow(dead_code)]    
+    #[allow(dead_code)]
     pub fn get_file_name(&self, idx: usize) -> String {
         assert!(idx < self.files.len(), "Index out of bounds");
         self.files[idx].to_owned()

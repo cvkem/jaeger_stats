@@ -1,6 +1,7 @@
 use crate::stats::call_chain::{Call, CallChain, CallDirection};
 use std::{collections::HashMap, iter};
 
+#[allow(dead_code)] // enum might have unused variants
 #[derive(Default, Debug)]
 pub enum ProcessNodeType {
     /// represents a process that is directly exposed (via an API gateway), so this is the starting point of a service-process

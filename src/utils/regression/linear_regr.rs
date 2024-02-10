@@ -24,13 +24,13 @@ impl LinearRegression {
             // insufficient data to compute a value
             None
         } else {
-            let avg_xy = get_average_xy(&data);
-            let (slope, y_intercept) = get_slope_intercept(&data, &avg_xy);
+            let avg_xy = get_average_xy(data);
+            let (slope, y_intercept) = get_slope_intercept(data, &avg_xy);
 
             #[allow(non_snake_case)]
-            let R_squared = get_R_squared(&data, &avg_xy, slope, y_intercept);
+            let R_squared = get_R_squared(data, &avg_xy, slope, y_intercept);
             #[allow(non_snake_case)]
-            let L1_deviation = get_L1_deviation(&data, slope, y_intercept);
+            let L1_deviation = get_L1_deviation(data, slope, y_intercept);
 
             let avg_growth_per_period = {
                 let start = y_intercept;
@@ -57,10 +57,10 @@ impl LinearRegression {
     }
     pub fn get_deviation(&self, data: &[Option<f64>], idx: usize) -> Option<f64> {
         assert!(idx < data.len());
-        data[idx].and_then(|y| {
+        data[idx].map(|y| {
             let x = (idx + 1) as f64;
             let expect = self.y_intercept + x * self.slope;
-            Some(y - expect)
+            y - expect
         })
     }
 

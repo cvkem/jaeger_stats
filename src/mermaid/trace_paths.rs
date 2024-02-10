@@ -72,7 +72,7 @@ impl TracePaths {
                         let call_chain = &ccd.trace_path.call_chain;
                         if call_chain.len() >= 2 {
                             let skip = call_chain.len() - 2;
-                            let mut cc = call_chain.into_iter().skip(skip);
+                            let mut cc = call_chain.iter().skip(skip);
                             let from = cc.next().unwrap();
                             let to = cc.next().unwrap();
 
@@ -98,7 +98,7 @@ impl TracePaths {
                     };
                     sog
                         // TODO: remove the clone operations (and fix downstream)
-                        .add_connection(&from, &to, edge_data, service, default_pos);
+                        .add_connection(from, to, edge_data, service, default_pos);
                     sog
                 },
             );

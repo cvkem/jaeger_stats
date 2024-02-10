@@ -56,7 +56,7 @@ impl CChainStatsKey {
             .map(|call| call.get_process_method())
             .collect::<Vec<_>>()
             .join(", ");
-        if key.is_empty() && self.call_chain.len() > 0 {
+        if key.is_empty() && !self.call_chain.is_empty() {
             // if string is empty but call-chain is not we show the first call (the api-gateway call that apparantly is not marked as inbound)
             self.call_chain[0].get_process_method()
         } else {

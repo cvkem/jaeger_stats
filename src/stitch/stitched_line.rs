@@ -94,10 +94,10 @@ impl StitchedLine {
     }
 
     pub fn anomalies(&self, pars: &AnomalyParameters) -> Option<Anomalies> {
-        Anomalies::anomalies(&self, pars)
+        Anomalies::new_opt(self, pars)
     }
 
-    pub fn calculate_avg(data: &Vec<Option<f64>>) -> Option<f64> {
+    pub fn calculate_avg(data: &[Option<f64>]) -> Option<f64> {
         let values: Vec<_> = data.iter().filter_map(|x| *x).collect();
         if values.is_empty() {
             None
@@ -113,10 +113,7 @@ impl StitchedLine {
                 .lin_regr
                 .as_ref()
                 .and_then(|lr| lr.avg_growth_per_period),
-            BestFit::ExprRegr => self
-                .exp_regr
-                .as_ref()
-                .and_then(|er| Some(er.avg_growth_per_period)),
+            BestFit::ExprRegr => self.exp_regr.as_ref().map(|er| er.avg_growth_per_period),
             _ => None,
         }
     }

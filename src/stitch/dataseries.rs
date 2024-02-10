@@ -11,7 +11,7 @@ impl<'a> DataSeries<'a> {
     pub fn drop_low_volume_traces(&mut self, drop_count: usize) -> usize {
         // Determine the count per process
         let proc_count = self.0.iter().fold(Counted::new(), |mut proc_count, sro| {
-            sro.as_ref().map(|sr| {
+            if let Some(sr) = sro.as_ref() {
                 sr.stats.iter().for_each(|(k, v)| {
                     //                    proc_count.add_item_count(&k[..], v.num_received_calls);
                     proc_count.add_item_count(
@@ -19,14 +19,14 @@ impl<'a> DataSeries<'a> {
                         v.num_received_calls + v.num_unknown_calls, // unknown calls included as these might be inbound calls (trying to be conservative in excluding Processes.s)
                     );
                 });
-            });
+            };
             proc_count
         });
 
         let mut num_dropped = 0;
 
         self.0.iter_mut().for_each(|sro| {
-            sro.as_mut().map(|sr| {
+            if let Some(sr) = sro.as_mut() {
                 let orig_stats = mem::take(&mut sr.stats);
                 sr.stats = orig_stats
                     .into_iter()
@@ -39,7 +39,7 @@ impl<'a> DataSeries<'a> {
                         }
                     })
                     .collect()
-            });
+            };
         });
 
         num_dropped

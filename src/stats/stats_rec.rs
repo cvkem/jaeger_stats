@@ -148,7 +148,7 @@ impl StatsRec {
     pub fn call_chain_keys(&self) -> Vec<CChainStatsKey> {
         self.stats
             .values()
-            .flat_map(|stat| stat.call_chain.0.keys().map(|psk| psk.clone()))
+            .flat_map(|stat| stat.call_chain.0.keys().cloned())
             .collect()
     }
 
@@ -202,7 +202,7 @@ impl StatsRec {
                 let proc = proc.to_owned();
 
                 let update_stat = |stat: &mut OperationStats| {
-                    stat.update(idx, span, &spans, &self.caching_processes, &trace.root_call);
+                    stat.update(idx, span, spans, &self.caching_processes, &trace.root_call);
                 };
 
                 // This is the actual insert or update based on the 'update_stats'.
@@ -385,20 +385,20 @@ impl StatsRec {
             .stats
             .values()
             .map(|st| st.call_chain.0.keys().count())
-            .count();
+            .sum();
 
         let unrooted_cc = self
             .stats
             .values()
             .map(|st| st.call_chain.0.values().filter(|ccv| !ccv.rooted).count())
-            .count();
+            .sum();
         (total_cc, unrooted_cc)
     }
 
     /// returns a hashset containing all call-chains (string-keys)
     pub fn call_chain_set(&self) -> HashSet<String> {
         let cc_keys = self.call_chain_list();
-        HashSet::from_iter(cc_keys.into_iter())
+        HashSet::from_iter(cc_keys)
     }
 
     /// returns an ordered containing all call-chains (string-keys)
@@ -415,8 +415,8 @@ impl StatsRec {
             .flat_map(|(service, v)| {
                 v.operation
                     .0
-                    .iter()
-                    .map(|(oper, _v)| format!("{service}/{oper}"))
+                    .keys()
+                    .map(|oper| format!("{service}/{oper}"))
                     .collect::<Vec<String>>()
             })
             .collect()
@@ -464,7 +464,7 @@ impl StatsRec {
                     }
 
                     let new_call_chain = rooted.into_iter()
-                        .chain(non_rooted.into_iter())
+                        .chain(non_rooted)
                         .fold(HashMap::new(), |mut cc, (k, mut v_new)| {
                             cc.entry(k)
                                 .and_modify(|v_curr: &mut CChainStatsValue| {

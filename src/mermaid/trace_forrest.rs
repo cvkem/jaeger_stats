@@ -32,8 +32,7 @@ impl<'a> TraceForrest<'a> {
         self.0
             .iter()
             .enumerate()
-            .filter(|(_, tn)| tn.service == call.service && tn.operation == call.operation)
-            .next()
+            .find(|(_, tn)| tn.service == call.service && tn.operation == call.operation)
             .map(|(idx, _tn)| idx)
     }
 
