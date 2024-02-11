@@ -164,6 +164,6 @@ impl TracePaths {
         };
 
         sog.update_service_operation_type(service_oper, ServiceOperationType::Emphasized);
-        sog.mermaid_diagram(scope, compact, edge_value)
+        sog.mermaid_diagram(scope, compact, service_oper, edge_value)
     }
 }

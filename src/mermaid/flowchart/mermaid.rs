@@ -4,13 +4,15 @@ use super::{
 };
 
 pub struct Mermaid {
+    title: Option<String>,
     nodes: Vec<MermaidNode>,
     links: Vec<MermaidLink>,
 }
 
 impl Mermaid {
-    pub fn new() -> Self {
+    pub fn new(title: Option<String>) -> Self {
         Self {
+            title,
             nodes: Vec::new(),
             links: Vec::new(),
         }
@@ -58,6 +60,10 @@ impl Mermaid {
     /// generate a detailled Mermaid diagram, which includes the operations and the outbound calls of each of the services.
     pub fn to_diagram(&self) -> String {
         let mut diagram = Vec::new();
+        if let Some(title) = self.title.as_ref() {
+            diagram.push(format!("---\ntitle: {title}\n---"));
+
+        };
         diagram.push("graph LR".to_string());
 
         self.nodes

@@ -188,10 +188,11 @@ impl ServiceOperGraph {
     /// generate a detailled Mermaid diagram, which includes the operations and the outbound calls of each of the services.
     fn mermaid_diagram_full(
         &self,
+        title: String,
         node_select: NodeSelector,
         edge_value_selector: EdgeValueSelector,
     ) -> String {
-        let mut mermaid = Mermaid::new();
+        let mut mermaid = Mermaid::new(Some(title));
 
         self.0
             .iter()
@@ -206,10 +207,11 @@ impl ServiceOperGraph {
     /// Get a compact Mermaid diagram only showing the services, and discarding the detail regarding the actual operation being called.
     fn mermaid_diagram_compact(
         &self,
+        title: String,
         node_select: NodeSelector,
         edge_value_selector: EdgeValueSelector,
     ) -> String {
-        let mut mermaid = Mermaid::new();
+        let mut mermaid = Mermaid::new(Some(title));
 
         self.0
             .iter()
@@ -230,14 +232,16 @@ impl ServiceOperGraph {
         &self,
         scope: MermaidScope,
         compact: bool,
+        service_oper: &str,
         edge_value: EdgeValue,
     ) -> String {
         let node_select = scope_to_node_selector(scope);
         let edge_value_selector = edge_value_to_selector(edge_value);
+        let title = format!("{service_oper} (metric={})", edge_value.to_string());
         if compact {
-            self.mermaid_diagram_compact(node_select, edge_value_selector)
+            self.mermaid_diagram_compact(title, node_select, edge_value_selector)
         } else {
-            self.mermaid_diagram_full(node_select, edge_value_selector)
+            self.mermaid_diagram_full(title, node_select, edge_value_selector)
         }
     }
 }
