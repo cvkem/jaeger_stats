@@ -8,9 +8,8 @@ use super::{
 };
 use crate::{
     mermaid::trace_forrest::TraceForrest,
-    MermaidScope,
     stats::{CChainStatsKey, LeafService},
-    EdgeValue,
+    EdgeValue, MermaidScope,
 };
 use std::collections::HashMap;
 
@@ -42,9 +41,16 @@ impl TracePaths {
                 TraceForrest::build_trace_forrest(paths)
             }
             None => {
-                println!("Services in the tracepath are:\n{}\n", self.0.keys().map(|s| &**s).collect::<Vec<&str>>().join("\n"));
+                println!(
+                    "Services in the tracepath are:\n{}\n",
+                    self.0
+                        .keys()
+                        .map(|s| &**s)
+                        .collect::<Vec<&str>>()
+                        .join("\n")
+                );
                 panic!("Failure to find the paths that terminate in service '{service}'.");
-            },
+            }
         }
     }
 

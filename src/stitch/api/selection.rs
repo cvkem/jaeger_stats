@@ -1,4 +1,7 @@
-use crate::{stitch::stitched::CallChainData, view_api::types::{Selection, SelectLabel}};
+use crate::{
+    stitch::stitched::CallChainData,
+    view_api::types::{SelectLabel, Selection},
+};
 
 use super::super::{stitch_list::StitchSources, stitched_set::StitchedSet, Stitched};
 use super::utils;

@@ -1,5 +1,3 @@
-
-
 #[allow(non_camel_case_types)]
 #[derive(thiserror::Error, Debug)]
 pub enum ViewError {

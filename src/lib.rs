@@ -1,11 +1,10 @@
-
-mod view_api;
 mod mermaid;
 mod processed;
 mod raw;
 mod stats;
 mod trace_analysis;
 pub mod utils;
+mod view_api;
 
 mod graph;
 mod stitch;
@@ -22,8 +21,11 @@ pub use utils::{
 };
 
 pub use stitch::{
-    AnomalyParameters, BestFit,
-    StitchList, StitchParameters, Stitched, StitchedDataSet, StitchedLine, StitchedSet,
+    AnomalyParameters, BestFit, StitchList, StitchParameters, Stitched, StitchedDataSet,
+    StitchedLine, StitchedSet,
 };
-pub use trace_analysis::analyze_file_or_folder;
-pub use view_api::{EdgeValue, MermaidScope, TraceScope, Viewer, ViewError, types::{self, ServiceOperString}};
+pub use trace_analysis::{analyze_file_or_folder, TraceDataSet};
+pub use view_api::{
+    types::{self, ServiceOperString},
+    EdgeValue, MermaidScope, TraceScope, ViewError, Viewer,
+};

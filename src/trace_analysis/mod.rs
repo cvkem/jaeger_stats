@@ -1,15 +1,14 @@
 use crate::{
-    EdgeValue,
-    MermaidScope,
     processed, raw,
     stats::{self as crate_stats, BasicStatsRec, TraceExtVec},
-    utils,
+    utils, EdgeValue, MermaidScope,
 };
+pub use api::TraceDataSet;
 
 use std::path::{Path, PathBuf};
 
-mod dedup;
 mod api;
+mod dedup;
 mod stats;
 mod write;
 
@@ -67,7 +66,7 @@ pub fn analyze_file_or_folder(
     let scope = MermaidScope::Full;
     let edge_value = EdgeValue::Count;
     if let Some(display_service_oper) = display_service_oper {
-        stats_rec.write_mermaid_diagram(
+        TraceDataSet(stats_rec).write_mermaid_diagram(
             &folder,
             display_service_oper,
             display_call_chain,

@@ -62,7 +62,6 @@ impl Mermaid {
         let mut diagram = Vec::new();
         if let Some(title) = self.title.as_ref() {
             diagram.push(format!("---\ntitle: {title}\n---"));
-
         };
         diagram.push("graph LR".to_string());
 

@@ -3,8 +3,7 @@ use std::{collections::HashMap, error::Error, fs, io};
 use crate::{
     string_hash,
     utils::{self, CsvFileBuffer},
-    StitchList,
-    ServiceOperString,
+    ServiceOperString, StitchList,
 };
 
 use super::{

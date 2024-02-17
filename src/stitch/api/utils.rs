@@ -1,5 +1,8 @@
-use crate::{BestFit, Stitched, StitchedLine, StitchedSet, TraceScope, view_api::types::{ChartDataParameters, ChartLine, ProcessList, ProcessListItem, Table}};
 use super::inbound_prefix_idx::InboundPrefixIdx;
+use crate::{
+    view_api::types::{ChartDataParameters, ChartLine, ProcessList, ProcessListItem, Table},
+    BestFit, Stitched, StitchedLine, StitchedSet, TraceScope,
+};
 use log::error;
 use regex::{self, Regex};
 use std::cmp::Ordering;
@@ -351,19 +354,19 @@ impl ChartDataParameters {
 pub fn get_service_oper_chart_data(
     data: &Stitched,
     labels: Vec<String>,
-    process: &str,
+    full_service_oper_key: &str,
     metric: &str,
 ) -> Option<ChartDataParameters> {
     match data
         .process_operation
         .iter()
-        .find(|(proc, _)| proc == process)
+        .find(|(proc, _)| proc == full_service_oper_key)
     {
         Some((proc, st_set)) => st_set
             .get_metric_stitched_line(metric)
             .map(|sl| ChartDataParameters::new(proc, metric, labels, sl)),
         None => {
-            error!("Could not find process '{process}'");
+            error!("Could not find process '{full_service_oper_key}'");
             None
         }
     }

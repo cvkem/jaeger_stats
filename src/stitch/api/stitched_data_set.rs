@@ -1,13 +1,15 @@
-use crate::{MermaidScope, TraceScope, Viewer, ViewError, view_api::types::{ChartDataParameters, ProcessList, Selection, Table}};
 use super::{
     super::Stitched,
-    selection::{get_full_selection, get_derived_stitched},
-    utils, 
+    selection::{get_derived_stitched, get_full_selection},
+    utils,
 };
 use crate::mermaid;
+use crate::{
+    view_api::types::{ChartDataParameters, ProcessList, Selection, Table},
+    EdgeValue, MermaidScope, TraceScope, ViewError, Viewer,
+};
 use log::{error, info};
 use std::{path::Path, sync::Arc};
-
 
 pub struct StitchedDataSet {
     /// current dataset used for most of the operations
@@ -40,9 +42,7 @@ impl StitchedDataSet {
     }
 }
 
-
 impl Viewer for StitchedDataSet {
-
     fn from_file(file_name: &str) -> Result<Box<Self>, ViewError> {
         if Path::new(file_name).exists() {
             info!("Trying to load the file {file_name}");
@@ -64,9 +64,12 @@ impl Viewer for StitchedDataSet {
         }
     }
 
+    /// Does the viewer contains a time-series, and thus does it have time-series charts available?
+    fn time_series(&self) -> bool {
+        true
+    }
 
     fn get_process_list(&self, metric: &str) -> ProcessList {
-        
         utils::get_process_list(&self.current, metric)
     }
 
@@ -80,19 +83,26 @@ impl Viewer for StitchedDataSet {
         utils::get_call_chain_list(&self.current, proc_oper, metric, scope, inbound_idx)
     }
 
+    /// Get the chart-data for a specific service-operation
     fn get_service_oper_chart_data(
         &self,
-        process: &str,
+        full_service_oper_key: &str,
         metric: &str,
     ) -> Option<ChartDataParameters> {
-        utils::get_service_oper_chart_data(&self.current, self.get_label_list(), process, metric)
+        utils::get_service_oper_chart_data(
+            &self.current,
+            self.get_label_list(),
+            full_service_oper_key,
+            metric,
+        )
     }
 
     /// get a mermaid diagram that depicts the current selection based on proc_oper and optionally a call-chain.
     fn get_mermaid_diagram(
         &self,
-        proc_oper: &str,
+        service_oper: &str,
         call_chain_key: Option<&str>,
+        edge_value: EdgeValue,
         scope: MermaidScope,
         compact: bool,
     ) -> String {
@@ -135,9 +145,9 @@ impl Viewer for StitchedDataSet {
             })
             .collect();
         mermaid::TracePaths(trace_tree).get_diagram(
-            proc_oper,
+            service_oper,
             call_chain_key,
-            crate::EdgeValue::Count,
+            edge_value,
             scope,
             compact,
         )

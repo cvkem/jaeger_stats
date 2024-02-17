@@ -1,5 +1,5 @@
 use clap::Parser;
-use jaeger_stats::{utils, EdgeValue, MermaidScope, StatsRec};
+use jaeger_stats::{utils, EdgeValue, MermaidScope, TraceDataSet, Viewer};
 use std::path::Path;
 
 /// Parsing and analyzin}g Jaeger traces
@@ -52,32 +52,39 @@ fn get_numbered_lines(data: Vec<String>) -> String {
 fn main() {
     let args = Args::parse();
 
-    let file_path = Path::new(&args.input).to_path_buf().into_os_string(); //get_full_path(base_path, input);
-    let traces = StatsRec::read_file(&file_path).unwrap_or_else(|err| {
-        panic!(
-            "Could not read input-file '{:?}'. Received error: {err:?}",
-            file_path
-        )
-    });
+    // let file_path = Path::new(&args.input).to_path_buf().into_os_string(); //get_full_path(base_path, input);
+    // let traces = StatsRec::read_file(&file_path).unwrap_or_else(|err| {
+    //     panic!(
+    //         "Could not read input-file '{:?}'. Received error: {err:?}",
+    //         file_path
+    //     )
+    // });
 
-    println!("The edge_value: {:?}", args.edge_value);
+    match TraceDataSet::from_file(&args.input) {
+        Ok(trace_data_set) => {
+            println!("Successfully read a TraceDataSet from file {}", args.input);
 
-    if args.display {
-        let po = traces.get_proc_oper_list();
-        println!("Service-Operation:\n{}\n\n", get_numbered_lines(po));
+            println!("The edge_value: {:?}", args.edge_value);
 
-        let cc = traces.call_chain_sorted();
-        println!("Call-chains:\n{}\n\n", get_numbered_lines(cc));
+            if args.display {
+                let po = trace_data_set.0.get_proc_oper_list();
+                println!("Service-Operation:\n{}\n\n", get_numbered_lines(po));
+
+                let cc = trace_data_set.0.call_chain_sorted();
+                println!("Call-chains:\n{}\n\n", get_numbered_lines(cc));
+            }
+
+            let folder = utils::current_folder();
+            println!("found folder = {}", folder.to_str().unwrap());
+            trace_data_set.write_mermaid_diagram(
+                &folder,
+                &args.service_oper,
+                to_opt_str(&args.call_chain),
+                args.edge_value,
+                args.scope,
+                args.compact,
+            )
+        }
+        Err(err) => panic!("Reading '{}' failed with error: {err:?}", args.input),
     }
-
-    let folder = utils::current_folder();
-    println!("found folder = {}", folder.to_str().unwrap());
-    traces.write_mermaid_diagram(
-        &folder,
-        &args.service_oper,
-        to_opt_str(&args.call_chain),
-        args.edge_value,
-        args.scope,
-        args.compact,
-    )
 }
