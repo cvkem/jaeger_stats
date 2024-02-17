@@ -1,9 +1,5 @@
-use super::{
-    inbound_prefix_idx::InboundPrefixIdx,
-    types::{ChartDataParameters, ChartLine, ProcessList, ProcessListItem, Table},
-    TraceScope,
-};
-use crate::{BestFit, Stitched, StitchedLine, StitchedSet};
+use crate::{BestFit, Stitched, StitchedLine, StitchedSet, TraceScope, view_api::types::{ChartDataParameters, ChartLine, ProcessList, ProcessListItem, Table}};
+use super::inbound_prefix_idx::InboundPrefixIdx;
 use log::error;
 use regex::{self, Regex};
 use std::cmp::Ordering;
@@ -351,7 +347,7 @@ impl ChartDataParameters {
     }
 }
 
-/// the the chart-data for a specific Process-operation combination
+/// the the chart-data for a specific Service-operation combination
 pub fn get_service_oper_chart_data(
     data: &Stitched,
     labels: Vec<String>,

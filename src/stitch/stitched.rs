@@ -4,6 +4,7 @@ use crate::{
     string_hash,
     utils::{self, CsvFileBuffer},
     StitchList,
+    ServiceOperString,
 };
 
 use super::{
@@ -71,10 +72,10 @@ pub struct Stitched {
     /// the list of input-files (one per analysis) that are used.
     pub sources: StitchSources,
     pub basic: StitchedSet,
-    pub process_operation: Vec<(String, StitchedSet)>,
-    ///  call-chain is keyed by the Process/Oper and the values is a series of call-chains that end in this process/Oper
+    pub process_operation: Vec<(ServiceOperString, StitchedSet)>,
+    ///  call-chain is keyed by the Service/Operation and the values is a series of call-chains that end in this process/Oper
     /// The values is a Vector call-chains represent all different paths (call-chains) that terminate in de Process/Oper of the key of this vector.
-    pub call_chain: Vec<(String, Vec<CallChainData>)>,
+    pub call_chain: Vec<(ServiceOperString, Vec<CallChainData>)>,
 }
 
 impl Stitched {

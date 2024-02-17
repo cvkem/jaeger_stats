@@ -5,10 +5,10 @@ use super::{
     tt_utils::{
         get_call_chain_prefix, mark_selected_call_chain, split_service, split_service_operation,
     },
-    MermaidScope,
 };
 use crate::{
     mermaid::trace_forrest::TraceForrest,
+    MermaidScope,
     stats::{CChainStatsKey, LeafService},
     EdgeValue,
 };
@@ -41,7 +41,10 @@ impl TracePaths {
                 };
                 TraceForrest::build_trace_forrest(paths)
             }
-            None => panic!("Failure to find the paths that terminate in service '{service}'."),
+            None => {
+                println!("Services in the tracepath are:\n{}\n", self.0.keys().map(|s| &**s).collect::<Vec<&str>>().join("\n"));
+                panic!("Failure to find the paths that terminate in service '{service}'.");
+            },
         }
     }
 

@@ -1,7 +1,7 @@
-use crate::stitch::stitched::CallChainData;
+use crate::{stitch::stitched::CallChainData, view_api::types::{Selection, SelectLabel}};
 
 use super::super::{stitch_list::StitchSources, stitched_set::StitchedSet, Stitched};
-use super::{types::SelectLabel, utils, Selection};
+use super::utils;
 use std::{iter, sync::Arc};
 
 impl SelectLabel {

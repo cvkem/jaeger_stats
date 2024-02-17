@@ -1,6 +1,5 @@
 use super::{
     super::flowchart::Mermaid,
-    super::MermaidScope,
     edge_value_selector::{edge_value_to_selector, EdgeValueSelector},
     link_type::LinkType,
     loc::Loc,
@@ -9,7 +8,7 @@ use super::{
     service::Service,
     service_oper_type::ServiceOperationType,
 };
-use crate::{mermaid::trace_data::TraceDataStats, stats::call_chain::Call, EdgeValue};
+use crate::{mermaid::trace_data::TraceDataStats, MermaidScope, stats::call_chain::Call, EdgeValue};
 
 /// A ServiceOperGraph is a vector of service that each contain a vector of Operations. Each Operation collects data on the set of outbound calls.
 /// This data-structure tracks all links that exist between a caller and calllees.

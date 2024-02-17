@@ -1,11 +1,14 @@
 use serde::Serialize;
 
+
+pub type ServiceOperString = String;
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProcessListItem {
     pub idx: i64,
-    pub key: String,
-    pub display: String, // the display can be used in select-boxes, but is nog guaranteed to be unique (at least nog for a Call-chain list.)
+    pub key: String,   // the key is a full key that ends in a specific Service/Operation 
+    pub display: ServiceOperString, // the display can be used in select-boxes, but is nog guaranteed to be unique (at least not for a Call-chain list.)
     pub rank: f64,
     pub avg_count: i64,
     pub chain_type: String,

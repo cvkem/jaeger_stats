@@ -1,4 +1,4 @@
-use crate::mermaid::MermaidScope;
+use crate::MermaidScope;
 
 use super::{service::Service, Position};
 

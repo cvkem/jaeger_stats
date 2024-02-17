@@ -1,5 +1,7 @@
-use crate::{mermaid, stats::StatsRec, utils, utils::TimeStats, EdgeValue};
+use crate::{mermaid, MermaidScope, stats::StatsRec, utils, utils::TimeStats, EdgeValue};
 use std::path::Path;
+
+
 
 impl StatsRec {
     /// get a mermaid diagram that depicts the current selection based on proc_oper and optionally a call-chain.
@@ -9,7 +11,7 @@ impl StatsRec {
         proc_oper: &str,
         call_chain_key: Option<&str>,
         edge_value: EdgeValue,
-        scope: mermaid::MermaidScope,
+        scope: MermaidScope,
         compact: bool,
     ) {
         let trace_tree = self
@@ -48,7 +50,6 @@ impl StatsRec {
             .collect();
 
         let diagram =
-            //TODO: do aggregation here
             mermaid::TracePaths(trace_tree).get_diagram(proc_oper, call_chain_key, edge_value, scope, compact);
 
         write_diagram(folder, proc_oper, diagram);
