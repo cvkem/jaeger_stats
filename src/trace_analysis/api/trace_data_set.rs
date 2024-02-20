@@ -1,11 +1,11 @@
+use super::utils;
 use crate::{
     mermaid,
     stats::StatsRec,
-    utils::{TimeStats, write_string_to_file},
+    utils::{write_string_to_file, TimeStats},
     view_api::types::ProcessList,
     EdgeValue, MermaidScope, TraceScope, ViewError, Viewer,
 };
-use super::utils;
 use log::{error, info};
 use std::path::Path;
 

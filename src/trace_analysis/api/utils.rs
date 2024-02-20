@@ -1,13 +1,42 @@
-use crate::{StatsRec, types::ProcessList, TraceScope};
-
-
+use crate::{
+    types::{ProcessList, ProcessListItem},
+    view_api::reorder_and_renumber,
+    StatsRec, TraceScope,
+};
 
 /// return a ranked list of processes where rank is based on the periodic-growth of the metric provided.
 /// If metric is an empty string the data will be provided in the current order (lexicographic sort.)
 pub fn get_process_list(data: &StatsRec, metric: &str) -> ProcessList {
-    // let list_size = data.process_operation.len();
+    // code is based on StatsRec.get_service_oper_list(&self) -> Vec<String>
+    let mut idx: i64 = 0;
+    let mut proc_list = data
+        .stats
+        .iter()
+        .flat_map(|(service, v)| {
+            v.operation
+                .0
+                .iter()
+                .map(|(oper, oper_stats)| {
+                    let service_oper = format!("{service}/{oper}");
+                    let rank = 0.0; // TODO: compute it
+                    idx += 1;
+                    ProcessListItem {
+                        idx: idx as i64,
+                        key: service_oper.to_owned(),
+                        display: service_oper,
+                        rank,
+                        avg_count: oper_stats.count as i64,
+                        chain_type: String::new(),
+                        inbound_idx: 0,
+                    }
+                })
+                .collect::<Vec<ProcessListItem>>()
+        })
+        .collect::<Vec<_>>();
+
+    // let list_size = data.stats.len(); // probabably incorrect
     // let proc_list: Vec<_> = data
-    //     .process_operation
+    //     .stats
     //     .iter()
     //     .enumerate()
     //     .map(|(idx, po)| {
@@ -30,12 +59,8 @@ pub fn get_process_list(data: &StatsRec, metric: &str) -> ProcessList {
     //         }
     //     })
     //     .collect();
-
-    // reorder_and_renumber(proc_list, metric)
-    unimplemented!()
+    reorder_and_renumber(proc_list, !metric.is_empty())
 }
-
-
 
 // /// get an ordered list of call-chains ranked based on 'metric' that are inbound on a point.
 // fn get_call_chain_list_inbound(data: &StatsRec, service_oper: &str, metric: &str) -> ProcessList {

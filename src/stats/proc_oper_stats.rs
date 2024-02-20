@@ -118,6 +118,7 @@ impl ProcOperStatsValue {
     }
 }
 
+type OperationString = String;
 /// the information is distributed over the key and the value (no duplication in value)
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
-pub struct ProcOperStats(pub HashMap<String, ProcOperStatsValue>);
+pub struct ProcOperStats(pub HashMap<OperationString, ProcOperStatsValue>);

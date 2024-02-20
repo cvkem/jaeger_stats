@@ -67,7 +67,7 @@ fn main() {
             println!("The edge_value: {:?}", args.edge_value);
 
             if args.display {
-                let po = trace_data_set.0.get_proc_oper_list();
+                let po = trace_data_set.0.get_service_oper_list();
                 println!("Service-Operation:\n{}\n\n", get_numbered_lines(po));
 
                 let cc = trace_data_set.0.call_chain_sorted();

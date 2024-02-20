@@ -1,11 +1,13 @@
 use super::inbound_prefix_idx::InboundPrefixIdx;
 use crate::{
-    view_api::types::{ChartDataParameters, ChartLine, ProcessList, ProcessListItem, Table},
+    view_api::{
+        reorder_and_renumber,
+        types::{ChartDataParameters, ChartLine, ProcessList, ProcessListItem, Table},
+    },
     BestFit, Stitched, StitchedLine, StitchedSet, TraceScope,
 };
 use log::error;
 use regex::{self, Regex};
-use std::cmp::Ordering;
 
 const DEFAULT_RANK: f64 = -1.0; // indicates growth not defined
 
@@ -78,35 +80,6 @@ fn get_stitched_set_count(stitch_set: &StitchedSet) -> i64 {
     }
 }
 
-/// Reorder the list of processes based on the rank field and renumber if the 'metric' is set.
-fn reorder_and_renumber(mut proc_list: ProcessList, metric: &str) -> ProcessList {
-    if !metric.is_empty() {
-        proc_list.sort_by(|a, b| b.rank.partial_cmp(&a.rank).unwrap_or(Ordering::Equal));
-
-        // renumber for new ordering
-        proc_list
-            .iter_mut()
-            .enumerate()
-            .for_each(|(idx, pli)| pli.idx = (idx + 1) as i64);
-    }
-
-    proc_list
-}
-
-/// Reorder the list of processes based on the rank field and renumber if the 'metric' is set.
-fn rank_lexicographic(mut proc_list: ProcessList) -> ProcessList {
-    proc_list.sort_by(|a, b| a.key.cmp(&b.key));
-    let list_len = proc_list.len();
-
-    // renumber for new ordering
-    proc_list.iter_mut().enumerate().for_each(|(idx, pli)| {
-        pli.idx = (idx + 1) as i64;
-        pli.rank = (list_len - idx) as f64;
-    });
-
-    proc_list
-}
-
 /// return a ranked list of processes where rank is based on the periodic-growth of the metric provided.
 /// If metric is an empty string the data will be provided in the current order (lexicographic sort.)
 pub fn get_process_list(data: &Stitched, metric: &str) -> ProcessList {
@@ -136,7 +109,7 @@ pub fn get_process_list(data: &Stitched, metric: &str) -> ProcessList {
         })
         .collect();
 
-    reorder_and_renumber(proc_list, metric)
+    reorder_and_renumber(proc_list, !metric.is_empty())
 }
 
 /// get an ordered list of call-chains ranked based on 'metric' that are inbound on a point.
@@ -188,7 +161,7 @@ fn get_call_chain_list_inbound(data: &Stitched, service_oper: &str, metric: &str
         }
     };
 
-    reorder_and_renumber(proc_list, metric)
+    reorder_and_renumber(proc_list, !metric.is_empty())
 }
 
 /// get an ordered list of call-chains ranked based on 'metric' that are end2end process (from end-point to leaf-process of the call-chain).
@@ -241,11 +214,7 @@ fn get_call_chain_list_end2end(
         })
         .collect();
 
-    if metric.is_empty() {
-        rank_lexicographic(proc_list)
-    } else {
-        reorder_and_renumber(proc_list, metric)
-    }
+    reorder_and_renumber(proc_list, !metric.is_empty())
 }
 
 /// get an ordered list of call-chains ranked based on 'metric' that are inbound on a point.

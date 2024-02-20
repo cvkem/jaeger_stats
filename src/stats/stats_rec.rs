@@ -409,7 +409,7 @@ impl StatsRec {
     }
 
     /// get the ordered list of all process/oper combinations
-    pub fn get_proc_oper_list(&self) -> Vec<String> {
+    pub fn get_service_oper_list(&self) -> Vec<String> {
         self.stats
             .iter()
             .flat_map(|(service, v)| {

@@ -57,7 +57,7 @@ pub trait Viewer {
     }
 
     /// update the selection by creating a modified dataset that only contains the selected data.
-    fn set_selection(&mut self, selected: Vec<bool>) -> Result<(), ViewError> {
+    fn set_selection(&mut self, _selected: Vec<bool>) -> Result<(), ViewError> {
         panic!("Set_selection only exists for time-series data")
     }
 
