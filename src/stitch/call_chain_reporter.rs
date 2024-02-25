@@ -1,8 +1,10 @@
 use super::stitched_line::StitchedLine;
 use crate::{
-    stats::call_chain::CChainStatsKey,
-    stats::{call_chain::CChainStatsValue, StatsRec},
-    AnomalyParameters,
+    stats::{
+        call_chain::{CChainStatsKey, CChainStatsValue},
+        StatsRec,
+    },
+    AnomalyParameters, Metric,
 };
 
 use std::{cmp::Ordering, collections::HashMap};
@@ -17,7 +19,7 @@ type CCData<'a> = Vec<Option<ProcessorInput<'a>>>;
 /// TODO: as this is a copy of the POReportItem, including all code we should move this to generics
 ///   only the Processor-type and thus the input data are different.
 pub struct CCReportItem {
-    pub label: &'static str,
+    pub metric: Metric,
     processor: Processor,
 }
 
@@ -26,8 +28,8 @@ pub struct CCReportItem {
 pub struct CCReportItems(pub Vec<CCReportItem>);
 
 impl CCReportItem {
-    pub fn new(label: &'static str, processor: Processor) -> Self {
-        Self { label, processor }
+    pub fn new(metric: Metric, processor: Processor) -> Self {
+        Self { metric, processor }
     }
 
     pub fn extract_stitched_line(&self, data: &CCData, pars: &AnomalyParameters) -> StitchedLine {
@@ -36,7 +38,7 @@ impl CCReportItem {
             .map(|ms| ms.as_ref().and_then(self.processor))
             .collect::<Vec<_>>();
 
-        StitchedLine::new(self.label.to_string(), values, pars)
+        StitchedLine::new(self.metric, values, pars)
     }
 }
 

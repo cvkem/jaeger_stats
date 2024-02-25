@@ -1,5 +1,8 @@
 use super::anomalies::{Anomalies, AnomalyParameters};
-use crate::utils::{self, ExponentialRegression, LinearRegression};
+use crate::{
+    utils::{self, ExponentialRegression, LinearRegression},
+    Metric,
+};
 use serde::{Deserialize, Serialize};
 
 const MIN_POINTS_FOR_ST_MULTIPLIER: usize = 2;
@@ -32,7 +35,7 @@ impl ToString for BestFit {
 /// StitchedLine represents a line of values for a certain metric as mentioned in label. When sufficient data is present the Linear regression is added.
 /// Also an optional st_line is added which represents the last ST_dATA_LEN values of the data-array including a linear regression. However this is only added if the full data-set contains enough values.
 pub struct StitchedLine {
-    pub label: String,
+    pub metric: Metric,
     pub data: Vec<Option<f64>>,
     pub num_filled_columns: u32,
     pub data_avg: Option<f64>,
@@ -45,7 +48,7 @@ pub struct StitchedLine {
 impl StitchedLine {
     /// compute a data-series (StitchedLine) including linear regression, the average of the data and possibly a short-term line for the last few datapoint.
     /// The Short-Term line is used to detect anomalies. However, this is only computed if the full dataset significantly exceed the size of the ST
-    pub fn new(label: String, data: Vec<Option<f64>>, pars: &AnomalyParameters) -> Self {
+    pub fn new(metric: Metric, data: Vec<Option<f64>>, pars: &AnomalyParameters) -> Self {
         let lin_regr = LinearRegression::new(&data);
         let exp_regr = ExponentialRegression::new(&data);
         let best_fit = match (&lin_regr, &exp_regr) {
@@ -82,7 +85,7 @@ impl StitchedLine {
             .fold(0, |cnt, val| if val.is_some() { cnt + 1 } else { cnt });
 
         Self {
-            label,
+            metric,
             data,
             num_filled_columns,
             data_avg,
@@ -198,7 +201,7 @@ impl StitchedLine {
         if let Some(lr) = &self.lin_regr {
             format!(
                 "{header}; {}; {}; {values}; ; ; {}; {}; {}; {}; {}; {}; {}; {}; {}; {}; {}; {};",
-                self.label,
+                self.metric.to_str(),
                 self.num_filled_columns,
                 self.best_fit.to_string(),
                 utils::format_float(lr.slope),
@@ -216,7 +219,8 @@ impl StitchedLine {
         } else {
             format!(
                 "{header}; {}; {}; {values}; ; ; ; ; ;",
-                self.label, self.num_filled_columns
+                self.metric.to_str(),
+                self.num_filled_columns
             )
         }
     }

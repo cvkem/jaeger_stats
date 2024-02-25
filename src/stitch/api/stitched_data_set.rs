@@ -3,10 +3,10 @@ use super::{
     selection::{get_derived_stitched, get_full_selection},
     utils,
 };
-use crate::mermaid;
 use crate::{
+    mermaid,
     view_api::types::{ChartDataParameters, ProcessList, Selection, Table},
-    EdgeValue, MermaidScope, TraceScope, ViewError, Viewer,
+    MermaidScope, Metric, TraceScope, ViewError, Viewer,
 };
 use log::{error, info};
 use std::{path::Path, sync::Arc};
@@ -69,14 +69,14 @@ impl Viewer for StitchedDataSet {
         true
     }
 
-    fn get_process_list(&self, metric: &str) -> ProcessList {
+    fn get_process_list(&self, metric: Metric) -> ProcessList {
         utils::get_process_list(&self.current, metric)
     }
 
     fn get_call_chain_list(
         &self,
         proc_oper: &str,
-        metric: &str,
+        metric: Metric,
         scope: TraceScope,
         inbound_idx: Option<i64>,
     ) -> ProcessList {
@@ -87,7 +87,7 @@ impl Viewer for StitchedDataSet {
     fn get_service_oper_chart_data(
         &self,
         full_service_oper_key: &str,
-        metric: &str,
+        metric: Metric,
     ) -> Option<ChartDataParameters> {
         utils::get_service_oper_chart_data(
             &self.current,
@@ -102,7 +102,7 @@ impl Viewer for StitchedDataSet {
         &self,
         service_oper: &str,
         call_chain_key: Option<&str>,
-        edge_value: EdgeValue,
+        edge_value: Metric,
         scope: MermaidScope,
         compact: bool,
     ) -> String {
@@ -125,7 +125,7 @@ impl Viewer for StitchedDataSet {
                             .data
                             .0
                             .iter()
-                            .find(|x| x.label == "avg_duration_millis")
+                            .find(|x| x.metric == Metric::AvgDurationMillis)
                             .and_then(|data| data.data_avg)
                             .expect("avg-duration missing");
                         mermaid::TraceData::new(
@@ -156,7 +156,7 @@ impl Viewer for StitchedDataSet {
     fn get_call_chain_chart_data(
         &self,
         call_chain_key: &str,
-        metric: &str,
+        metric: Metric,
     ) -> Option<ChartDataParameters> {
         utils::get_call_chain_chart_data(
             &self.current,

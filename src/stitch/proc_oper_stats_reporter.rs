@@ -1,4 +1,7 @@
-use crate::{stats::ProcOperStatsValue, stats::StatsRec, AnomalyParameters};
+use crate::{
+    stats::{ProcOperStatsValue, StatsRec},
+    AnomalyParameters, Metric,
+};
 use std::collections::HashSet;
 
 use super::{key::Key, stitched_line::StitchedLine};
@@ -11,7 +14,7 @@ type POData<'a> = Vec<Option<ProcessorInput<'a>>>;
 
 /// Process-Operation report items
 pub struct POReportItem {
-    pub label: &'static str,
+    pub metric: Metric,
     processor: Processor,
 }
 
@@ -19,8 +22,8 @@ pub struct POReportItem {
 pub struct POReportItems(pub Vec<POReportItem>);
 
 impl POReportItem {
-    pub fn new(label: &'static str, processor: Processor) -> Self {
-        Self { label, processor }
+    pub fn new(metric: Metric, processor: Processor) -> Self {
+        Self { metric, processor }
     }
 
     pub fn extract_stitched_line(&self, data: &POData, pars: &AnomalyParameters) -> StitchedLine {
@@ -29,7 +32,7 @@ impl POReportItem {
             .map(|ms| ms.as_ref().and_then(self.processor))
             .collect::<Vec<_>>();
 
-        StitchedLine::new(self.label.to_string(), values, pars)
+        StitchedLine::new(self.metric, values, pars)
     }
 }
 

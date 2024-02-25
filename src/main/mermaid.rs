@@ -1,5 +1,5 @@
 use clap::Parser;
-use jaeger_stats::{utils, EdgeValue, MermaidScope, TraceDataSet, Viewer};
+use jaeger_stats::{utils, MermaidScope, Metric, TraceDataSet, Viewer};
 use std::path::Path;
 
 /// Parsing and analyzin}g Jaeger traces
@@ -13,8 +13,8 @@ struct Args {
     //    #[arg(long, default_value_t = String::from("/home/cees/ehome/230717_1122_druk/Stats/cummulative_trace_stats.json"))]
     input: String,
 
-    #[arg(short, long, value_enum, default_value_t = EdgeValue::Count)]
-    edge_value: EdgeValue,
+    #[arg(short, long, value_enum, default_value_t = Metric::Count)]
+    edge_value: Metric,
 
     #[arg(short, long)] // "bspc-productinzicht/geefProducten"))]
     service_oper: String,

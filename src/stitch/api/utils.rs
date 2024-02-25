@@ -4,7 +4,7 @@ use crate::{
         reorder_and_renumber,
         types::{ChartDataParameters, ChartLine, ProcessList, ProcessListItem, Table},
     },
-    BestFit, Stitched, StitchedLine, StitchedSet, TraceScope,
+    BestFit, Metric, Stitched, StitchedLine, StitchedSet, TraceScope,
 };
 use log::error;
 use regex::{self, Regex};
@@ -60,20 +60,20 @@ pub fn get_label_list(data: &Stitched) -> Vec<String> {
 }
 
 /// get the rank of this stitched set based on the growth of the 'metric'.
-fn get_stitched_set_rank(stitch_set: &StitchedSet, metric: &str) -> f64 {
+fn get_stitched_set_rank(stitch_set: &StitchedSet, metric: Metric) -> f64 {
     // rank on the periodic-growth of the selected metric
     let line = stitch_set
         .get_metric_stitched_line(metric)
-        .unwrap_or_else(|| panic!("Could not find ranking-metric '{}'", metric));
+        .unwrap_or_else(|| panic!("Could not find ranking-metric '{}'", metric.to_str()));
     line.periodic_growth().unwrap_or(DEFAULT_RANK)
 }
 
 /// get the average count of this process or call-chain over a measurements.
 fn get_stitched_set_count(stitch_set: &StitchedSet) -> i64 {
-    let metric = "count";
+    let metric = Metric::Count;
     let line = stitch_set
         .get_metric_stitched_line(metric)
-        .unwrap_or_else(|| panic!("Could not find metric '{}'", metric));
+        .unwrap_or_else(|| panic!("Could not find metric '{}'", metric.to_str()));
     match line.data_avg {
         Some(avg) => avg.round() as i64,
         None => 0,
@@ -82,7 +82,7 @@ fn get_stitched_set_count(stitch_set: &StitchedSet) -> i64 {
 
 /// return a ranked list of processes where rank is based on the periodic-growth of the metric provided.
 /// If metric is an empty string the data will be provided in the current order (lexicographic sort.)
-pub fn get_process_list(data: &Stitched, metric: &str) -> ProcessList {
+pub fn get_process_list(data: &Stitched, metric: Metric) -> ProcessList {
     let list_size = data.process_operation.len();
     let proc_list: Vec<_> = data
         .process_operation
@@ -90,7 +90,7 @@ pub fn get_process_list(data: &Stitched, metric: &str) -> ProcessList {
         .enumerate()
         .map(|(idx, po)| {
             // provide a rank based on the reverse of the index, as the highest rank should be in first position.
-            let rank = if metric.is_empty() {
+            let rank = if metric.is_none() {
                 (list_size - idx) as f64
             } else {
                 get_stitched_set_rank(&po.1, metric)
@@ -109,11 +109,11 @@ pub fn get_process_list(data: &Stitched, metric: &str) -> ProcessList {
         })
         .collect();
 
-    reorder_and_renumber(proc_list, !metric.is_empty())
+    reorder_and_renumber(proc_list, !metric.is_none())
 }
 
 /// get an ordered list of call-chains ranked based on 'metric' that are inbound on a point.
-fn get_call_chain_list_inbound(data: &Stitched, service_oper: &str, metric: &str) -> ProcessList {
+fn get_call_chain_list_inbound(data: &Stitched, service_oper: &str, metric: Metric) -> ProcessList {
     let proc_list = match data
         .call_chain
         .iter()
@@ -128,7 +128,7 @@ fn get_call_chain_list_inbound(data: &Stitched, service_oper: &str, metric: &str
                 .enumerate()
                 .map(|(idx, ccd)| {
                     // provide a rank based on the reverse of the index, as the highest rank should be in first position.
-                    let rank = if metric.is_empty() {
+                    let rank = if metric.is_none() {
                         (list_size - idx) as f64
                     } else {
                         get_stitched_set_rank(&ccd.data, metric)
@@ -161,14 +161,14 @@ fn get_call_chain_list_inbound(data: &Stitched, service_oper: &str, metric: &str
         }
     };
 
-    reorder_and_renumber(proc_list, !metric.is_empty())
+    reorder_and_renumber(proc_list, !metric.is_none())
 }
 
 /// get an ordered list of call-chains ranked based on 'metric' that are end2end process (from end-point to leaf-process of the call-chain).
 fn get_call_chain_list_end2end(
     data: &Stitched,
     service_oper: &str,
-    metric: &str,
+    metric: Metric,
     all_chains: bool,
     inbound_idx_filter: Option<i64>,
 ) -> ProcessList {
@@ -189,7 +189,7 @@ fn get_call_chain_list_end2end(
                 .filter(|ccd| re_service_oper.find(&ccd.full_key).is_some())
                 .filter_map(|ccd| {
                     // provide a rank based on the reverse of the index, as the highest rank should be in first position.
-                    let rank = if metric.is_empty() {
+                    let rank = if metric.is_none() {
                         DEFAULT_RANK // will be rewritten before returning this value
                     } else {
                         get_stitched_set_rank(&ccd.data, metric)
@@ -214,14 +214,14 @@ fn get_call_chain_list_end2end(
         })
         .collect();
 
-    reorder_and_renumber(proc_list, !metric.is_empty())
+    reorder_and_renumber(proc_list, !metric.is_none())
 }
 
 /// get an ordered list of call-chains ranked based on 'metric' that are inbound on a point.
 pub fn get_call_chain_list(
     data: &Stitched,
     service_oper: &str,
-    metric: &str,
+    metric: Metric,
     scope: TraceScope,
     inbound_idx: Option<i64>,
 ) -> ProcessList {
@@ -238,12 +238,6 @@ pub fn get_call_chain_list(
 
 impl ChartDataParameters {
     pub fn new(process: &str, metric: &str, labels: Vec<String>, st_line: &StitchedLine) -> Self {
-        // let labels = st_line
-        //     .data
-        //     .iter()
-        //     .enumerate()
-        //     .map(|(idx, _)| format!("{}", idx))
-        //     .collect();
         let mut lines = Vec::new();
         lines.push(ChartLine {
             label: "Observed".to_string(),
@@ -324,7 +318,7 @@ pub fn get_service_oper_chart_data(
     data: &Stitched,
     labels: Vec<String>,
     full_service_oper_key: &str,
-    metric: &str,
+    metric: Metric,
 ) -> Option<ChartDataParameters> {
     match data
         .process_operation
@@ -333,7 +327,7 @@ pub fn get_service_oper_chart_data(
     {
         Some((proc, st_set)) => st_set
             .get_metric_stitched_line(metric)
-            .map(|sl| ChartDataParameters::new(proc, metric, labels, sl)),
+            .map(|sl| ChartDataParameters::new(proc, metric.to_str(), labels, sl)),
         None => {
             error!("Could not find process '{full_service_oper_key}'");
             None
@@ -384,7 +378,7 @@ pub fn get_call_chain_chart_data(
     data: &Stitched,
     labels: Vec<String>,
     call_chain_key: &str,
-    metric: &str,
+    metric: Metric,
 ) -> Option<ChartDataParameters> {
     let proc: Vec<_> = data
         .call_chain
@@ -403,7 +397,7 @@ pub fn get_call_chain_chart_data(
             proc[0]
                 .data
                 .get_metric_stitched_line(metric)
-                .map(|sl| ChartDataParameters::new(call_chain_key, metric, labels, sl))
+                .map(|sl| ChartDataParameters::new(call_chain_key, metric.to_str(), labels, sl))
         }
     }
 }
@@ -418,7 +412,7 @@ pub fn get_file_stats(data: &Stitched) -> Table {
         .0
         .iter()
         .map(|sl| ChartLine {
-            label: sl.label.to_owned(),
+            label: sl.metric.to_string(),
             data: sl.data.clone(),
         })
         .collect();

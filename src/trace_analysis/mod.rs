@@ -1,7 +1,7 @@
 use crate::{
     processed, raw,
     stats::{self as crate_stats, BasicStatsRec, TraceExtVec},
-    utils, EdgeValue, MermaidScope,
+    utils, MermaidScope, Metric,
 };
 pub use api::TraceDataSet;
 
@@ -64,7 +64,7 @@ pub fn analyze_file_or_folder(
     // Assume some default parameters
     let compact = false;
     let scope = MermaidScope::Full;
-    let edge_value = EdgeValue::Count;
+    let edge_value = Metric::Count;
     if let Some(display_service_oper) = display_service_oper {
         TraceDataSet(stats_rec).write_mermaid_diagram(
             &folder,

@@ -1,6 +1,6 @@
 use super::{
     types::{ChartDataParameters, ProcessList, Selection, Table},
-    EdgeValue, MermaidScope, TraceScope, ViewError,
+    MermaidScope, Metric, TraceScope, ViewError,
 };
 
 pub trait Viewer {
@@ -13,13 +13,13 @@ pub trait Viewer {
     }
 
     /// Get the list of processes that exist in the current dataset.
-    fn get_process_list(&self, metric: &str) -> ProcessList;
+    fn get_process_list(&self, metric: Metric) -> ProcessList;
 
     /// Get the list of call-chains for a given Service-Operation
     fn get_call_chain_list(
         &self,
         proc_oper: &str,
-        metric: &str,
+        metric: Metric,
         scope: TraceScope,
         inbound_idx: Option<i64>,
     ) -> ProcessList;
@@ -29,7 +29,7 @@ pub trait Viewer {
     fn get_service_oper_chart_data(
         &self,
         full_service_oper_key: &str,
-        metric: &str,
+        metric: Metric,
     ) -> Option<ChartDataParameters> {
         // default implementation does not have charts as it does not contain a time-series.
         None
@@ -40,7 +40,7 @@ pub trait Viewer {
     fn get_call_chain_chart_data(
         &self,
         call_chain_key: &str,
-        metric: &str,
+        metric: Metric,
     ) -> Option<ChartDataParameters> {
         // default implementation does not have charts as it does not contain a time-series.
         None
@@ -66,7 +66,7 @@ pub trait Viewer {
         &self,
         service_oper: &str,
         call_chain_key: Option<&str>,
-        edge_value: EdgeValue,
+        edge_value: Metric,
         scope: MermaidScope,
         compact: bool,
     ) -> String;

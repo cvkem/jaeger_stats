@@ -1,16 +1,16 @@
 use super::stitched_line::StitchedLine;
-use crate::{stats::StatsRec, AnomalyParameters};
+use crate::{stats::StatsRec, AnomalyParameters, Metric};
 
 type SRProcessor = fn(&StatsRec) -> Option<f64>;
 
 pub struct SRReportItem {
-    label: &'static str,
+    metric: Metric,
     processor: SRProcessor,
 }
 
 impl SRReportItem {
-    pub fn new(label: &'static str, processor: SRProcessor) -> Self {
-        Self { label, processor }
+    pub fn new(metric: Metric, processor: SRProcessor) -> Self {
+        Self { metric, processor }
     }
 
     /// extract values
@@ -28,6 +28,6 @@ impl SRReportItem {
     ) -> StitchedLine {
         let values = self.extract_data(data);
 
-        StitchedLine::new(self.label.to_string(), values, pars)
+        StitchedLine::new(self.metric, values, pars)
     }
 }

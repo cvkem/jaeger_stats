@@ -27,5 +27,5 @@ pub use stitch::{
 pub use trace_analysis::{analyze_file_or_folder, TraceDataSet};
 pub use view_api::{
     types::{self, ServiceOperString},
-    EdgeValue, MermaidScope, TraceScope, ViewError, Viewer,
+    MermaidScope, Metric, TraceScope, ViewError, Viewer,
 };

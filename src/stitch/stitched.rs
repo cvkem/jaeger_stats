@@ -354,10 +354,10 @@ impl Stitched {
         let metrics: Vec<_> = PROC_OPER_REPORT_ITEMS
             .0
             .iter()
-            .map(|por| por.label)
+            .map(|por| por.metric)
             .collect();
         metrics.iter().for_each(|metric| {
-            csv.add_section(&format!("{metric} (Proces/Operation-level)"));
+            csv.add_section(&format!("{} (Proces/Operation-level)", metric.to_str()));
 
             csv.add_line(Anomalies::report_stats_line_header_str().to_owned());
 
@@ -365,7 +365,7 @@ impl Stitched {
                 lines
                     .0
                     .iter()
-                    .filter(|s| s.label[..] == **metric)
+                    .filter(|s| s.metric == *metric)
                     .for_each(|line| {
                         if let Some(anomalies) = line.anomalies(pars) {
                             num_anomalies += 1;
@@ -386,10 +386,10 @@ impl Stitched {
         let metrics: Vec<_> = CALL_CHAIN_REPORT_ITEMS
             .0
             .iter()
-            .map(|ccr| ccr.label)
+            .map(|ccr| ccr.metric)
             .collect();
         metrics.iter().for_each(|metric| {
-            csv.add_section(&format!("{metric} (Call-Chain-level)"));
+            csv.add_section(&format!("{} (Call-Chain-level)", metric.to_str()));
 
             self.call_chain.iter().for_each(|(po_label, call_chains)| {
                 csv.add_empty_lines(1);
@@ -399,7 +399,7 @@ impl Stitched {
                     ccd.data
                         .0
                         .iter()
-                        .filter(|s| s.label[..] == **metric)
+                        .filter(|s| s.metric == *metric)
                         .for_each(|line| {
                             if let Some(anomalies) = line.anomalies(pars) {
                                 num_anomalies += 1;

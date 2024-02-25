@@ -1,3 +1,5 @@
+use crate::Metric;
+
 use super::{anomalies::DEFAULT_ANOMALY_PARS, stitched_line::StitchedLine};
 use std::iter;
 
@@ -21,12 +23,12 @@ impl StitchedSet {
     /// On the normal summary that shows the averages per metric 'extra_count' is set to false as 'Count' is the first metric.
     /// However, in summary reports that use another statistic, such as 'slope' or R2 value, the 'extra_count' is set to true as the existing Count column in that case does not represents the average.  
     pub fn summary_header(&self, extra_count: bool) -> Vec<String> {
-        let headers = self.0.iter().map(|sl| sl.label.to_owned());
+        let headers = self.0.iter().map(|sl| sl.metric.to_string());
         if extra_count {
             let count_label = self
                 .0
                 .first()
-                .map(|sl| sl.label.to_uppercase())
+                .map(|sl| sl.metric.to_string())
                 .unwrap_or("NO DATA".to_owned());
             [count_label, "NUM_FILLED".to_string()]
                 .iter()
@@ -37,16 +39,6 @@ impl StitchedSet {
             headers.collect()
         }
     }
-
-    // /// Header for the full data-report over a single metric (a specific StitchedLine) in this StitchedSet
-    // /// A StitchedLine is a time-series of the data and a linear-regression over that data, so this header contains a column for each time-slice and a few extra columns for the lineair regression.
-    // pub fn full_data_header(&self) -> String {
-    //     if self.0.is_empty() {
-    //         "NO DATA".to_owned()
-    //     } else {
-    //         self.0[0].headers()
-    //     }
-    // }
 
     pub fn summary_avg(&self) -> Vec<Option<f64>> {
         self.0.iter().map(|sl| sl.data_avg).collect()
@@ -77,8 +69,8 @@ impl StitchedSet {
         self.prefix_with_counts(self.0.iter().map(|sl| sl.scaled_slope()))
     }
 
-    pub fn get_metric_stitched_line(&self, metric: &str) -> Option<&StitchedLine> {
-        self.0.iter().find(|line| line.label == metric)
+    pub fn get_metric_stitched_line(&self, metric: Metric) -> Option<&StitchedLine> {
+        self.0.iter().find(|line| line.metric == metric)
     }
 
     /// Get a subset of selected data-points for each of the stiched lines in the stitched set, or None if the selection does not contain any f64 values (only None)
@@ -92,7 +84,7 @@ impl StitchedSet {
                     .filter_map(|(sel, val)| if *sel { Some(*val) } else { None })
                     .collect();
                 let has_value = selected.iter().any(|x| x.is_some());
-                (&sl.label, selected, has_value)
+                (&sl.metric, selected, has_value)
             })
             .collect();
 

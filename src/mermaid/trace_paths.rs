@@ -9,7 +9,7 @@ use super::{
 use crate::{
     mermaid::trace_forrest::TraceForrest,
     stats::{CChainStatsKey, LeafService},
-    EdgeValue, MermaidScope,
+    MermaidScope, Metric,
 };
 use std::collections::HashMap;
 
@@ -156,7 +156,7 @@ impl TracePaths {
         &self,
         service_oper: &str,
         call_chain_key: Option<&str>,
-        edge_value: EdgeValue,
+        edge_value: Metric,
         scope: MermaidScope,
         compact: bool,
     ) -> String {

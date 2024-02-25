@@ -4,7 +4,7 @@ use crate::{
     stats::StatsRec,
     utils::{write_string_to_file, TimeStats},
     view_api::types::ProcessList,
-    EdgeValue, MermaidScope, TraceScope, ViewError, Viewer,
+    MermaidScope, Metric, TraceScope, ViewError, Viewer,
 };
 use log::{error, info};
 use std::path::Path;
@@ -22,7 +22,7 @@ impl TraceDataSet {
         folder: &Path,
         service_oper: &str,
         call_chain_key: Option<&str>,
-        edge_value: EdgeValue,
+        edge_value: Metric,
         scope: MermaidScope,
         compact: bool,
     ) {
@@ -53,7 +53,7 @@ impl Viewer for TraceDataSet {
     }
 
     /// Get the list of processes that exist in the current dataset.
-    fn get_process_list(&self, metric: &str) -> ProcessList {
+    fn get_process_list(&self, metric: Metric) -> ProcessList {
         utils::get_process_list(&self.0, metric)
     }
 
@@ -61,7 +61,7 @@ impl Viewer for TraceDataSet {
     fn get_call_chain_list(
         &self,
         proc_oper: &str,
-        metric: &str,
+        metric: Metric,
         scope: TraceScope,
         inbound_idx: Option<i64>,
     ) -> ProcessList {
@@ -72,7 +72,7 @@ impl Viewer for TraceDataSet {
         &self,
         service_oper: &str,
         call_chain_key: Option<&str>,
-        edge_value: EdgeValue,
+        edge_value: Metric,
         scope: MermaidScope,
         compact: bool,
     ) -> String {

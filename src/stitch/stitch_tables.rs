@@ -3,39 +3,42 @@ use super::{
     proc_oper_stats_reporter::{POReportItem, POReportItems},
     stats_rec_reporter::SRReportItem,
 };
-use crate::utils::{self, TimeStats};
+use crate::{
+    utils::{self, TimeStats},
+    Metric,
+};
 use lazy_static::lazy_static;
 
 lazy_static! {
     /// NOTE/TODO: the interface of StatsRec is different from the interface of ProcOperStats and CCStats
     pub static ref BASIC_REPORT_ITEMS: Vec<SRReportItem> = vec![
-        SRReportItem::new("num_files", |stats_rec| Some(stats_rec.num_files as f64)),
-        SRReportItem::new("rate (req/sec)", |stats_rec| {
+        SRReportItem::new(Metric::NumFiles, |stats_rec| Some(stats_rec.num_files as f64)),
+        SRReportItem::new(Metric::Rate, |stats_rec| {
             let dt: Vec<_> = stats_rec.start_dt.iter().map(|dt| utils::datetime_to_micros(*dt)).collect();
             TimeStats(&dt)
                 .get_avg_rate(stats_rec.num_files)
         }),
-        SRReportItem::new("num_traces", |stats_rec| Some(
+        SRReportItem::new(Metric::NumTraces, |stats_rec| Some(
             stats_rec.trace_id.len() as f64
         )),
-        SRReportItem::new("num_endpoints", |stats_rec| Some(stats_rec.num_endpoints as f64)),
-        SRReportItem::new("num_incomplete_traces", |stats_rec| Some(stats_rec.num_incomplete_traces as f64)),
-        SRReportItem::new("num_call_chains", |stats_rec| Some(stats_rec.num_call_chains as f64)),
-        SRReportItem::new("init_num_unrooted_cc", |stats_rec| Some(stats_rec.init_num_unrooted_cc as f64)),
-        SRReportItem::new("num_fixes", |stats_rec| Some(stats_rec.num_fixes as f64)),
-        SRReportItem::new("num_unrooted_cc_after_fixes", |stats_rec| Some(stats_rec.num_unrooted_cc_after_fixes as f64)),
-        SRReportItem::new("min_duration_millis", |stats_rec| Some(
+        SRReportItem::new(Metric::NumEndpoints, |stats_rec| Some(stats_rec.num_endpoints as f64)),
+        SRReportItem::new(Metric::NumIncompleteTraces, |stats_rec| Some(stats_rec.num_incomplete_traces as f64)),
+        SRReportItem::new(Metric::NumCallChains, |stats_rec| Some(stats_rec.num_call_chains as f64)),
+        SRReportItem::new(Metric::InitNumUnrootedCallChains, |stats_rec| Some(stats_rec.init_num_unrooted_cc as f64)),
+        SRReportItem::new(Metric::NumFixes, |stats_rec| Some(stats_rec.num_fixes as f64)),
+        SRReportItem::new(Metric::NumUnrootedCallChainsAfterFixes, |stats_rec| Some(stats_rec.num_unrooted_cc_after_fixes as f64)),
+        SRReportItem::new(Metric::MinDurationMillis, |stats_rec| Some(
             TimeStats(&stats_rec.duration_micros).get_min_millis()
         )),
-        SRReportItem::new("avg_duration_millis", |stats_rec| Some(
+        SRReportItem::new(Metric::AvgDurationMillis, |stats_rec| Some(
             TimeStats(&stats_rec.duration_micros).get_avg_millis()
         )),
-        SRReportItem::new("median_duration_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_median_millis()),
-        SRReportItem::new("p75_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.75)),
-        SRReportItem::new("p90_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.90)),
-        SRReportItem::new("p95_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.95)),
-        SRReportItem::new("p99_millis", |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.99)),
-        SRReportItem::new("max_duration_millis", |stats_rec| Some(
+        SRReportItem::new(Metric::MedianDurationMillis, |stats_rec| TimeStats(&stats_rec.duration_micros).get_median_millis()),
+        SRReportItem::new(Metric::P75Millis, |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.75)),
+        SRReportItem::new(Metric::P90Millis, |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.90)),
+        SRReportItem::new(Metric::P95Millis, |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.95)),
+        SRReportItem::new(Metric::P99Millis, |stats_rec| TimeStats(&stats_rec.duration_micros).get_p_millis(0.99)),
+        SRReportItem::new(Metric::MaxDurationMillis, |stats_rec| Some(
             TimeStats(&stats_rec.duration_micros).get_max_millis()
         ))
     ];
@@ -44,24 +47,24 @@ lazy_static! {
 lazy_static! {
     pub static ref PROC_OPER_REPORT_ITEMS: POReportItems = POReportItems(vec![
         // The downstream analysis assumes that the first Report item is the Count measure!!
-        POReportItem::new("count", |&(pov, _, _)| Some(pov.count as f64)),
-        POReportItem::new("Occurance percentage", |&(pov, _, num_traces)| Some(
+        POReportItem::new(Metric::Count, |&(pov, _, _)| Some(pov.count as f64)),
+        POReportItem::new(Metric::OccurancePercentage, |&(pov, _, num_traces)| Some(
             pov.count as f64 / num_traces as f64
         )),
-        POReportItem::new("rate (avg)", |&(pov, num_files, _)| pov
+        POReportItem::new(Metric::Rate, |&(pov, num_files, _)| pov
             .get_avg_rate(num_files)),
-        POReportItem::new("min_millis", |&(pov, _, _)| Some(pov.get_min_millis())),
-        POReportItem::new("avg_duration_millis", |&(pov, _, _)| Some(pov.get_avg_millis())),
-        POReportItem::new("median_duration_millis", |&(pov, _, _)| pov.get_median_millis()),
-        POReportItem::new("p75_millis", |&(pov, _, _)| pov.get_p_millis(0.75)),
-        POReportItem::new("p90_millis", |&(pov, _, _)| pov.get_p_millis(0.90)),
-        POReportItem::new("p95_millis", |&(pov, _, _)| pov.get_p_millis(0.95)),
-        POReportItem::new("p99_millis", |&(pov, _, _)| pov.get_p_millis(0.99)),
-        POReportItem::new("max_millis", |&(pov, _, _)| Some(pov.get_max_millis())),
-        POReportItem::new("frac_not_http_ok", |&(pov, _, _)| Some(
+        POReportItem::new(Metric::MinDurationMillis, |&(pov, _, _)| Some(pov.get_min_millis())),
+        POReportItem::new(Metric::AvgDurationMillis, |&(pov, _, _)| Some(pov.get_avg_millis())),
+        POReportItem::new(Metric::MedianDurationMillis, |&(pov, _, _)| pov.get_median_millis()),
+        POReportItem::new(Metric::MaxDurationMillis, |&(pov, _, _)| Some(pov.get_max_millis())),
+        POReportItem::new(Metric::P75Millis, |&(pov, _, _)| pov.get_p_millis(0.75)),
+        POReportItem::new(Metric::P90Millis, |&(pov, _, _)| pov.get_p_millis(0.90)),
+        POReportItem::new(Metric::P95Millis, |&(pov, _, _)| pov.get_p_millis(0.95)),
+        POReportItem::new(Metric::P99Millis, |&(pov, _, _)| pov.get_p_millis(0.99)),
+        POReportItem::new(Metric::FracNotHttpOk, |&(pov, _, _)| Some(
             pov.get_frac_not_http_ok()
         )),
-        POReportItem::new("frac_error_logs", |&(pov, _, _)| Some(
+        POReportItem::new(Metric::FracErrorLogs, |&(pov, _, _)| Some(
             pov.get_frac_error_log()
         )),
     ]);
@@ -70,24 +73,24 @@ lazy_static! {
 lazy_static! {
     pub static ref CALL_CHAIN_REPORT_ITEMS: CCReportItems = CCReportItems(vec![
         // The downstream analysis assumes that the first Report item is the Count measure!!
-        CCReportItem::new("count", |&(ccv, _, _)| Some(ccv.count as f64)),
-        CCReportItem::new("Occurance percentage", |&(ccv, _, num_traces)| Some(
+        CCReportItem::new(Metric::Count, |&(ccv, _, _)| Some(ccv.count as f64)),
+        CCReportItem::new(Metric::OccurancePercentage, |&(ccv, _, num_traces)| Some(
             ccv.count as f64 / num_traces as f64
         )),
-        CCReportItem::new("rate (avg)", |&(ccv, num_files, _)| ccv
+        CCReportItem::new(Metric::Rate, |&(ccv, num_files, _)| ccv
             .get_avg_rate(num_files)),
-        CCReportItem::new("min_millis", |&(ccv, _, _)| Some(ccv.get_min_millis())),
-        CCReportItem::new("avg_duration_millis", |&(ccv, _, _)| Some(ccv.get_avg_millis())),
-        CCReportItem::new("median_duration_millis", |&(ccv, _, _)| ccv.get_median_millis()),
-        CCReportItem::new("p75_millis", |&(ccv, _, _)| ccv.get_p_millis(0.75)),
-        CCReportItem::new("p90_millis", |&(ccv, _, _)| ccv.get_p_millis(0.90)),
-        CCReportItem::new("p95_millis", |&(ccv, _, _)| ccv.get_p_millis(0.95)),
-        CCReportItem::new("p99_millis", |&(ccv, _, _)| ccv.get_p_millis(0.99)),
-        CCReportItem::new("max_millis", |&(ccv, _, _)| Some(ccv.get_max_millis())),
-        CCReportItem::new("frac_not_http_ok", |&(ccv, _, _)| Some(
+        CCReportItem::new(Metric::MaxDurationMillis, |&(ccv, _, _)| Some(ccv.get_min_millis())),
+        CCReportItem::new(Metric::AvgDurationMillis, |&(ccv, _, _)| Some(ccv.get_avg_millis())),
+        CCReportItem::new(Metric::MedianDurationMillis, |&(ccv, _, _)| ccv.get_median_millis()),
+        CCReportItem::new(Metric::P75Millis, |&(ccv, _, _)| ccv.get_p_millis(0.75)),
+        CCReportItem::new(Metric::P90Millis, |&(ccv, _, _)| ccv.get_p_millis(0.90)),
+        CCReportItem::new(Metric::P95Millis, |&(ccv, _, _)| ccv.get_p_millis(0.95)),
+        CCReportItem::new(Metric::P99Millis, |&(ccv, _, _)| ccv.get_p_millis(0.99)),
+        CCReportItem::new(Metric::MaxDurationMillis, |&(ccv, _, _)| Some(ccv.get_max_millis())),
+        CCReportItem::new(Metric::FracNotHttpOk, |&(ccv, _, _)| Some(
             ccv.get_frac_not_http_ok()
         )),
-        CCReportItem::new("frac_error_logs", |&(ccv, _, _)| Some(
+        CCReportItem::new(Metric::FracErrorLogs, |&(ccv, _, _)| Some(
             ccv.get_frac_error_log()
         )),
     ]);

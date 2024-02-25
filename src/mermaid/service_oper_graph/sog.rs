@@ -8,9 +8,7 @@ use super::{
     service::Service,
     service_oper_type::ServiceOperationType,
 };
-use crate::{
-    mermaid::trace_data::TraceDataStats, stats::call_chain::Call, EdgeValue, MermaidScope,
-};
+use crate::{mermaid::trace_data::TraceDataStats, stats::call_chain::Call, MermaidScope, Metric};
 
 /// A ServiceOperGraph is a vector of service that each contain a vector of Operations. Each Operation collects data on the set of outbound calls.
 /// This data-structure tracks all links that exist between a caller and calllees.
@@ -234,7 +232,7 @@ impl ServiceOperGraph {
         scope: MermaidScope,
         compact: bool,
         service_oper: &str,
-        edge_value: EdgeValue,
+        edge_value: Metric,
     ) -> String {
         let node_select = scope_to_node_selector(scope);
         let edge_value_selector = edge_value_to_selector(edge_value);
