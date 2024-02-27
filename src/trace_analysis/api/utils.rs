@@ -9,7 +9,7 @@ use crate::{
 pub fn get_process_list(data: &StatsRec, metric: Metric) -> ProcessList {
     // code is based on StatsRec.get_service_oper_list(&self) -> Vec<String>
     let mut idx: i64 = 0;
-    let mut proc_list = data
+    let proc_list = data
         .stats
         .iter()
         .flat_map(|(service, v)| {

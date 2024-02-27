@@ -5,10 +5,12 @@ use super::{
 
 pub trait Viewer {
     /// Read the file (either Traces or Stitched) and create a viewer for it.
-    fn from_file(file_name: &str) -> Result<Box<Self>, ViewError>;
+    fn from_file(file_name: &str) -> Result<Box<Self>, ViewError>
+    where
+        Self: Sized;
 
     /// Does the viewer contains a time-series, and thus does it have time-series charts available?
-    fn time_series(&self) -> bool {
+    fn is_time_series(&self) -> bool {
         false
     }
 

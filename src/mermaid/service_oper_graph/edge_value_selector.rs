@@ -6,6 +6,7 @@ pub type EdgeValueSelector = fn(Option<&CallDescriptorStats>) -> Option<f64>;
 pub fn edge_value_to_selector(edge_value: Metric) -> EdgeValueSelector {
     match edge_value {
         Metric::Count => |cds| cds.map(|ips| ips.count as f64),
+        Metric::Rate => |cds| cds.and_then(|ips| ips.rate.get_value()),
         Metric::AvgDurationMillis => |cds| cds.and_then(|ips| ips.avg_duration_millis.get_value()),
         Metric::P75Millis => |cds| cds.and_then(|ips| ips.p75_millis.get_value()),
         Metric::P90Millis => |cds| cds.and_then(|ips| ips.p90_millis.get_value()),

@@ -47,7 +47,7 @@ impl Viewer for StitchedDataSet {
         if Path::new(file_name).exists() {
             info!("Trying to load the file {file_name}");
 
-            match Stitched::from_json(file_name) {
+            match Stitched::from_file(file_name) {
                 Ok(data) => {
                     info!("Ready loading file");
                     Ok(Box::new(Self::new(data)))
@@ -65,7 +65,7 @@ impl Viewer for StitchedDataSet {
     }
 
     /// Does the viewer contains a time-series, and thus does it have time-series charts available?
-    fn time_series(&self) -> bool {
+    fn is_time_series(&self) -> bool {
         true
     }
 
@@ -133,6 +133,8 @@ impl Viewer for StitchedDataSet {
                             ccd.rooted,
                             ccd.is_leaf,
                             count,
+                            //TODO: some more parameters need to be passed.
+                            None,
                             avg_duration_millis,
                             None,
                             None,

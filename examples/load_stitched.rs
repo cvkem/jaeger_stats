@@ -1,7 +1,7 @@
 use clap::Parser;
 use jaeger_stats::{
-    BestFit, ChartDataParameters, ChartLine, ProcessListItem, Stitched, StitchedDataSet,
-    StitchedLine, StitchedSet,
+    types::{ChartDataParameters, ChartLine, ProcessListItem},
+    BestFit, Metric, Stitched, StitchedDataSet, StitchedLine, StitchedSet, TraceScope, Viewer,
 };
 use log::{error, info};
 use serde::Serialize;
@@ -18,7 +18,9 @@ struct Args {
     input: String,
 }
 
-const FILTER_METRIC: &str = "rate (avg)";
+const FILTER_METRIC: Metric = Metric::Rate;
+const TRACE_SCOPE: TraceScope = TraceScope::End2end;
+
 const PROCESS: &str = "bspc-productinzicht/geefProducten";
 //const PROCESS: &str = "retail-gateway//services/apic-productinzicht/api";
 
@@ -59,14 +61,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         dump_proc_list("proces_list_mock.json", &proc_list);
 
-        let chart_data = sd.get_proc_oper_chart_data(PROCESS, FILTER_METRIC);
+        let chart_data = sd.get_service_oper_chart_data(PROCESS, FILTER_METRIC);
 
         dump_chart_data("charts_mock.json", &chart_data);
     }
 
     {
         /// Showing Call_chains
-        let proc_list = sd.get_call_chain_list(PROCESS, FILTER_METRIC, "end2end", None);
+        let proc_list = sd.get_call_chain_list(PROCESS, FILTER_METRIC, TRACE_SCOPE, None);
 
         dump_proc_list("cc_proces_list_mock.json", &proc_list);
 

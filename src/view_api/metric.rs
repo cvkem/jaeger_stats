@@ -79,6 +79,7 @@ impl TryFrom<&str> for Metric {
                 .iter()
                 .position(|&label| label == us) {
             Some(pos) => {
+                    // TODO: unsafe code needed. It would be better to use a match statement.
                     let metric: Metric = unsafe { mem::transmute(pos as u8) };
                     Ok(metric)
                 }

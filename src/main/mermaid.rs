@@ -1,6 +1,5 @@
 use clap::Parser;
-use jaeger_stats::{utils, MermaidScope, Metric, TraceDataSet, Viewer};
-use std::path::Path;
+use jaeger_stats::{load_viewer, utils, MermaidScope, Metric, TraceDataSet, Viewer};
 
 /// Parsing and analyzin}g Jaeger traces
 
@@ -52,13 +51,16 @@ fn get_numbered_lines(data: Vec<String>) -> String {
 fn main() {
     let args = Args::parse();
 
-    // let file_path = Path::new(&args.input).to_path_buf().into_os_string(); //get_full_path(base_path, input);
-    // let traces = StatsRec::read_file(&file_path).unwrap_or_else(|err| {
-    //     panic!(
-    //         "Could not read input-file '{:?}'. Received error: {err:?}",
-    //         file_path
-    //     )
-    // });
+    match load_viewer(&args.input) {
+        Ok(viewer) => {
+            println!(
+                "Read the file '{}' as generic.  has time-series {}",
+                args.input,
+                viewer.is_time_series()
+            );
+        }
+        Err(err) => panic!("Reading '{}' failed with error: {err:?}", args.input),
+    }
 
     match TraceDataSet::from_file(&args.input) {
         Ok(trace_data_set) => {

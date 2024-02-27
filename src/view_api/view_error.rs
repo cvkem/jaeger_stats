@@ -13,4 +13,9 @@ pub enum ViewError {
 
     #[error("Mismatch in length of the selection which contains {0} elements, while the original dataset has {1} columns.")]
     selection_failure(usize, usize),
+
+    #[error(
+        "Failed to load as trace_data_set and as stitched_dataset. Errors:\n\tTDS: {0}\n\tSDS: {1}"
+    )]
+    load_error(String, String),
 }

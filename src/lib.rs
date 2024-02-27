@@ -26,6 +26,7 @@ pub use stitch::{
 };
 pub use trace_analysis::{analyze_file_or_folder, TraceDataSet};
 pub use view_api::{
+    load_viewer,
     types::{self, ServiceOperString},
     MermaidScope, Metric, TraceScope, ViewError, Viewer,
 };

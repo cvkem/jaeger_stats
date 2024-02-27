@@ -5,6 +5,7 @@ use crate::stats::CChainStatsKey;
 pub struct TraceDataStats {
     /// The number of times this path is traversed
     pub count: u64,
+    pub rate: Option<f64>,
     pub avg_duration_millis: f64,
     pub p75_millis: Option<f64>,
     pub p90_millis: Option<f64>,
@@ -44,6 +45,7 @@ impl TraceData {
         rooted: bool,
         is_leaf: bool,
         count: u64,
+        rate: Option<f64>,
         avg_duration_millis: f64,
         p75_millis: Option<f64>,
         p90_millis: Option<f64>,
@@ -56,6 +58,7 @@ impl TraceData {
         });
         let data = TraceDataStats {
             count,
+            rate,
             avg_duration_millis,
             p75_millis,
             p90_millis,

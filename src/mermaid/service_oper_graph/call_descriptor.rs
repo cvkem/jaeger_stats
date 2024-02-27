@@ -10,6 +10,7 @@ pub struct CallDescriptorStats {
     pub count: u64,
 
     /// statistics aggregated over all paths
+    pub rate: AverageData,
     pub avg_duration_millis: AverageData,
     pub p75_millis: AverageData,
     pub p90_millis: AverageData,
@@ -21,6 +22,7 @@ impl CallDescriptorStats {
     fn new(data: &TraceDataStats) -> Self {
         Self {
             count: data.count,
+            rate: AverageData::new(data.count, data.rate),
             avg_duration_millis: AverageData::new(data.count, Some(data.avg_duration_millis)),
             p75_millis: AverageData::new(data.count, data.p75_millis),
             p90_millis: AverageData::new(data.count, data.p90_millis),
@@ -31,6 +33,8 @@ impl CallDescriptorStats {
 
     /// Update all aggregate statistics in place
     fn update(&mut self, data: &TraceDataStats) {
+        self.count += data.count;
+        self.rate.add(data.count, data.rate);
         self.avg_duration_millis
             .add(data.count, Some(data.avg_duration_millis));
         self.p75_millis.add(data.count, data.p75_millis);

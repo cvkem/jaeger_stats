@@ -11,6 +11,10 @@ use std::path::Path;
 
 pub struct TraceDataSet(pub StatsRec);
 
+//TODO How are we going to pass this parameter?
+
+static NUM_FILES: i32 = 1;
+
 impl TraceDataSet {
     pub fn new(data: StatsRec) -> Self {
         Self(data)
@@ -89,6 +93,7 @@ impl Viewer for TraceDataSet {
                         let key = cck.call_chain_key();
                         let count = ccv.count as u64;
                         let avg_duration_millis = TimeStats(&ccv.duration_micros).get_avg_millis();
+                        let rate = TimeStats(&ccv.duration_micros).get_avg_rate(NUM_FILES);
                         let p75_millis = TimeStats(&ccv.duration_micros).get_p_millis(0.75);
                         let p90_millis = TimeStats(&ccv.duration_micros).get_p_millis(0.90);
                         let p95_millis = TimeStats(&ccv.duration_micros).get_p_millis(0.95);
@@ -100,6 +105,7 @@ impl Viewer for TraceDataSet {
                             ccv.rooted,
                             cck.is_leaf,
                             count,
+                            rate,
                             avg_duration_millis,
                             p75_millis,
                             p90_millis,

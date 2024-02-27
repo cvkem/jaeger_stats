@@ -149,7 +149,8 @@ impl Stitched {
         stitched
     }
 
-    pub fn from_json(file_name: &str) -> Result<Self, Box<dyn Error>> {
+    // read from file (json or bincode)
+    pub fn from_file(file_name: &str) -> Result<Self, Box<dyn Error>> {
         //let keep = path.clone().into_string().unwrap();
         let path_str = Path::new(file_name);
         let f = fs::File::open(path_str)?;

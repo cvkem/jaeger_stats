@@ -1,3 +1,4 @@
+mod file;
 mod mermaid_scope;
 mod metric;
 mod proc_list_utils;
@@ -6,6 +7,7 @@ pub mod types;
 mod view_error;
 mod viewer;
 
+pub use file::load_viewer;
 pub use mermaid_scope::MermaidScope;
 pub use metric::Metric;
 pub use proc_list_utils::reorder_and_renumber;
