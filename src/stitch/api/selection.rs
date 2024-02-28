@@ -75,8 +75,10 @@ pub fn get_derived_stitched(original: &Stitched, selection: &Vec<bool>) -> Arc<S
     let process_operation = get_proc_oper_selection(original, selection);
     let call_chain = get_call_chain_selection(original, selection);
     let sources = get_stitch_sources(original, selection);
+    let version = original.version;
     Arc::new(Stitched {
         sources,
+        version,
         basic: StitchedSet(Vec::new()), // exluded from copy
         process_operation,
         call_chain,

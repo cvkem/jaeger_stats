@@ -4,6 +4,7 @@ use crate::{
     string_hash,
     utils::{self, CsvFileBuffer},
     ServiceOperString, StitchList,
+    view_api::Version
 };
 
 use super::{
@@ -68,6 +69,7 @@ impl CallChainData {
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct Stitched {
+    pub version: Version,
     /// the list of input-files (one per analysis) that are used.
     pub sources: StitchSources,
     pub basic: StitchedSet,
@@ -87,6 +89,7 @@ impl Stitched {
         let sources = mem::take(&mut stitch_list.lines);
         let mut stitched = Self {
             sources,
+            version: Version::new(0, 3),
             ..Self::default()
         };
 

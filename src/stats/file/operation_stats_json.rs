@@ -5,9 +5,10 @@
 use crate::{
     stats::{
         call_chain::{CChainStatsKey, CChainStatsValue},
-        OperationStats, ProcOperStats, StatsRec, Version,
+        OperationStats, ProcOperStats, StatsRec,
     },
     utils,
+    view_api::Version
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error, ffi::OsString, fs::File, io, path::Path};

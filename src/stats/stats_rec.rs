@@ -11,8 +11,6 @@ use crate::{
     processed::Trace,
     utils::{self, micros_to_datetime, Chapter},
 };
-use serde::{Deserialize, Serialize};
-
 use chrono::NaiveDateTime;
 use std::{
     collections::{HashMap, HashSet},
@@ -20,12 +18,7 @@ use std::{
     ffi::OsString,
     mem,
 };
-
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
-pub struct Version {
-    pub major: u16,
-    pub minor: u16,
-}
+use crate::view_api::Version;
 
 #[derive(Default, Clone)]
 pub struct BasicStatsRec {
@@ -44,11 +37,6 @@ pub struct BasicStatsRec {
     pub caching_processes: Vec<String>,
 }
 
-impl Default for Version {
-    fn default() -> Self {
-        Version { major: 0, minor: 2 }
-    }
-}
 
 pub type LeafService = String;
 
