@@ -3,12 +3,13 @@ use std::{collections::HashMap, error::Error, fs, io};
 use crate::{
     string_hash,
     utils::{self, CsvFileBuffer},
+    view_api::Version,
     ServiceOperString, StitchList,
-    view_api::Version
 };
 
 use super::{
     anomalies::{Anomalies, AnomalyParameters},
+    call_chain_data::CallChainData,
     call_chain_reporter::CCReportItems,
     dataseries::DataSeries,
     proc_oper_stats_reporter::POReportItems,
@@ -18,7 +19,11 @@ use super::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{self};
-use std::{mem, path::Path};
+use std::{
+    io::{Seek, SeekFrom},
+    mem,
+    path::Path,
+};
 
 #[derive(Debug)]
 pub struct StitchParameters {
@@ -26,46 +31,7 @@ pub struct StitchParameters {
     pub anomaly_pars: AnomalyParameters,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CallChainData {
-    /// unique key constructed by the concatenation of all steps of the trace.
-    pub full_key: String,
-    /// Key constructed from the inbound calls only (outbound calls, such as GET and POST are omitted). This key is likely unique, but is not guaranteed to be unique
-    #[serde(alias = "inboud_process_key")]
-    // fix as we had a typo in the past. I doubt whether this alias is needed.
-    pub inbound_process_key: String,
-    /// This process refers back to the (identified) root of the full trace
-    pub rooted: bool,
-    /// This Call-chain ends at a leaf, and thus covers a full chain (provided it is rooted)
-    pub is_leaf: bool,
-    /// The set of actual data associated with the Call-chain.
-    pub data: StitchedSet,
-}
-
-impl CallChainData {
-    pub fn chain_type(&self) -> &str {
-        match (self.rooted, self.is_leaf) {
-            (true, true) => "end2end",
-            (true, false) => "partial",
-            (false, true) => "unrooted-leaf",
-            (false, false) => "floating",
-        }
-    }
-
-    /// Get a subset of selected data-points for each of the stiched lines in the stitched set, or None if the selection does not contain any f64 values (only None)
-    /// assume that the size of the selection was checked by the upstream process (the caller).
-    pub fn get_selection(&self, selection: &[bool]) -> Option<Self> {
-        self.data
-            .get_selection(selection)
-            .map(|data| CallChainData {
-                full_key: self.full_key.to_owned(),
-                inbound_process_key: self.inbound_process_key.to_owned(),
-                rooted: self.rooted,
-                is_leaf: self.is_leaf,
-                data,
-            })
-    }
-}
+type ServiceOperList = Vec<(ServiceOperString, StitchedSet)>;
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct Stitched {
@@ -73,13 +39,28 @@ pub struct Stitched {
     /// the list of input-files (one per analysis) that are used.
     pub sources: StitchSources,
     pub basic: StitchedSet,
-    pub process_operation: Vec<(ServiceOperString, StitchedSet)>,
+    pub service_operation: ServiceOperList,
     ///  call-chain is keyed by the Service/Operation and the values is a series of call-chains that end in this process/Oper
     /// The values is a Vector call-chains represent all different paths (call-chains) that terminate in de Process/Oper of the key of this vector.
     pub call_chain: Vec<(ServiceOperString, Vec<CallChainData>)>,
 }
 
 impl Stitched {
+    pub fn new(
+        sources: StitchSources,
+        basic: StitchedSet,
+        service_operation: ServiceOperList,
+        call_chain: Vec<(ServiceOperString, Vec<CallChainData>)>,
+    ) -> Self {
+        Self {
+            version: Version::new(0, 3),
+            sources,
+            basic,
+            service_operation,
+            call_chain,
+        }
+    }
+
     /// build a stitched dataset based on a StitchList.
     /// The contents of the Stiched dataset are defined in a series of tables:
     ///    1. `stitched_tables::BASIC_REPORT_ITEMS`: Some basic statistics for this dataset.
@@ -87,11 +68,6 @@ impl Stitched {
     ///    3. `stitched_tables::CALL_CHAIN_REPORT_ITEMS`:  A detailed report where we compute separate statistics for each call-chain (call-path) that lead to a specific Process/Operation.
     pub fn build(mut stitch_list: StitchList, pars: &StitchParameters) -> Self {
         let sources = mem::take(&mut stitch_list.lines);
-        let mut stitched = Self {
-            sources,
-            version: Version::new(0, 3),
-            ..Self::default()
-        };
 
         // this method reads the data in the original format, so data contains one column (StatsRec) per dataset
         let mut data = stitch_list.read_data();
@@ -104,30 +80,29 @@ impl Stitched {
         );
 
         // add the basic report items as defined in stitch_tables::BASIC_REPORT_ITEMS.
-        BASIC_REPORT_ITEMS.iter().for_each(|sr| {
-            stitched
-                .basic
-                .0
-                .push(sr.extract_stitched_line(&data, &pars.anomaly_pars))
-        });
+        let basic = StitchedSet(
+            BASIC_REPORT_ITEMS
+                .iter()
+                .map(|sr| sr.extract_stitched_line(&data, &pars.anomaly_pars))
+                .collect(),
+        );
 
-        POReportItems::get_keys(&data)
+        let service_operation = POReportItems::get_keys(&data)
             .into_iter()
-            .for_each(|po_key| {
+            .map(|po_key| {
                 let key_data = POReportItems::extract_dataset(&data, &po_key);
                 let stitched_set = PROC_OPER_REPORT_ITEMS
                     .0
                     .iter()
                     .map(|por| por.extract_stitched_line(&key_data, &pars.anomaly_pars))
                     .collect();
-                stitched
-                    .process_operation
-                    .push((po_key.to_string(), StitchedSet(stitched_set)))
-            });
+                (po_key.to_string(), StitchedSet(stitched_set))
+            })
+            .collect();
 
-        CCReportItems::get_keys(&data)
+        let call_chain = CCReportItems::get_keys(&data)
             .into_iter()
-            .for_each(|(proc_oper, cc_keys)| {
+            .map(|(proc_oper, cc_keys)| {
                 let call_chains = cc_keys
                     .into_iter()
                     .map(|(cc_key, rooted)| {
@@ -146,10 +121,11 @@ impl Stitched {
                         }
                     })
                     .collect();
-                stitched.call_chain.push((proc_oper, call_chains))
-            });
+                (proc_oper, call_chains)
+            })
+            .collect();
 
-        stitched
+        Stitched::new(sources, basic, service_operation, call_chain)
     }
 
     // read from file (json or bincode)
@@ -163,7 +139,7 @@ impl Stitched {
             panic!("Failed to find extension of '{}'", path_str.display());
         };
 
-        let stiched = match ext.to_str().unwrap() {
+        let stitched: Self = match ext.to_str().unwrap() {
             "json" => serde_json::from_reader(reader)?,
             "bincode" => bincode::deserialize_from(reader)?,
             ext => panic!(
@@ -171,7 +147,7 @@ impl Stitched {
                 path_str.display()
             ),
         };
-        Ok(stiched)
+        Ok(stitched)
     }
 
     /// write the 'stitched' dataset to json
@@ -205,10 +181,10 @@ impl Stitched {
     /// When the statistic is 'Average' we already have a 'Count' column. However, when reporting over another Statistic an (average) Count column is prefixed to
     /// indicate the reliability of the computed statistic.
     pub fn summary_header(&self, table_type: &[&str], extra_count: bool) -> String {
-        let col_headers = if self.process_operation.is_empty() {
+        let col_headers = if self.service_operation.is_empty() {
             "NO DATA".to_owned()
         } else {
-            self.process_operation[0]
+            self.service_operation[0]
                 .1
                 .summary_header(extra_count)
                 .join("; ")
@@ -220,10 +196,10 @@ impl Stitched {
     pub fn full_data_header(&self, table_type: &[&str]) -> String {
         let table_type = table_type.join("; ");
         let col_headers =
-            if self.process_operation.is_empty() || self.process_operation[0].1 .0.is_empty() {
+            if self.service_operation.is_empty() || self.service_operation[0].1 .0.is_empty() {
                 "NO DATA".to_owned()
             } else {
-                self.process_operation[0].1 .0[0].headers()
+                self.service_operation[0].1 .0[0].headers()
             };
         format!("{table_type}; {}", col_headers)
     }
@@ -241,7 +217,7 @@ impl Stitched {
 
         csv.add_section("Summary_statistics per Process/Operation");
         csv.add_line(self.summary_header(&["Process/Operation"], false));
-        self.process_operation
+        self.service_operation
             .iter()
             .for_each(|(label, stitched_set)| {
                 csv.add_line(format!(
@@ -252,7 +228,7 @@ impl Stitched {
 
         csv.add_section("Slope summary per Process/Operation");
         csv.add_line(self.summary_header(&["Process/Operation"], true));
-        self.process_operation
+        self.service_operation
             .iter()
             .for_each(|(label, stitched_set)| {
                 csv.add_line(format!(
@@ -263,7 +239,7 @@ impl Stitched {
 
         csv.add_section("Scaled Slope summary per Process/Operation");
         csv.add_line(self.summary_header(&["Process/Operation"], true));
-        self.process_operation
+        self.service_operation
             .iter()
             .for_each(|(label, stitched_set)| {
                 csv.add_line(format!(
@@ -274,7 +250,7 @@ impl Stitched {
 
         csv.add_section("Last-deviation-scaled summary per Process/Operation");
         csv.add_line(self.summary_header(&["Process/Operation"], true));
-        self.process_operation
+        self.service_operation
             .iter()
             .for_each(|(label, stitched_set)| {
                 csv.add_line(format!(
@@ -289,7 +265,7 @@ impl Stitched {
 
         csv.add_section("Statistics per Process/Operation combination:");
         csv.add_line(self.full_data_header(&["Process/Operation"]));
-        self.process_operation
+        self.service_operation
             .iter()
             .for_each(|(label, stitched_set)| csv.append(&mut stitched_set.csv_output(&[&label])));
 
@@ -365,7 +341,7 @@ impl Stitched {
 
             csv.add_line(Anomalies::report_stats_line_header_str().to_owned());
 
-            self.process_operation.iter().for_each(|(po, lines)| {
+            self.service_operation.iter().for_each(|(po, lines)| {
                 lines
                     .0
                     .iter()
@@ -446,7 +422,7 @@ impl Stitched {
 
     /// Take the process-operation data out of the record and return as a hashmap
     pub fn process_operation_as_hashmap(&mut self) -> HashMap<String, StitchedSet> {
-        mem::take(&mut self.process_operation).into_iter().collect()
+        mem::take(&mut self.service_operation).into_iter().collect()
     }
 
     // /// Take the call_chain data out of the record and return as a hashmap

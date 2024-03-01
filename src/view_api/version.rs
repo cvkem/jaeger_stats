@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct Version {
     pub major: u16,
@@ -14,8 +13,7 @@ impl Default for Version {
 }
 
 impl Version {
-
     pub fn new(major: u16, minor: u16) -> Self {
-        Self{major, minor}
+        Self { major, minor }
     }
 }

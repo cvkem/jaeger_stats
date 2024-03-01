@@ -83,9 +83,9 @@ fn get_stitched_set_count(stitch_set: &StitchedSet) -> i64 {
 /// return a ranked list of processes where rank is based on the periodic-growth of the metric provided.
 /// If metric is an empty string the data will be provided in the current order (lexicographic sort.)
 pub fn get_process_list(data: &Stitched, metric: Metric) -> ProcessList {
-    let list_size = data.process_operation.len();
+    let list_size = data.service_operation.len();
     let proc_list: Vec<_> = data
-        .process_operation
+        .service_operation
         .iter()
         .enumerate()
         .map(|(idx, po)| {
@@ -321,7 +321,7 @@ pub fn get_service_oper_chart_data(
     metric: Metric,
 ) -> Option<ChartDataParameters> {
     match data
-        .process_operation
+        .service_operation
         .iter()
         .find(|(proc, _)| proc == full_service_oper_key)
     {

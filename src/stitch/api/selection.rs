@@ -1,5 +1,5 @@
 use crate::{
-    stitch::stitched::CallChainData,
+    stitch::call_chain_data::CallChainData,
     view_api::types::{SelectLabel, Selection},
 };
 
@@ -38,7 +38,7 @@ fn get_stitch_sources(original: &Stitched, selection: &Vec<bool>) -> StitchSourc
 /// get a copy of the process_operation data for a specific selection
 fn get_proc_oper_selection(original: &Stitched, selection: &[bool]) -> Vec<(String, StitchedSet)> {
     original
-        .process_operation
+        .service_operation
         .iter()
         .filter_map(|(k, stitched_set)| {
             stitched_set
@@ -80,7 +80,7 @@ pub fn get_derived_stitched(original: &Stitched, selection: &Vec<bool>) -> Arc<S
         sources,
         version,
         basic: StitchedSet(Vec::new()), // exluded from copy
-        process_operation,
+        service_operation: process_operation,
         call_chain,
     })
 }

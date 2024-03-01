@@ -8,7 +8,7 @@ use crate::{
         OperationStats, ProcOperStats, StatsRec,
     },
     utils,
-    view_api::Version
+    view_api::Version,
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, error::Error, ffi::OsString, fs::File, io, path::Path};

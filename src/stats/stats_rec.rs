@@ -7,6 +7,7 @@ use super::{
     operation_stats::OperationStats,
     proc_oper_stats::ProcOperStatsValue,
 };
+use crate::view_api::Version;
 use crate::{
     processed::Trace,
     utils::{self, micros_to_datetime, Chapter},
@@ -18,7 +19,6 @@ use std::{
     ffi::OsString,
     mem,
 };
-use crate::view_api::Version;
 
 #[derive(Default, Clone)]
 pub struct BasicStatsRec {
@@ -36,7 +36,6 @@ pub struct BasicStatsRec {
     /// List of processes that perform caching, which is an input parameter to this analysis
     pub caching_processes: Vec<String>,
 }
-
 
 pub type LeafService = String;
 

@@ -6,6 +6,7 @@
 
 mod anomalies;
 mod api;
+mod call_chain_data;
 mod call_chain_reporter;
 mod dataseries;
 mod key;
