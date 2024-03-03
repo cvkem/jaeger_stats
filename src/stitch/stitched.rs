@@ -142,8 +142,7 @@ impl Stitched {
                     stitched
                 } else {
                     println!("WARN: Fallback to Legacy-format to load data!!");
-                    let sl = LegacyStitched::from_json(file_name)?;
-                    sl.try_into()?
+                    LegacyStitched::from_json(file_name)?
                 }
             }
             "bincode" => {
