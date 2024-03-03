@@ -39,10 +39,11 @@ impl Metric {
     }
 }
 
+/// The Metric_labels should all be set in Lower-case
 const METRIC_LABELS: [&str; 22] = [
     "NONE",
     "num_files",
-    "Occurance percentage",
+    "occurance percentage",
     "num_traces",
     "num_endpoints",
     "num_incomplete_traces",
@@ -54,14 +55,14 @@ const METRIC_LABELS: [&str; 22] = [
     "frac_error_logs",
     "count",
     "rate (req/sec)",
-    "min_duration_millis",
-    "avg_duration_millis",
-    "median_duration_millis",
-    "max_duration_millis",
-    "p75_millis",
-    "p90_millis",
-    "p95_millis",
-    "p99_millis",
+    "minimal duration millis",
+    "average duration millis",
+    "median duration millis",
+    "maximal duration millis",
+    "p75 millis",
+    "p90 millis",
+    "p95 millis",
+    "p99 millis",
 ];
 
 impl ToString for Metric {
@@ -75,15 +76,16 @@ impl TryFrom<&str> for Metric {
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         let us = &s.to_lowercase();
-        match METRIC_LABELS
-                .iter()
-                .position(|&label| label == us) {
+        match METRIC_LABELS.iter().position(|&label| label == us) {
             Some(pos) => {
-                    // TODO: unsafe code needed. It would be better to use a match statement.
-                    let metric: Metric = unsafe { mem::transmute(pos as u8) };
-                    Ok(metric)
-                }
-            None => Err("Could not derive EdgeValue for input.  Expected Full, Centered, Inbound or Outbound")
+                // TODO: unsafe code needed. It would be better to use a match statement.
+                let metric: Metric = unsafe { mem::transmute(pos as u8) };
+                Ok(metric)
+            }
+            None => {
+                println!("ERROR: Could not find enum-value for label '{s}'");
+                Err("Could not derive Metric for input.")
+            }
         }
     }
 }

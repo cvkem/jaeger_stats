@@ -10,6 +10,7 @@ mod call_chain_data;
 mod call_chain_reporter;
 mod dataseries;
 mod key;
+mod legacy;
 mod proc_oper_stats_reporter;
 mod stats_rec_reporter;
 mod stitch_list;

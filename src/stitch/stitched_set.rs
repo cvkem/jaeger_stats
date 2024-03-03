@@ -92,7 +92,7 @@ impl StitchedSet {
             Some(StitchedSet(
                 data.into_iter()
                     .map(|(lbl, data, _)| {
-                        StitchedLine::new(lbl.to_owned(), data, &DEFAULT_ANOMALY_PARS)
+                        StitchedLine::compute_new(lbl.to_owned(), data, &DEFAULT_ANOMALY_PARS)
                     })
                     .collect(),
             ))

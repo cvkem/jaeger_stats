@@ -12,6 +12,7 @@ use super::{
     call_chain_data::CallChainData,
     call_chain_reporter::CCReportItems,
     dataseries::DataSeries,
+    legacy::LegacyStitched,
     proc_oper_stats_reporter::POReportItems,
     stitch_list::StitchSources,
     stitch_tables::{BASIC_REPORT_ITEMS, CALL_CHAIN_REPORT_ITEMS, PROC_OPER_REPORT_ITEMS},
@@ -19,11 +20,7 @@ use super::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{self};
-use std::{
-    io::{Seek, SeekFrom},
-    mem,
-    path::Path,
-};
+use std::{mem, path::Path};
 
 #[derive(Debug)]
 pub struct StitchParameters {
@@ -140,8 +137,24 @@ impl Stitched {
         };
 
         let stitched: Self = match ext.to_str().unwrap() {
-            "json" => serde_json::from_reader(reader)?,
-            "bincode" => bincode::deserialize_from(reader)?,
+            "json" => {
+                if let Ok(stitched) = serde_json::from_reader(reader) {
+                    stitched
+                } else {
+                    println!("WARN: Fallback to Legacy-format to load data!!");
+                    let sl = LegacyStitched::from_json(file_name)?;
+                    sl.try_into()?
+                }
+            }
+            "bincode" => {
+                if let Ok(stitched) = bincode::deserialize_from(reader) {
+                    stitched
+                } else {
+                    println!("WARN: Fallback to Legacy-format to load data!!");
+                    let sl = LegacyStitched::from_bincode(file_name)?;
+                    sl.try_into()?
+                }
+            }
             ext => panic!(
                 "Unknown extension '{ext}'of inputfile {}",
                 path_str.display()

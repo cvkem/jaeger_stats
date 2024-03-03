@@ -38,7 +38,7 @@ impl CCReportItem {
             .map(|ms| ms.as_ref().and_then(self.processor))
             .collect::<Vec<_>>();
 
-        StitchedLine::new(self.metric, values, pars)
+        StitchedLine::compute_new(self.metric, values, pars)
     }
 }
 

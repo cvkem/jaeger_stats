@@ -28,6 +28,6 @@ impl SRReportItem {
     ) -> StitchedLine {
         let values = self.extract_data(data);
 
-        StitchedLine::new(self.metric, values, pars)
+        StitchedLine::compute_new(self.metric, values, pars)
     }
 }

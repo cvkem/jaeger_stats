@@ -46,9 +46,32 @@ pub struct StitchedLine {
 }
 
 impl StitchedLine {
+    /// construct a new instantce of StitchedLine from the constituing components.
+    pub fn new(
+        metric: Metric,
+        data: Vec<Option<f64>>,
+        num_filled_columns: u32,
+        data_avg: Option<f64>,
+        lin_regr: Option<LinearRegression>,
+        exp_regr: Option<ExponentialRegression>,
+        best_fit: BestFit,
+        st_line: Option<ShortTermStitchedLine>,
+    ) -> Self {
+        Self {
+            metric,
+            data,
+            num_filled_columns,
+            data_avg,
+            lin_regr,
+            exp_regr,
+            best_fit,
+            st_line,
+        }
+    }
+
     /// compute a data-series (StitchedLine) including linear regression, the average of the data and possibly a short-term line for the last few datapoint.
     /// The Short-Term line is used to detect anomalies. However, this is only computed if the full dataset significantly exceed the size of the ST
-    pub fn new(metric: Metric, data: Vec<Option<f64>>, pars: &AnomalyParameters) -> Self {
+    pub fn compute_new(metric: Metric, data: Vec<Option<f64>>, pars: &AnomalyParameters) -> Self {
         let lin_regr = LinearRegression::new(&data);
         let exp_regr = ExponentialRegression::new(&data);
         let best_fit = match (&lin_regr, &exp_regr) {
@@ -84,7 +107,7 @@ impl StitchedLine {
             .iter()
             .fold(0, |cnt, val| if val.is_some() { cnt + 1 } else { cnt });
 
-        Self {
+        Self::new(
             metric,
             data,
             num_filled_columns,
@@ -93,7 +116,7 @@ impl StitchedLine {
             exp_regr,
             best_fit,
             st_line,
-        }
+        )
     }
 
     pub fn anomalies(&self, pars: &AnomalyParameters) -> Option<Anomalies> {
